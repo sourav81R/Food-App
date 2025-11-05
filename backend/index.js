@@ -17,46 +17,23 @@ import { socketHandler } from "./socket.js"
 const app=express()
 const server=http.createServer(app)
 
-// const io=new Server(server,{
-//    cors:{
-//     origin:"https://petpooja-food-app.vercel.app/",
-//     credentials:true,
-//     methods:['POST','GET']
-// }
-// })
-
-// app.set("io",io)
-
-
-
-// const port=process.env.PORT || 5000
-// app.use(cors({
-//     origin:"https://petpooja-food-app.vercel.app/",
-//     credentials:true
-// }))
-
 const io=new Server(server,{
-  cors:{
-    origin: [
-      "http://localhost:5173",
-      "https://petpooja-food-app.vercel.app",
-      "https://petpooja-lmwb.onrender.com"
-    ],
+   cors:{
+    origin:"https://petpooja-food-app.vercel.app/",
     credentials:true,
-    methods:['GET','POST']
-  }
-});
+    methods:['POST','GET']
+}
+})
 
+app.set("io",io)
+
+
+
+const port=process.env.PORT || 5000
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://petpooja-food-app.vercel.app",
-    "https://petpooja-lmwb.onrender.com"
-  ],
-  credentials:true
-}));
-
-
+    origin:"https://petpooja-food-app.vercel.app/",
+    credentials:true
+}))
 app.use(express.json())
 app.use(cookieParser())
 app.use("/api/auth",authRouter)
