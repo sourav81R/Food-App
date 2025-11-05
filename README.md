@@ -1,8 +1,8 @@
-# 🍕 Vingo - Real-Time Food Delivery App
+# 🍕 PetPooja - Real-Time Food Delivery App
 
-Vingo is a **real-time food delivery web application** built with the **MERN stack (MongoDB, Express.js, React, Node.js)**.  
-It allows users to browse restaurants, order food, and track delivery status live — all in a beautiful and responsive UI.  
-It also includes an **admin panel** for managing orders, restaurants, and users.
+**PetPooja** is a **real-time food delivery web application** built using the **MERN stack (MongoDB, Express.js, React, Node.js)**.  
+It allows users to browse restaurants, order food, and track delivery status live — all within a modern, responsive, and interactive interface.  
+The app also includes an **admin panel** for managing orders, restaurants, and users efficiently.
 
 ---
 
@@ -47,5 +47,40 @@ It also includes an **admin panel** for managing orders, restaurants, and users.
 
 ---
 
+## ⚙️ Setup Instructions
 
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/sourav81R/petpooja.git
+cd petpooja
+
+cd backend
+npm install
+
+cd ../frontend
+npm install
+
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+CLOUDINARY_NAME=your_cloudinary_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+cd backend
+npm run dev
+
+cd ../frontend
+npm run dev
+
+```
+Then open 👉 http://localhost:5173
+ in your browser.
+ 
+# 👨‍💻 Author
+
+## [Sourav Chowdhury](https://github.com/sourav81R)
+[📧 Email](souravchowdhury0203@gmail.com)
+[🌐 Portfolio](https://sourav.is-a.dev)
+[🔗 LinkedIn](https://www.linkedin.com/in/souravchowdhury-2003r)
 
