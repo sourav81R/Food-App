@@ -4,8 +4,8 @@ import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
 import connectDb from "./config/db.js";
+
 import authRouter from "./routes/auth.routes.js";
 import userRouter from "./routes/user.routes.js";
 import shopRouter from "./routes/shop.routes.js";
@@ -18,28 +18,21 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// ✅ Allow both production (Vercel) and local dev frontend origins
+// ✅ Allowed frontend origins
 const allowedOrigins = [
-  "https://petpooja-food-app.vercel.app",
-  "http://localhost:5173",
+  "https://petpooja-food-app.vercel.app", // your frontend on Vercel
+  "http://localhost:5173", // for local testing
 ];
 
-// ✅ Express CORS middleware
+// ✅ Global CORS
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS blocked for origin: " + origin));
-      }
-    },
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
 
-// ✅ Ensure OPTIONS requests are handled globally
 app.options("*", cors({
   origin: allowedOrigins,
   credentials: true,
@@ -49,14 +42,14 @@ app.options("*", cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Main routes
+// ✅ API Routes
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
 
-// ✅ Socket.io setup with CORS
+// ✅ Socket.io setup (Render supports WebSocket!)
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -65,18 +58,18 @@ const io = new Server(server, {
     transports: ["websocket", "polling"],
   },
 });
-
 socketHandler(io);
 app.set("io", io);
 
-// ✅ Test endpoint
+// ✅ Test route
 app.get("/", (req, res) => {
-  res.json({ message: "Backend connected successfully ✅" });
+  res.json({ message: "🚀 PetPooja backend running successfully on Render!" });
 });
 
-// ✅ Start server
+// ✅ Connect DB and start server
 const port = process.env.PORT || 5000;
+
 server.listen(port, async () => {
   await connectDb();
-  console.log(`🚀 Server running on http://localhost:${port}`);
+  console.log(`✅ Server running on port ${port}`);
 });
