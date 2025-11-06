@@ -27,7 +27,7 @@ import useGetMyOrders from './hooks/useGetMyOrders';
 import useUpdateLocation from './hooks/useUpdateLocation';
 
 
-export const serverUrl = "https://petpooja-two.vercel.app/";
+export const serverUrl = "https://petpooja-two.vercel.app";
 
 function App() {
   const { userData } = useSelector((state) => state.user);

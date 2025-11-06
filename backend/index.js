@@ -18,36 +18,42 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigin = "https://petpooja-food-app.vercel.app"; // ✅ NO TRAILING SLASH
 
 const io = new Server(server, {
   cors: {
-    origin: "https://petpooja-food-app.vercel.app/",
+    origin: allowedOrigin,
     credentials: true,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   },
 });
 
 app.set("io", io);
 
+// ✅ CORS middleware
 app.use(
   cors({
-    origin: "https://petpooja-food-app.vercel.app/",
+    origin: allowedOrigin,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
+
 app.use(express.json());
 app.use(cookieParser());
+
+// ✅ Routes
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
 
+// ✅ Socket setup
 socketHandler(io);
-
 
 const port = process.env.PORT || 5000;
 server.listen(port, async () => {
   await connectDb();
-  console.log(` Server running on http://localhost:${port}`);
+  console.log(`✅ Server running on http://localhost:${port}`);
 });
