@@ -14,50 +14,69 @@ import orderRouter from "./routes/order.routes.js";
 import { socketHandler } from "./socket.js";
 
 dotenv.config();
+
 const app = express();
 const server = http.createServer(app);
 
-const FRONTEND_ORIGIN = "https://petpooja-food-app.vercel.app"; // ✅ no slash!
+// ✅ Allow both production (Vercel) and local dev frontend origins
+const allowedOrigins = [
+  "https://petpooja-food-app.vercel.app",
+  "http://localhost:5173",
+];
 
-// ✅ Socket.io CORS fix
-const io = new Server(server, {
-  cors: {
-    origin: FRONTEND_ORIGIN,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    transports: ["websocket", "polling"],
-  },
-  allowEIO3: true, // 👈 ensures compatibility with old socket.io clients
-});
-
-app.set("io", io);
-
-// ✅ Express CORS fix
+// ✅ Express CORS middleware
 app.use(
   cors({
-    origin: FRONTEND_ORIGIN,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS blocked for origin: " + origin));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
 
+// ✅ Ensure OPTIONS requests are handled globally
+app.options("*", cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+}));
+
 app.use(express.json());
 app.use(cookieParser());
 
+// ✅ Main routes
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
 
-// ✅ Handle socket connections
+// ✅ Socket.io setup with CORS
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST"],
+    transports: ["websocket", "polling"],
+  },
+});
+
 socketHandler(io);
+app.set("io", io);
 
-// ✅ Handle OPTIONS requests explicitly
-app.options("*", cors({ origin: FRONTEND_ORIGIN, credentials: true }));
+// ✅ Test endpoint
+app.get("/", (req, res) => {
+  res.json({ message: "Backend connected successfully ✅" });
+});
 
+// ✅ Start server
 const port = process.env.PORT || 5000;
 server.listen(port, async () => {
   await connectDb();
-  console.log(`✅ Server running on http://localhost:${port}`);
+  console.log(`🚀 Server running on http://localhost:${port}`);
 });
