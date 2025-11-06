@@ -18,22 +18,17 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigin = "https://petpooja-food-app.vercel.app"; // ✅ NO TRAILING SLASH
-
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigin,
+    origin: "https://petpooja-food-app.vercel.app", 
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   },
 });
 
-app.set("io", io);
-
-// ✅ CORS middleware
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin: "https://petpooja-food-app.vercel.app", 
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
