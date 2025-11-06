@@ -1,58 +1,66 @@
-import User from "./models/user.model.js"
+import User from "./models/user.model.js";
 
 export const socketHandler = (io) => {
-  io.on('connection', (socket) => {
-    console.log(socket.id)
-    socket.on('identity', async ({ userId }) => {
+  io.on("connection", (socket) => {
+    console.log("🟢 Socket connected:", socket.id);
+
+    // Identify user after login
+    socket.on("identity", async ({ userId }) => {
       try {
-        const user = await User.findByIdAndUpdate(userId, {
-          socketId: socket.id, isOnline: true
-        }, { new: true })
+        if (!userId) return;
+        await User.findByIdAndUpdate(
+          userId,
+          { socketId: socket.id, isOnline: true },
+          { new: true }
+        );
+        console.log(`✅ User ${userId} marked online`);
       } catch (error) {
-        console.log(error)
+        console.error("❌ identity event error:", error.message);
       }
-    })
+    });
 
-
-    socket.on('updateLocation', async ({ latitude, longitude, userId }) => {
+    // Update delivery location and broadcast to all clients
+    socket.on("updateLocation", async ({ latitude, longitude, userId }) => {
       try {
+        if (!userId || latitude == null || longitude == null) return;
+
         const user = await User.findByIdAndUpdate(userId, {
           location: {
-            type: 'Point',
-            coordinates: [longitude, latitude]
+            type: "Point",
+            coordinates: [longitude, latitude],
           },
           isOnline: true,
-          socketId: socket.id
-        })
+          socketId: socket.id,
+        });
 
         if (user) {
-          io.emit('updateDeliveryLocation',{
-            deliveryBoyId:userId,
+          io.emit("updateDeliveryLocation", {
+            deliveryBoyId: userId,
             latitude,
-            longitude
-          })
+            longitude,
+          });
         }
-
-
       } catch (error) {
-          console.log('updateDeliveryLocation error')
+        console.error("❌ updateLocation event error:", error.message);
       }
-    })
+    });
 
-
-
-
-    socket.on('disconnect', async () => {
+    // Handle disconnection safely
+    socket.on("disconnect", async (reason) => {
       try {
-
-        await User.findOneAndUpdate({ socketId: socket.id }, {
-          socketId: null,
-          isOnline: false
-        })
+        console.log(`🔴 Socket ${socket.id} disconnected (${reason})`);
+        await User.findOneAndUpdate(
+          { socketId: socket.id },
+          { socketId: null, isOnline: false }
+        );
       } catch (error) {
-        console.log(error)
+        console.error("❌ disconnect event error:", error.message);
       }
+    });
 
-    })
-  })
-}
+    // Handle unexpected errors
+    socket.on("error", (err) => {
+      console.error("⚠️ Socket error:", err.message);
+    });
+  });
+};
