@@ -4,8 +4,8 @@ import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import connectDb from "./config/db.js";
 
+import connectDb from "./config/db.js";
 import authRouter from "./routes/auth.routes.js";
 import userRouter from "./routes/user.routes.js";
 import shopRouter from "./routes/shop.routes.js";
@@ -18,58 +18,41 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// ✅ Allowed frontend origins
-const allowedOrigins = [
-  "https://petpooja-food-app.vercel.app", // your frontend on Vercel
-  "http://localhost:5173", // for local testing
-];
+// ✅ Socket.io Configuration
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    credentials: true,
+    methods: ["GET", "POST"],
+  },
+});
 
-// ✅ Global CORS
+// ✅ Make Socket.io accessible in routes
+app.set("io", io);
+
+// ✅ Middleware setup
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: "http://localhost:5173",
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
-
-app.options("*", cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-}));
-
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ API Routes
+// ✅ Route setup
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
 
-// ✅ Socket.io setup (Render supports WebSocket!)
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ["GET", "POST"],
-    transports: ["websocket", "polling"],
-  },
-});
+// ✅ Initialize socket handler
 socketHandler(io);
-app.set("io", io);
 
-// ✅ Test route
-app.get("/", (req, res) => {
-  res.json({ message: "🚀 PetPooja backend running successfully on Render!" });
-});
-
-// ✅ Connect DB and start server
+// ✅ Start Server
 const port = process.env.PORT || 5000;
-
 server.listen(port, async () => {
   await connectDb();
-  console.log(`✅ Server running on port ${port}`);
+  console.log(`✅ Server running on http://localhost:${port}`);
 });
