@@ -21,7 +21,7 @@ const server = http.createServer(app);
 // ✅ Socket.io Configuration
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "https://food-app-frontend-lh2k.onrender.com",
     credentials: true,
     methods: ["GET", "POST"],
   },
@@ -33,7 +33,7 @@ app.set("io", io);
 // ✅ Middleware setup
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "https://food-app-frontend-lh2k.onrender.com",
     credentials: true,
   })
 );
