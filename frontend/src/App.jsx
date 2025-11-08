@@ -29,7 +29,7 @@ import useGetMyOrders from './hooks/useGetMyOrders';
 import useUpdateLocation from './hooks/useUpdateLocation';
 
 // ✅ Corrected backend server URL
-export const serverUrl = "http://localhost:8000";
+export const serverUrl = "https://food-app-2wqm.onrender.com";
 
 function App() {
   const { userData } = useSelector((state) => state.user);
