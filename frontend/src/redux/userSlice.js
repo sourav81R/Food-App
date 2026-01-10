@@ -13,7 +13,8 @@ const userSlice = createSlice({
     totalAmount: 0,
     myOrders: [],
     searchItems: null,
-    socket: null
+    socket: null,
+    favorites: []
   },
   reducers: {
     setUserData: (state, action) => {
@@ -75,6 +76,11 @@ const userSlice = createSlice({
     },
     addMyOrder: (state, action) => {
       state.myOrders = [action.payload, ...state.myOrders]
+    },
+
+    clearCart: (state) => {
+      state.cartItems = []
+      state.totalAmount = 0
     }
 
     ,
@@ -101,9 +107,23 @@ const userSlice = createSlice({
 
     setSearchItems: (state, action) => {
       state.searchItems = action.payload
+    },
+
+    setFavorites: (state, action) => {
+      state.favorites = action.payload
+    },
+
+    toggleFavoriteItem: (state, action) => {
+      const itemId = action.payload;
+      const index = state.favorites.findIndex(id => id === itemId);
+      if (index > -1) {
+        state.favorites.splice(index, 1);
+      } else {
+        state.favorites.push(itemId);
+      }
     }
   }
 })
 
-export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, setMyOrders, addMyOrder, updateOrderStatus, setSearchItems, setTotalAmount, setSocket ,updateRealtimeOrderStatus} = userSlice.actions
+export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, setMyOrders, addMyOrder, updateOrderStatus, setSearchItems, setTotalAmount, setSocket, updateRealtimeOrderStatus, clearCart, setFavorites, toggleFavoriteItem } = userSlice.actions
 export default userSlice.reducer
