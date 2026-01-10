@@ -18,6 +18,7 @@ import OrderPlaced from './pages/OrderPlaced';
 import MyOrders from './pages/MyOrders';
 import TrackOrderPage from './pages/TrackOrderPage';
 import Shop from './pages/Shop';
+import Favorites from './pages/Favorites';
 
 // ✅ Hooks
 import useGetCurrentUser from './hooks/useGetCurrentUser';
@@ -28,7 +29,7 @@ import useGetItemsByCity from './hooks/useGetItemsByCity';
 import useGetMyOrders from './hooks/useGetMyOrders';
 import useUpdateLocation from './hooks/useUpdateLocation';
 
-// ✅ Corrected backend server URL
+// ✅ Backend server URL
 export const serverUrl = "https://food-app-2wqm.onrender.com";
 
 function App() {
@@ -75,6 +76,7 @@ function App() {
       <Route path="/my-orders" element={userData ? <MyOrders /> : <Navigate to="/signin" />} />
       <Route path="/track-order/:orderId" element={userData ? <TrackOrderPage /> : <Navigate to="/signin" />} />
       <Route path="/shop/:shopId" element={userData ? <Shop /> : <Navigate to="/signin" />} />
+      <Route path="/favorites" element={userData ? <Favorites /> : <Navigate to="/signin" />} />
     </Routes>
   );
 }

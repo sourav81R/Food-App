@@ -6,91 +6,153 @@ import { FaRegStar } from "react-icons/fa6";
 import { FaMinus } from "react-icons/fa";
 import { FaPlus } from "react-icons/fa";
 import { FaShoppingCart } from "react-icons/fa";
+import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart } from '../redux/userSlice';
+import { addToCart, toggleFavoriteItem } from '../redux/userSlice';
+import { useToast } from '../context/ToastContext';
+import axios from 'axios';
+import { serverUrl } from '../App';
 
-function FoodCard({data}) {
-const [quantity,setQuantity]=useState(0)
-const dispatch=useDispatch()
-const {cartItems}=useSelector(state=>state.user)
-    const renderStars=(rating)=>{   //r=3
-        const stars=[];
+function FoodCard({ data }) {
+    const [quantity, setQuantity] = useState(0)
+    const [favoriteLoading, setFavoriteLoading] = useState(false)
+    const dispatch = useDispatch()
+    const { cartItems, favorites, userData } = useSelector(state => state.user)
+    const toast = useToast()
+    const isInCart = cartItems.some(i => i.id == data._id)
+    const isFavorite = favorites.includes(data._id)
+
+    const renderStars = (rating) => {
+        const stars = [];
         for (let i = 1; i <= 5; i++) {
-           stars.push(
-            (i<=rating)?(
-                <FaStar className='text-yellow-500 text-lg'/>
-            ):(
-                <FaRegStar className='text-yellow-500 text-lg'/>
+            stars.push(
+                (i <= rating) ? (
+                    <FaStar key={i} className='text-yellow-500 text-sm sm:text-lg' />
+                ) : (
+                    <FaRegStar key={i} className='text-yellow-500 text-sm sm:text-lg' />
+                )
             )
-           )
-            
         }
-return stars
+        return stars
     }
 
-const handleIncrease=()=>{
-    const newQty=quantity+1
-    setQuantity(newQty)
-}
-const handleDecrease=()=>{
-    if(quantity>0){
-const newQty=quantity-1
-    setQuantity(newQty)
+    const handleIncrease = () => {
+        const newQty = quantity + 1
+        setQuantity(newQty)
     }
-    
-}
 
-  return (
-    <div className='w-[250px] rounded-2xl border-2 border-[#ff4d2d] bg-white shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col'>
-      <div className='relative w-full h-[170px] flex justify-center items-center bg-white'>
-        <div className='absolute top-3 right-3 bg-white rounded-full p-1 shadow'>{data.foodType=="veg"?<FaLeaf className='text-green-600 text-lg'/>:<FaDrumstickBite className='text-red-600 text-lg'/>}</div>
+    const handleDecrease = () => {
+        if (quantity > 0) {
+            const newQty = quantity - 1
+            setQuantity(newQty)
+        }
+    }
 
+    const handleAddToCart = () => {
+        if (quantity === 0) {
+            toast.warning("Please select quantity first")
+            return
+        }
 
-<img src={data.image} alt="" className='w-full h-full object-cover transition-transform duration-300 hover:scale-105'/>
-      </div>
+        dispatch(addToCart({
+            id: data._id,
+            name: data.name,
+            price: data.price,
+            image: data.image,
+            shop: data.shop,
+            quantity,
+            foodType: data.foodType
+        }))
 
-      <div className="flex-1 flex flex-col p-4">
-<h1 className='font-semibold text-gray-900 text-base truncate'>{data.name}</h1>
+        toast.success(`${data.name} added to cart!`)
+        setQuantity(0)
+    }
 
-<div className='flex items-center gap-1 mt-1'>
-{renderStars(data.rating?.average || 0)}
-<span className='text-xs text-gray-500'>
-    {data.rating?.count || 0}
-</span>
-</div>
-      </div>
+    const handleToggleFavorite = async () => {
+        if (!userData) {
+            toast.warning("Please sign in to add favorites")
+            return
+        }
 
-<div className='flex items-center justify-between mt-auto p-3'>
-<span className='font-bold text-gray-900 text-lg'>
-    ₹{data.price}
-</span>
+        setFavoriteLoading(true)
+        try {
+            await axios.post(`${serverUrl}/api/favorite/toggle/${data._id}`, {}, { withCredentials: true })
+            dispatch(toggleFavoriteItem(data._id))
+            toast.success(isFavorite ? "Removed from favorites" : "Added to favorites ❤️")
+        } catch (error) {
+            toast.error("Failed to update favorites")
+            console.log(error)
+        } finally {
+            setFavoriteLoading(false)
+        }
+    }
 
-<div className='flex items-center border rounded-full overflow-hidden shadow-sm'>
-<button className='px-2 py-1 hover:bg-gray-100 transition' onClick={handleDecrease}>
-<FaMinus size={12}/>
-</button>
-<span>{quantity}</span>
-<button className='px-2 py-1 hover:bg-gray-100 transition' onClick={handleIncrease}>
-<FaPlus size={12}/>
-</button>
-<button className={`${cartItems.some(i=>i.id==data._id)?"bg-gray-800":"bg-[#ff4d2d]"} text-white px-3 py-2 transition-colors`}  onClick={()=>{
-    quantity>0?dispatch(addToCart({
-          id:data._id,
-          name:data.name,
-          price:data.price,
-          image:data.image,
-          shop:data.shop,
-          quantity,
-          foodType:data.foodType
-})):null}}>
-<FaShoppingCart size={16}/>
-</button>
-</div>
-</div>
+    return (
+        <div className='w-full sm:w-[250px] rounded-2xl border-2 border-[#ff4d2d] bg-white shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col'>
+            <div className='relative w-full h-[150px] sm:h-[170px] flex justify-center items-center bg-white overflow-hidden'>
+                {/* Image - behind buttons */}
+                <img src={data.image} alt={data.name} className='w-full h-full object-cover' />
 
+                {/* Food type indicator - on top */}
+                <div className='absolute top-3 right-3 bg-white rounded-full p-1.5 shadow-md z-10'>
+                    {data.foodType == "veg" ?
+                        <FaLeaf className='text-green-600 text-base sm:text-lg' /> :
+                        <FaDrumstickBite className='text-red-600 text-base sm:text-lg' />
+                    }
+                </div>
 
-    </div>
-  )
+                {/* Favorite heart button - on top with pointer events */}
+                <button
+                    className='absolute top-3 left-3 bg-white rounded-full p-2 shadow-md z-10 hover:scale-110 hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer'
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        handleToggleFavorite()
+                    }}
+                    disabled={favoriteLoading}
+                >
+                    {isFavorite ? (
+                        <FaHeart className='text-red-500 text-base sm:text-lg' />
+                    ) : (
+                        <FaRegHeart className='text-gray-400 hover:text-red-400 text-base sm:text-lg transition-colors' />
+                    )}
+                </button>
+            </div>
+
+            <div className="flex-1 flex flex-col p-3 sm:p-4">
+                <h1 className='font-semibold text-gray-900 text-sm sm:text-base truncate'>{data.name}</h1>
+                <div className='flex items-center gap-1 mt-1'>
+                    {renderStars(data.rating?.average || 0)}
+                    <span className='text-xs text-gray-500'>
+                        ({data.rating?.count || 0})
+                    </span>
+                </div>
+            </div>
+
+            <div className='flex items-center justify-between mt-auto p-3'>
+                <span className='font-bold text-gray-900 text-base sm:text-lg'>
+                    ₹{data.price}
+                </span>
+
+                <div className='flex items-center border rounded-full overflow-hidden shadow-sm'>
+                    <button className='px-2 py-1 hover:bg-gray-100 transition active:bg-gray-200' onClick={handleDecrease}>
+                        <FaMinus size={12} />
+                    </button>
+                    <span className='px-1 min-w-[20px] text-center text-sm'>{quantity}</span>
+                    <button className='px-2 py-1 hover:bg-gray-100 transition active:bg-gray-200' onClick={handleIncrease}>
+                        <FaPlus size={12} />
+                    </button>
+                    <button
+                        className={`${isInCart ? "bg-gray-800" : "bg-[#ff4d2d]"} text-white px-3 py-2 transition-colors active:opacity-80`}
+                        onClick={handleAddToCart}
+                    >
+                        <FaShoppingCart size={16} />
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
 }
 
 export default FoodCard
+
+
