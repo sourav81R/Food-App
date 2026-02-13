@@ -1,4 +1,4 @@
-# 🍕 PetPooja - Real-Time Food Delivery App
+# 🍕 PetPooja - Real-Time Food Delivery App  
 
 **PetPooja** is a **real-time food delivery web application** built using the **MERN stack (MongoDB, Express.js, React, Node.js)**.  
 It allows users to browse restaurants, order food, and track delivery status live — all within a modern, responsive, and interactive interface.  
