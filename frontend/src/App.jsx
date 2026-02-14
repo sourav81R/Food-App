@@ -28,8 +28,8 @@ import useGetItemsByCity from './hooks/useGetItemsByCity';
 import useGetMyOrders from './hooks/useGetMyOrders';
 import useUpdateLocation from './hooks/useUpdateLocation';
 
-// ✅ Corrected backend server URL
-export const serverUrl = "http://localhost:8000";
+// Backend server URL
+export const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
 
 function App() {
   const { userData } = useSelector((state) => state.user);
@@ -46,17 +46,21 @@ function App() {
 
   // ✅ Socket connection setup
   useEffect(() => {
+    if (!userData?._id) {
+      dispatch(setSocket(null));
+      return;
+    }
+
     const socketInstance = io(serverUrl, { withCredentials: true });
     dispatch(setSocket(socketInstance));
 
     socketInstance.on('connect', () => {
-      if (userData) {
-        socketInstance.emit('identity', { userId: userData._id });
-      }
+      socketInstance.emit('identity', { userId: userData._id });
     });
 
     return () => {
       socketInstance.disconnect();
+      dispatch(setSocket(null));
     };
   }, [userData?._id, dispatch]);
 

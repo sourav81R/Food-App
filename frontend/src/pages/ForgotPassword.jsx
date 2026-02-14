@@ -14,6 +14,7 @@ function ForgotPassword() {
   const navigate=useNavigate()
 const [loading,setLoading]=useState(false)
   const handleSendOtp=async () => {
+    if(!email) return setErr("Please enter your email")
     setLoading(true)
     try {
       const result=await axios.post(`${serverUrl}/api/auth/send-otp`,{email},{withCredentials:true})
@@ -22,11 +23,12 @@ const [loading,setLoading]=useState(false)
       setStep(2)
       setLoading(false)
     } catch (error) {
-       setErr(error.response.data.message)
+       setErr(error?.response?.data?.message || error.message)
        setLoading(false)
     }
   }
   const handleVerifyOtp=async () => {
+      if(!otp) return setErr("Please enter the OTP")
       setLoading(true)
     try {
       const result=await axios.post(`${serverUrl}/api/auth/verify-otp`,{email,otp},{withCredentials:true})
@@ -35,13 +37,14 @@ const [loading,setLoading]=useState(false)
       setStep(3)
         setLoading(false)
     } catch (error) {
-        setErr(error?.response?.data?.message)
+        setErr(error?.response?.data?.message || error.message)
           setLoading(false)
     }
   }
   const handleResetPassword=async () => {
+    if(!newPassword || !confirmPassword) return setErr("Please enter new password")
     if(newPassword!=confirmPassword){
-      return null
+      return setErr("Passwords do not match")
     }
     setLoading(true)
     try {
@@ -51,7 +54,7 @@ const [loading,setLoading]=useState(false)
         setLoading(false)
       navigate("/signin")
     } catch (error) {
-     setErr(error?.response?.data?.message)
+     setErr(error?.response?.data?.message || error.message)
        setLoading(false)
     }
   }

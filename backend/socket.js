@@ -31,7 +31,7 @@ export const socketHandler = (io) => {
           },
           isOnline: true,
           socketId: socket.id,
-        });
+        }, { new: true });
 
         if (user) {
           io.emit("updateDeliveryLocation", {

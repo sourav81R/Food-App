@@ -19,6 +19,9 @@ export const getCurrentUser=async (req,res) => {
 export const updateUserLocation=async (req,res) => {
     try {
         const {lat,lon}=req.body
+        if(lat === undefined || lon === undefined){
+            return res.status(400).json({message:"lat and lon are required"})
+        }
         const user=await User.findByIdAndUpdate(req.userId,{
             location:{
                 type:'Point',
@@ -29,9 +32,17 @@ export const updateUserLocation=async (req,res) => {
                return res.status(400).json({message:"user is not found"})
         }
         
+        const io = req.app.get('io')
+        if(io){
+            io.emit('updateDeliveryLocation',{
+                deliveryBoyId:req.userId,
+                latitude:lat,
+                longitude:lon
+            })
+        }
+
         return res.status(200).json({message:'location updated'})
     } catch (error) {
            return res.status(500).json({message:`update location user error ${error}`})
     }
 }
-

@@ -1,13 +1,11 @@
 import React from 'react'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaRegEye } from "react-icons/fa";
 import { FaRegEyeSlash } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from 'react-router-dom';
 import axios from "axios"
 import { serverUrl } from '../App';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '../../firebase';
 import { ClipLoader } from 'react-spinners';
 import { useDispatch } from 'react-redux';
 import { setUserData } from '../redux/userSlice';
@@ -23,7 +21,17 @@ function SignIn() {
     const [err,setErr]=useState("")
     const [loading,setLoading]=useState(false)
     const dispatch=useDispatch()
+    useEffect(() => {
+        if (typeof window !== 'undefined' && !window.google) {
+            const script = document.createElement('script');
+            script.src = "https://accounts.google.com/gsi/client";
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
+        }
+    }, []);
      const handleSignIn=async () => {
+        if(!email || !password) return setErr("Please fill in all fields")
         setLoading(true)
         try {
             const result=await axios.post(`${serverUrl}/api/auth/signin`,{
@@ -33,22 +41,36 @@ function SignIn() {
             setErr("")
             setLoading(false)
         } catch (error) {
-           setErr(error?.response?.data?.message)
+           setErr(error?.response?.data?.message || error.message)
            setLoading(false)
         }
      }
-     const handleGoogleAuth=async () => {
-             const provider=new GoogleAuthProvider()
-             const result=await signInWithPopup(auth,provider)
-       try {
-         const {data}=await axios.post(`${serverUrl}/api/auth/google-auth`,{
-             email:result.user.email,
-         },{withCredentials:true})
-         dispatch(setUserData(data))
-       } catch (error) {
-         console.log(error)
-       }
-          }
+    const handleGoogleAuth = () => {
+        if (typeof window === 'undefined' || !window.google) {
+            return setErr("Google Sign-In script not loaded");
+        }
+
+        const client = window.google.accounts.oauth2.initTokenClient({
+            client_id: "165719685733-lpjbgm95ql9dfsb5k0f2roq0sb1k2phq.apps.googleusercontent.com",
+            scope: "email profile",
+            callback: async (tokenResponse) => {
+                try {
+                    const userInfo = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                    });
+                    const { data } = await axios.post(`${serverUrl}/api/auth/google-auth`, {
+                        email: userInfo.data.email,
+                    }, { withCredentials: true });
+                    dispatch(setUserData(data));
+                } catch (error) {
+                    console.log(error);
+                    // Handle 500 errors or other failures gracefully
+                    setErr(error?.response?.data?.message || "Google Sign-In failed. Please try again.");
+                }
+            },
+        });
+        client.requestAccessToken();
+    }
     return (
         <div className='min-h-screen w-full flex items-center justify-center p-4' style={{ backgroundColor: bgColor }}>
             <div className={`bg-white rounded-xl shadow-lg w-full max-w-md p-8 border-[1px] `} style={{

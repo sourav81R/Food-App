@@ -1,5 +1,14 @@
-import express from "express";
+// 🔥 Load environment variables FIRST
 import dotenv from "dotenv";
+dotenv.config();
+
+// ❗ Validate required env variables early
+if (!process.env.MONGODB_URL) {
+  console.error("❌ MONGODB_URL is missing in .env file");
+  process.exit(1);
+}
+
+import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
@@ -13,46 +22,66 @@ import itemRouter from "./routes/item.routes.js";
 import orderRouter from "./routes/order.routes.js";
 import { socketHandler } from "./socket.js";
 
-dotenv.config();
-
 const app = express();
 const server = http.createServer(app);
 
-// ✅ Socket.io Configuration
+const PORT = process.env.PORT || 5000;
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+
+// ✅ Socket.io configuration
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: CLIENT_URL,
     credentials: true,
     methods: ["GET", "POST"],
   },
 });
 
-// ✅ Make Socket.io accessible in routes
+// ✅ Make io accessible inside routes/controllers
 app.set("io", io);
 
-// ✅ Middleware setup
+// ✅ Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: CLIENT_URL,
     credentials: true,
   })
 );
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Route setup
+// ✅ Routes
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
 
-// ✅ Initialize socket handler
+// ✅ Socket handler
 socketHandler(io);
 
-// ✅ Start Server
-const port = process.env.PORT || 5000;
-server.listen(port, async () => {
-  await connectDb();
-  console.log(`✅ Server running on http://localhost:${port}`);
+// ✅ Start server AFTER DB connection
+const startServer = async () => {
+  try {
+    console.log("🔄 Connecting to MongoDB...");
+    await connectDb();
+
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running at http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server");
+    console.error(error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
+
+// ✅ Graceful shutdown
+process.on("SIGINT", () => {
+  console.log("🛑 Server shutting down...");
+  server.close(() => {
+    process.exit(0);
+  });
 });

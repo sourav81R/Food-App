@@ -1,13 +1,11 @@
 import React from 'react'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaRegEye } from "react-icons/fa";
 import { FaRegEyeSlash } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from 'react-router-dom';
 import axios from "axios"
 import { serverUrl } from '../App';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '../../firebase';
 import { ClipLoader } from "react-spinners"
 import { useDispatch } from 'react-redux';
 import { setUserData } from '../redux/userSlice';
@@ -26,7 +24,17 @@ function SignUp() {
     const [err,setErr]=useState("")
     const [loading,setLoading]=useState(false)
     const dispatch=useDispatch()
+    useEffect(() => {
+        if (typeof window !== 'undefined' && !window.google) {
+            const script = document.createElement('script');
+            script.src = "https://accounts.google.com/gsi/client";
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
+        }
+    }, []);
      const handleSignUp=async () => {
+        if(!fullName || !email || !password || !mobile) return setErr("Please fill in all fields")
         setLoading(true)
         try {
             const result=await axios.post(`${serverUrl}/api/auth/signup`,{
@@ -36,7 +44,7 @@ function SignUp() {
             setErr("")
             setLoading(false)
         } catch (error) {
-            setErr(error?.response?.data?.message)
+            setErr(error?.response?.data?.message || error.message)
              setLoading(false)
         }
      }
@@ -45,19 +53,33 @@ function SignUp() {
         if(!mobile){
           return setErr("mobile no is required")
         }
-        const provider=new GoogleAuthProvider()
-        const result=await signInWithPopup(auth,provider)
-  try {
-    const {data}=await axios.post(`${serverUrl}/api/auth/google-auth`,{
-        fullName:result.user.displayName,
-        email:result.user.email,
-        role,
-        mobile
-    },{withCredentials:true})
-   dispatch(setUserData(data))
-  } catch (error) {
-    console.log(error)
-  }
+        
+        if (typeof window === 'undefined' || !window.google) {
+            return setErr("Google Sign-In script not loaded");
+        }
+
+        const client = window.google.accounts.oauth2.initTokenClient({
+            client_id: "165719685733-lpjbgm95ql9dfsb5k0f2roq0sb1k2phq.apps.googleusercontent.com",
+            scope: "email profile",
+            callback: async (tokenResponse) => {
+                try {
+                    const userInfo = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                    });
+                    const { data } = await axios.post(`${serverUrl}/api/auth/google-auth`, {
+                        fullName: userInfo.data.name,
+                        email: userInfo.data.email,
+                        role,
+                        mobile
+                    }, { withCredentials: true });
+                    dispatch(setUserData(data));
+                } catch (error) {
+                    console.log(error);
+                    setErr(error?.response?.data?.message || "Google Sign-Up failed. Please try again.");
+                }
+            },
+        });
+        client.requestAccessToken();
      }
     return (
         <div className='min-h-screen w-full flex items-center justify-center p-4' style={{ backgroundColor: bgColor }}>
@@ -103,6 +125,7 @@ function SignUp() {
                     <div className='flex gap-2'>
                         {["user", "owner", "deliveryBoy"].map((r) => (
                             <button
+                                key={r}
                                 className='flex-1 border rounded-lg px-3 py-2 text-center font-medium transition-colors cursor-pointer'
                                 onClick={()=>setRole(r)}
                                 style={
