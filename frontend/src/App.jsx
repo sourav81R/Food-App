@@ -22,7 +22,6 @@ import useGetCity from './hooks/useGetCity';
 import useGetMyshop from './hooks/useGetMyShop';
 import useGetShopByCity from './hooks/useGetShopByCity';
 import useGetItemsByCity from './hooks/useGetItemsByCity';
-import useGetMyOrders from './hooks/useGetMyOrders';
 import useUpdateLocation from './hooks/useUpdateLocation';
 
 export const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
@@ -36,7 +35,6 @@ function App() {
   useGetMyshop();
   useGetShopByCity();
   useGetItemsByCity();
-  useGetMyOrders();
 
   return (
     <Routes>

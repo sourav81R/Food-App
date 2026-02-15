@@ -71,7 +71,11 @@ const userSlice = createSlice({
       state.myOrders = action.payload
     },
     addMyOrder: (state, action) => {
-      state.myOrders = [action.payload, ...state.myOrders]
+      const incomingOrder = action.payload
+      const exists = state.myOrders.some(order => order?._id == incomingOrder?._id)
+      if (!exists) {
+        state.myOrders = [incomingOrder, ...state.myOrders]
+      }
     },
 
     clearCart: (state) => {
@@ -84,7 +88,12 @@ const userSlice = createSlice({
       const { orderId, shopId, status } = action.payload
       const order = state.myOrders.find(o => o._id == orderId)
       if (order) {
-        if (order.shopOrders && order.shopOrders.shop._id == shopId) {
+        if (Array.isArray(order.shopOrders)) {
+          const targetShopOrder = order.shopOrders.find(so => so.shop?._id == shopId)
+          if (targetShopOrder) {
+            targetShopOrder.status = status
+          }
+        } else if (order.shopOrders?.shop?._id == shopId) {
           order.shopOrders.status = status
         }
       }
@@ -94,9 +103,13 @@ const userSlice = createSlice({
       const { orderId, shopId, status } = action.payload
       const order = state.myOrders.find(o => o._id == orderId)
       if (order) {
-        const shopOrder = order.shopOrders.find(so => so.shop._id == shopId)
-        if (shopOrder) {
-          shopOrder.status = status
+        if (Array.isArray(order.shopOrders)) {
+          const shopOrder = order.shopOrders.find(so => so.shop?._id == shopId)
+          if (shopOrder) {
+            shopOrder.status = status
+          }
+        } else if (order.shopOrders?.shop?._id == shopId) {
+          order.shopOrders.status = status
         }
       }
     },

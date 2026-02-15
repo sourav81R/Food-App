@@ -31,17 +31,21 @@ function MyOrders() {
       }
     }
 
-    if (userData) {
-      fetchOrders()
+    if (userData?._id) {
+      void fetchOrders()
     }
-  }, [userData, dispatch])
+  }, [userData?._id, dispatch])
 
   // Socket listeners for real-time updates
   useEffect(() => {
     if (!socket || !userData?._id) return
 
     const handleNewOrder = (data) => {
-      if (data.shopOrders?.owner?._id == userData._id) {
+      const hasOwnerMatch = Array.isArray(data?.shopOrders)
+        ? data.shopOrders.some(shopOrder => shopOrder?.owner?._id == userData._id)
+        : data?.shopOrders?.owner?._id == userData._id
+
+      if (hasOwnerMatch) {
         dispatch(addMyOrder(data))
       }
     }

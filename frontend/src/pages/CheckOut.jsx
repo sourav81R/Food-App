@@ -37,6 +37,7 @@ function CheckOut() {
   const AmountWithDeliveryFee = totalAmount + deliveryFee
   const toast = useToast()
   const [orderLoading, setOrderLoading] = useState(false)
+  const [geoLoading, setGeoLoading] = useState(false)
 
 
 
@@ -44,16 +45,38 @@ function CheckOut() {
 
 
   const onDragEnd = (e) => {
-    const { lat, lng } = e.target._latlng
+    const { lat, lng } = e.target.getLatLng()
     dispatch(setLocation({ lat, lon: lng }))
-    getAddressByLatLng(lat, lng)
+    void getAddressByLatLng(lat, lng)
   }
   const getCurrentLocation = () => {
-    const latitude = userData.location.coordinates[1]
-    const longitude = userData.location.coordinates[0]
-    dispatch(setLocation({ lat: latitude, lon: longitude }))
-    getAddressByLatLng(latitude, longitude)
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported in this browser")
+      return
+    }
 
+    setGeoLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = position.coords.latitude
+        const longitude = position.coords.longitude
+        dispatch(setLocation({ lat: latitude, lon: longitude }))
+        void getAddressByLatLng(latitude, longitude)
+        setGeoLoading(false)
+      },
+      () => {
+        const savedLongitude = userData?.location?.coordinates?.[0]
+        const savedLatitude = userData?.location?.coordinates?.[1]
+        if (Number.isFinite(savedLongitude) && Number.isFinite(savedLatitude)) {
+          dispatch(setLocation({ lat: savedLatitude, lon: savedLongitude }))
+          void getAddressByLatLng(savedLatitude, savedLongitude)
+        } else {
+          toast.error("Unable to fetch current location")
+        }
+        setGeoLoading(false)
+      },
+      { enableHighAccuracy: false, timeout: 7000, maximumAge: 5 * 60 * 1000 }
+    )
 
   }
 
@@ -70,7 +93,12 @@ function CheckOut() {
   const getLatLngByAddress = async () => {
     try {
       const result = await axios.get(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(addressInput)}&apiKey=${apiKey}`)
-      const { lat, lon } = result.data.features[0].properties
+      const firstMatch = result?.data?.features?.[0]?.properties
+      if (!firstMatch) {
+        toast.warning("No matching address found")
+        return
+      }
+      const { lat, lon } = firstMatch
       dispatch(setLocation({ lat, lon }))
     } catch (error) {
       console.log(error)
@@ -113,10 +141,17 @@ function CheckOut() {
       } else {
         const orderId = result.data.orderId
         const razorOrder = result.data.razorOrder
-        openRazorpayWindow(orderId, razorOrder)
+        const razorpayKeyId = result.data.razorpayKeyId
+        openRazorpayWindow(orderId, razorOrder, razorpayKeyId)
       }
 
     } catch (error) {
+      const statusCode = error?.response?.status
+      if (statusCode === 401) {
+        toast.error("Session expired. Please sign in again.")
+        navigate("/signin")
+        return
+      }
       const message = error?.response?.data?.message || "Failed to place order. Please try again."
       toast.error(message)
       console.log(error)
@@ -125,9 +160,20 @@ function CheckOut() {
     }
   }
 
-  const openRazorpayWindow = (orderId, razorOrder) => {
+  const openRazorpayWindow = (orderId, razorOrder, razorpayKeyId) => {
+    if (!window.Razorpay) {
+      toast.error("Razorpay SDK not loaded. Please refresh the page.")
+      return
+    }
+
+    const keyToUse = razorpayKeyId || import.meta.env.VITE_RAZORPAY_KEY_ID
+    if (!keyToUse) {
+      toast.error("Razorpay key is missing. Contact support.")
+      return
+    }
+
     const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+      key: keyToUse,
       amount: razorOrder.amount,
       currency: 'INR',
       name: "PetPooja",
@@ -171,6 +217,11 @@ function CheckOut() {
   useEffect(() => {
     setAddressInput(address)
   }, [address])
+
+  const mapCenter = [
+    Number.isFinite(location?.lat) ? location.lat : 22.5726,
+    Number.isFinite(location?.lon) ? location.lon : 88.3639
+  ]
   return (
     <div className='min-h-screen bg-[#fff9f6] flex items-center justify-center p-6'>
       <div className=' absolute top-[20px] left-[20px] z-[10]' onClick={() => navigate("/")}>
@@ -184,13 +235,19 @@ function CheckOut() {
           <div className='flex gap-2 mb-3'>
             <input type="text" className='flex-1 border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2d]' placeholder='Enter Your Delivery Address..' value={addressInput} onChange={(e) => setAddressInput(e.target.value)} />
             <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-3 py-2 rounded-lg flex items-center justify-center' onClick={getLatLngByAddress}><IoSearchOutline size={17} /></button>
-            <button className='bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg flex items-center justify-center' onClick={getCurrentLocation}><TbCurrentLocation size={17} /></button>
+            <button
+              className='bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg flex items-center justify-center disabled:opacity-70'
+              onClick={getCurrentLocation}
+              disabled={geoLoading}
+            >
+              {geoLoading ? <ClipLoader size={14} color='white' /> : <TbCurrentLocation size={17} />}
+            </button>
           </div>
           <div className='rounded-xl border overflow-hidden'>
             <div className='h-64 w-full flex items-center justify-center'>
               <MapContainer
                 className={"w-full h-full"}
-                center={[location?.lat, location?.lon]}
+                center={mapCenter}
                 zoom={16}
               >
                 <TileLayer
@@ -198,7 +255,9 @@ function CheckOut() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <RecenterMap location={location} />
-                <Marker position={[location?.lat, location?.lon]} draggable eventHandlers={{ dragend: onDragEnd }} />
+                {Number.isFinite(location?.lat) && Number.isFinite(location?.lon) && (
+                  <Marker position={[location.lat, location.lon]} draggable eventHandlers={{ dragend: onDragEnd }} />
+                )}
 
 
               </MapContainer>

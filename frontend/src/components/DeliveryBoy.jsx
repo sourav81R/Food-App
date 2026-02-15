@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux'
 import axios from 'axios'
 import { serverUrl } from '../App'
 import { useEffect } from 'react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import DeliveryBoyTracking from './DeliveryBoyTracking'
 import { ClipLoader } from 'react-spinners'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -13,6 +13,7 @@ import { useSocket } from '../context/SocketContext'
 function DeliveryBoy() {
   const { userData } = useSelector(state => state.user)
   const socket = useSocket()
+  const lastSocketEmitRef = useRef(0)
   const [currentOrder,setCurrentOrder]=useState()
   const [showOtpBox,setShowOtpBox]=useState(false)
   const [availableAssignments,setAvailableAssignments]=useState(null)
@@ -29,6 +30,9 @@ watchId=navigator.geolocation.watchPosition((position)=>{
     const latitude=position.coords.latitude
     const longitude=position.coords.longitude
     setDeliveryBoyLocation({lat:latitude,lon:longitude})
+    const now = Date.now()
+    if (now - lastSocketEmitRef.current < 5000) return
+    lastSocketEmitRef.current = now
     socket.emit('updateLocation',{
       latitude,
       longitude,
@@ -39,7 +43,9 @@ watchId=navigator.geolocation.watchPosition((position)=>{
     console.log(error)
   },
   {
-    enableHighAccuracy:true
+    enableHighAccuracy:true,
+    maximumAge:10000,
+    timeout:8000
   }
 }
 

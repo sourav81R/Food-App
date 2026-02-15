@@ -4,20 +4,36 @@ import Shop from "../models/shop.model.js"
 import User from "../models/user.model.js"
 import { sendDeliveryOtpMail } from "../utils/mail.js"
 import RazorPay from "razorpay"
-import dotenv from "dotenv"
-import { count } from "console"
 
-dotenv.config()
-let instance = new RazorPay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+const ALLOWED_PAYMENT_METHODS = new Set(["cod", "online"])
+
+const getRazorpayClient = () => {
+    const keyId = process.env.RAZORPAY_KEY_ID
+    const keySecret = process.env.RAZORPAY_KEY_SECRET
+    if (!keyId || !keySecret) {
+        return {
+            error: "Razorpay is not configured on server. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend/.env"
+        }
+    }
+    return {
+        client: new RazorPay({
+            key_id: keyId,
+            key_secret: keySecret
+        })
+    }
+}
 
 export const placeOrder = async (req, res) => {
     try {
         const { cartItems, paymentMethod, deliveryAddress, totalAmount } = req.body
-        if (cartItems.length == 0 || !cartItems) {
+        if (!Array.isArray(cartItems) || cartItems.length === 0) {
             return res.status(400).json({ message: "cart is empty" })
+        }
+        if (!ALLOWED_PAYMENT_METHODS.has(paymentMethod)) {
+            return res.status(400).json({ message: "invalid payment method" })
+        }
+        if (!Number.isFinite(Number(totalAmount)) || Number(totalAmount) <= 0) {
+            return res.status(400).json({ message: "invalid total amount" })
         }
         if (!deliveryAddress.text || !deliveryAddress.latitude || !deliveryAddress.longitude) {
             return res.status(400).json({ message: "send complete deliveryAddress" })
@@ -26,7 +42,10 @@ export const placeOrder = async (req, res) => {
         const groupItemsByShop = {}
 
         cartItems.forEach(item => {
-            const shopId = item.shop
+            const shopId = item?.shop?._id || item?.shop
+            if (!shopId) {
+                throw new Error("Invalid cart item: missing shop id")
+            }
             if (!groupItemsByShop[shopId]) {
                 groupItemsByShop[shopId] = []
             }
@@ -36,7 +55,7 @@ export const placeOrder = async (req, res) => {
         const shopOrders = await Promise.all(Object.keys(groupItemsByShop).map(async (shopId) => {
             const shop = await Shop.findById(shopId).populate("owner")
             if (!shop) {
-                return res.status(400).json({ message: "shop not found" })
+                throw new Error(`shop not found: ${shopId}`)
             }
             const items = groupItemsByShop[shopId]
             const subtotal = items.reduce((sum, i) => sum + Number(i.price) * Number(i.quantity), 0)
@@ -55,11 +74,27 @@ export const placeOrder = async (req, res) => {
         ))
 
         if (paymentMethod == "online") {
-            const razorOrder = await instance.orders.create({
-                amount: Math.round(totalAmount * 100),
-                currency: 'INR',
-                receipt: `receipt_${Date.now()}`
-            })
+            const { client, error } = getRazorpayClient()
+            if (error) {
+                return res.status(503).json({ message: error })
+            }
+
+            let razorOrder
+            try {
+                razorOrder = await client.orders.create({
+                    amount: Math.round(Number(totalAmount) * 100),
+                    currency: 'INR',
+                    receipt: `receipt_${Date.now()}`
+                })
+            } catch (razorpayError) {
+                const providerStatus = razorpayError?.statusCode
+                const statusCode = providerStatus === 401 ? 502 : (providerStatus || 502)
+                const description = providerStatus === 401
+                    ? "Razorpay authentication failed. Check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET."
+                    : (razorpayError?.error?.description || razorpayError?.message || "Failed to create Razorpay order")
+                return res.status(statusCode).json({ message: description })
+            }
+
             const newOrder = await Order.create({
                 user: req.userId,
                 paymentMethod,
@@ -73,6 +108,7 @@ export const placeOrder = async (req, res) => {
             return res.status(200).json({
                 razorOrder,
                 orderId: newOrder._id,
+                razorpayKeyId: process.env.RAZORPAY_KEY_ID
             })
 
         }
@@ -113,20 +149,46 @@ export const placeOrder = async (req, res) => {
 
         return res.status(201).json(newOrder)
     } catch (error) {
-        return res.status(500).json({ message: `place order error ${error}` })
+        return res.status(500).json({ message: error?.message || "place order failed" })
     }
 }
 
 export const verifyPayment = async (req, res) => {
     try {
         const { razorpay_payment_id, orderId } = req.body
-        const payment = await instance.payments.fetch(razorpay_payment_id)
-        if (!payment || payment.status != "captured") {
-            return res.status(400).json({ message: "payment not captured" })
+        if (!razorpay_payment_id || !orderId) {
+            return res.status(400).json({ message: "razorpay_payment_id and orderId are required" })
         }
+
+        const { client, error } = getRazorpayClient()
+        if (error) {
+            return res.status(503).json({ message: error })
+        }
+
         const order = await Order.findById(orderId)
         if (!order) {
             return res.status(400).json({ message: "order not found" })
+        }
+        if (String(order.user) !== String(req.userId)) {
+            return res.status(403).json({ message: "unauthorized order access" })
+        }
+
+        let payment
+        try {
+            payment = await client.payments.fetch(razorpay_payment_id)
+        } catch (razorpayError) {
+            const providerStatus = razorpayError?.statusCode
+            const statusCode = providerStatus === 401 ? 502 : (providerStatus || 502)
+            const description = providerStatus === 401
+                ? "Razorpay authentication failed. Check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET."
+                : (razorpayError?.error?.description || razorpayError?.message || "Failed to verify payment")
+            return res.status(statusCode).json({ message: description })
+        }
+        if (!payment || payment.status != "captured") {
+            return res.status(400).json({ message: "payment not captured" })
+        }
+        if (order.razorpayOrderId && payment.order_id !== order.razorpayOrderId) {
+            return res.status(400).json({ message: "payment does not belong to this order" })
         }
 
         order.payment = true
@@ -161,7 +223,7 @@ export const verifyPayment = async (req, res) => {
         return res.status(200).json(order)
 
     } catch (error) {
-        return res.status(500).json({ message: `verify payment  error ${error}` })
+        return res.status(500).json({ message: error?.error?.description || error?.message || "verify payment failed" })
     }
 }
 
@@ -213,6 +275,9 @@ export const updateOrderStatus = async (req, res) => {
         const { orderId, shopId } = req.params
         const { status } = req.body
         const order = await Order.findById(orderId)
+        if (!order) {
+            return res.status(404).json({ message: "order not found" })
+        }
 
         const shopOrder = order.shopOrders.find(o => o.shop == shopId)
         if (!shopOrder) {
@@ -454,7 +519,7 @@ export const getCurrentOrder = async (req, res) => {
 
 
     } catch (error) {
-
+        return res.status(500).json({ message: `get current order error ${error}` })
     }
 }
 
