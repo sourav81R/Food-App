@@ -22,7 +22,9 @@ import itemRouter from "./routes/item.routes.js";
 import orderRouter from "./routes/order.routes.js";
 import favoriteRouter from "./routes/favorite.routes.js";
 import couponRouter from "./routes/coupon.routes.js";
+import adminRouter from "./routes/admin.routes.js";
 import { socketHandler } from "./socket.js";
+import { bootstrapAdminFromEnv } from "./utils/bootstrapAdmin.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -60,6 +62,7 @@ app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
 app.use("/api/favorite", favoriteRouter);
 app.use("/api/coupon", couponRouter);
+app.use("/api/admin", adminRouter);
 
 // ✅ Socket handler
 socketHandler(io);
@@ -69,6 +72,7 @@ const startServer = async () => {
   try {
     console.log("🔄 Connecting to MongoDB...");
     await connectDb();
+    await bootstrapAdminFromEnv();
 
     server.listen(PORT, () => {
       console.log(`🚀 Server running at http://localhost:${PORT}`);

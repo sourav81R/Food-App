@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
     },
     role:{
         type:String,
-        enum:["user","owner","deliveryBoy"],
+        enum:["user","owner","deliveryBoy","admin"],
         required:true
     },
     resetOtp:{

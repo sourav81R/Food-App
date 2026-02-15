@@ -16,6 +16,7 @@ const getCookieOptions = () => {
 export const signUp=async (req,res) => {
     try {
         const {fullName,email,password,mobile,role}=req.body
+        const normalizedRole=["user","owner","deliveryBoy"].includes(role) ? role : "user"
         let user=await User.findOne({email})
         if(user){
             return res.status(400).json({message:"User Already exist."})
@@ -31,7 +32,7 @@ export const signUp=async (req,res) => {
         user=await User.create({
             fullName,
             email,
-            role,
+            role:normalizedRole,
             mobile,
             password:hashedPassword
         })

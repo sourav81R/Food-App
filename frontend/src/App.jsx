@@ -17,6 +17,7 @@ import TrackOrderPage from './pages/TrackOrderPage';
 import Shop from './pages/Shop';
 import Favorites from './pages/Favorites';
 import Profile from './pages/Profile';
+import AdminDashboard from './components/AdminDashboard';
 
 import useGetCurrentUser from './hooks/useGetCurrentUser';
 import useGetCity from './hooks/useGetCity';
@@ -54,6 +55,7 @@ function App() {
       <Route path="/shop/:shopId" element={userData ? <Shop /> : <Navigate to="/signin" />} />
       <Route path="/favorites" element={userData ? <Favorites /> : <Navigate to="/signin" />} />
       <Route path="/profile" element={userData ? <Profile /> : <Navigate to="/signin" />} />
+      <Route path="/admin" element={userData?.role === "admin" ? <AdminDashboard /> : (userData ? <Navigate to="/" /> : <Navigate to="/signin" />)} />
     </Routes>
   );
 }

@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "make-admin": "node make-admin.js"
   },
   "author": "Virtual code",
   "license": "ISC",

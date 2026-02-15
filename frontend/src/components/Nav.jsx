@@ -195,9 +195,17 @@ function Nav() {
 
 
 
-                        <button className='hidden md:block px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] text-sm font-medium' onClick={() => navigate("/my-orders")}>
-                            My Orders
-                        </button>
+                        {userData.role == "user" && (
+                            <button className='hidden md:block px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] text-sm font-medium' onClick={() => navigate("/my-orders")}>
+                                My Orders
+                            </button>
+                        )}
+
+                        {userData.role == "admin" && (
+                            <button className='hidden md:block px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] text-sm font-medium' onClick={() => navigate("/admin")}>
+                                Admin Panel
+                            </button>
+                        )}
 
                         {/* Theme Toggle */}
                         <button
@@ -235,6 +243,15 @@ function Nav() {
                                     onClick={() => navigate("/my-orders")}
                                 >
                                     My Orders
+                                </button>
+                            )}
+
+                            {userData.role == "admin" && (
+                                <button
+                                    className={`text-left text-sm font-medium py-1.5 px-2 rounded-md transition ${isDark ? 'hover:bg-[#0f3460]' : 'hover:bg-gray-100'}`}
+                                    onClick={() => navigate("/admin")}
+                                >
+                                    Admin Panel
                                 </button>
                             )}
 

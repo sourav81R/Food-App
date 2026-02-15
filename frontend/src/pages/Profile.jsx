@@ -102,6 +102,20 @@ function Profile() {
             </div>
           </div>
         )}
+
+        {userData.role === "admin" && (
+          <div className={`rounded-2xl border p-6 mt-5 ${isDark ? "bg-[#16213e] border-[#374151] text-white" : "bg-white border-gray-100 text-gray-900"}`}>
+            <h2 className="text-xl font-bold">Admin Panel</h2>
+            <p className={`mt-2 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+              Manage users, shops, items, and orders from a single dashboard.
+            </p>
+            <div className="flex flex-wrap gap-3 mt-4">
+              <button className="px-4 py-2 rounded-lg bg-[#ff4d2d] text-white font-medium" onClick={() => navigate("/admin")}>
+                Open Admin Panel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
