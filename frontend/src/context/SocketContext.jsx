@@ -18,14 +18,26 @@ export function SocketProvider({ children }) {
       return;
     }
 
-    const socketInstance = io(socketServerUrl, { withCredentials: true });
+    const socketInstance = io(socketServerUrl, {
+      withCredentials: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 8000
+    });
     setSocket(socketInstance);
 
     socketInstance.on("connect", () => {
       socketInstance.emit("identity", { userId });
     });
 
+    const handleConnectError = (error) => {
+      console.warn("Socket connection failed:", error.message);
+    };
+    socketInstance.on("connect_error", handleConnectError);
+
     return () => {
+      socketInstance.off("connect_error", handleConnectError);
       socketInstance.disconnect();
       setSocket((currentSocket) => (currentSocket === socketInstance ? null : currentSocket));
     };
