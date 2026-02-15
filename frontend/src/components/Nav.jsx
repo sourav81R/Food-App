@@ -12,6 +12,8 @@ import { TbReceipt2 } from "react-icons/tb";
 import { FaHeart, FaSun, FaMoon } from "react-icons/fa";
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { signOut as firebaseSignOut } from "firebase/auth";
+import { auth } from "../config/firebase";
 
 function Nav() {
     const { userData, currentCity, cartItems } = useSelector(state => state.user)
@@ -24,7 +26,10 @@ function Nav() {
     const { isDark, toggleTheme } = useTheme()
     const handleLogOut = async () => {
         try {
-            const result = await axios.get(`${serverUrl}/api/auth/signout`, { withCredentials: true })
+            await Promise.allSettled([
+                axios.get(`${serverUrl}/api/auth/signout`, { withCredentials: true }),
+                firebaseSignOut(auth)
+            ])
             dispatch(setUserData(null))
             sessionStorage.removeItem('hasSeenWelcomeCelebration')
         } catch (error) {

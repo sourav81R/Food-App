@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from "react-router-dom";
@@ -8,12 +8,13 @@ import { ClipLoader } from "react-spinners";
 import { useDispatch } from "react-redux";
 import { setUserData } from "../redux/userSlice";
 import { useToast } from "../context/ToastContext";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../config/firebase";
 
 function SignIn() {
   const primaryColor = "#ff4d2d";
   const bgColor = "#fff9f6";
   const borderColor = "#ddd";
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -24,16 +25,6 @@ function SignIn() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const toast = useToast();
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && !window.google) {
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      document.body.appendChild(script);
-    }
-  }, []);
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -58,59 +49,37 @@ function SignIn() {
     }
   };
 
-  const handleGoogleAuth = () => {
-    if (!googleClientId) {
-      toast.error("Google client ID is missing. Set VITE_GOOGLE_CLIENT_ID in frontend/.env");
-      return;
-    }
-
-    if (typeof window === "undefined" || !window.google) {
-      toast.error("Google Sign-In script not loaded");
-      return;
-    }
-
+  const handleGoogleAuth = async () => {
     setGoogleLoading(true);
-    const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: googleClientId,
-      scope: "email profile",
-      prompt: "select_account",
-      error_callback: (response) => {
-        const message = response?.type === "popup_closed"
+    try {
+      const firebaseResult = await signInWithPopup(auth, googleProvider);
+      const googleEmail = firebaseResult?.user?.email;
+
+      if (!googleEmail) {
+        toast.error("Google account email not available");
+        return;
+      }
+
+      const { data } = await axios.post(
+        `${serverUrl}/api/auth/google-auth`,
+        { email: googleEmail },
+        { withCredentials: true }
+      );
+
+      dispatch(setUserData(data));
+      toast.success("Signed in with Google");
+    } catch (error) {
+      const firebaseMessage =
+        error?.code === "auth/popup-closed-by-user"
           ? "Google popup was closed before completion"
-          : "Google sign in could not be started";
-        toast.error(message);
-        setGoogleLoading(false);
-      },
-      callback: async (tokenResponse) => {
-        if (tokenResponse?.error || !tokenResponse?.access_token) {
-          toast.error(tokenResponse?.error_description || tokenResponse?.error || "Google sign in failed");
-          setGoogleLoading(false);
-          return;
-        }
-
-        try {
-          const userInfo = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
-            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-          });
-
-          const { data } = await axios.post(
-            `${serverUrl}/api/auth/google-auth`,
-            { email: userInfo.data.email },
-            { withCredentials: true }
-          );
-
-          dispatch(setUserData(data));
-          toast.success("Signed in with Google");
-        } catch (error) {
-          const message = error?.response?.data?.message || "Google sign in failed. Please try again.";
-          toast.error(message);
-        } finally {
-          setGoogleLoading(false);
-        }
-      },
-    });
-
-    client.requestAccessToken();
+          : error?.code === "auth/popup-blocked"
+            ? "Popup blocked by browser. Allow popups and try again."
+            : "Google sign in failed. Please try again.";
+      const message = error?.response?.data?.message || firebaseMessage;
+      toast.error(message);
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleKeyPress = (e) => {

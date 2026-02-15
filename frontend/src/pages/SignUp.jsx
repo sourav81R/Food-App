@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from "react-router-dom";
@@ -8,12 +8,13 @@ import { ClipLoader } from "react-spinners";
 import { useDispatch } from "react-redux";
 import { setUserData } from "../redux/userSlice";
 import { useToast } from "../context/ToastContext";
+import { signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
+import { auth, googleProvider } from "../config/firebase";
 
 function SignUp() {
   const primaryColor = "#ff4d2d";
   const bgColor = "#fff9f6";
   const borderColor = "#ddd";
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState("user");
@@ -27,16 +28,6 @@ function SignUp() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const toast = useToast();
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && !window.google) {
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      document.body.appendChild(script);
-    }
-  }, []);
 
   const validateForm = () => {
     if (!fullName.trim()) {
@@ -78,68 +69,48 @@ function SignUp() {
     }
   };
 
-  const handleGoogleAuth = () => {
-    if (!googleClientId) {
-      toast.error("Google client ID is missing. Set VITE_GOOGLE_CLIENT_ID in frontend/.env");
-      return;
-    }
-
+  const handleGoogleAuth = async () => {
     if (!mobile.trim()) {
       toast.warning("Please enter mobile number for Google signup");
       return;
     }
-    if (typeof window === "undefined" || !window.google) {
-      toast.error("Google Sign-In script not loaded");
-      return;
-    }
-
     setGoogleLoading(true);
-    const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: googleClientId,
-      scope: "email profile",
-      prompt: "select_account",
-      error_callback: (response) => {
-        const message = response?.type === "popup_closed"
+    try {
+      const firebaseResult = await signInWithPopup(auth, googleProvider);
+      const googleUser = firebaseResult?.user;
+      const googleEmail = googleUser?.email;
+
+      if (!googleEmail) {
+        toast.error("Google account email not available");
+        return;
+      }
+
+      const { data } = await axios.post(
+        `${serverUrl}/api/auth/google-auth`,
+        {
+          fullName: googleUser?.displayName || fullName || "Google User",
+          email: googleEmail,
+          role,
+          mobile,
+        },
+        { withCredentials: true }
+      );
+
+      dispatch(setUserData(data));
+      toast.success("Account created with Google");
+    } catch (error) {
+      await firebaseSignOut(auth).catch(() => {});
+      const firebaseMessage =
+        error?.code === "auth/popup-closed-by-user"
           ? "Google popup was closed before completion"
-          : "Google sign up could not be started";
-        toast.error(message);
-        setGoogleLoading(false);
-      },
-      callback: async (tokenResponse) => {
-        if (tokenResponse?.error || !tokenResponse?.access_token) {
-          toast.error(tokenResponse?.error_description || tokenResponse?.error || "Google sign up failed");
-          setGoogleLoading(false);
-          return;
-        }
-
-        try {
-          const userInfo = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
-            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-          });
-
-          const { data } = await axios.post(
-            `${serverUrl}/api/auth/google-auth`,
-            {
-              fullName: userInfo.data.name,
-              email: userInfo.data.email,
-              role,
-              mobile,
-            },
-            { withCredentials: true }
-          );
-
-          dispatch(setUserData(data));
-          toast.success("Account created with Google");
-        } catch (error) {
-          const message = error?.response?.data?.message || "Google sign up failed. Please try again.";
-          toast.error(message);
-        } finally {
-          setGoogleLoading(false);
-        }
-      },
-    });
-
-    client.requestAccessToken();
+          : error?.code === "auth/popup-blocked"
+            ? "Popup blocked by browser. Allow popups and try again."
+            : "Google sign up failed. Please try again.";
+      const message = error?.response?.data?.message || firebaseMessage;
+      toast.error(message);
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   return (
