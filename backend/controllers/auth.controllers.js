@@ -134,10 +134,21 @@ export const resetPassword=async (req,res) => {
 export const googleAuth=async (req,res) => {
     try {
         const {fullName,email,mobile,role}=req.body
+        if(!email){
+            return res.status(400).json({message:"Email is required for Google authentication."})
+        }
         let user=await User.findOne({email})
         if(!user){
+            if(!fullName || !mobile){
+                return res.status(400).json({message:"Google account not found. Please use Google Sign Up first."})
+            }
+            if(mobile.length<10){
+                return res.status(400).json({message:"mobile no must be at least 10 digits."})
+            }
+
+            const normalizedRole=["user","owner","deliveryBoy"].includes(role) ? role : "user"
             user=await User.create({
-                fullName,email,mobile,role
+                fullName,email,mobile,role:normalizedRole
             })
         }
 

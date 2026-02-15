@@ -1,16 +1,13 @@
-import React, { useState, useEffect } from 'react'
-import { FaSun, FaCloudSun, FaMoon, FaClock } from 'react-icons/fa'
+import React, { useEffect, useMemo, useState } from 'react'
+import { FaSun, FaCloudSun, FaMoon, FaClock, FaUtensils } from 'react-icons/fa'
 import { useTheme } from '../context/ThemeContext'
 import FoodCard from './FoodCard'
 
-// Meal configurations with time ranges and recommended items
 const mealConfig = {
     breakfast: {
         name: 'Breakfast',
         icon: FaSun,
-        startHour: 6,
-        endHour: 11,
-        greeting: 'Good Morning! 🌅',
+        greeting: 'Good Morning!',
         description: 'Start your day with these delicious breakfast options',
         color: 'from-orange-400 to-yellow-300',
         categories: ['South Indian', 'Snacks'],
@@ -19,9 +16,7 @@ const mealConfig = {
     lunch: {
         name: 'Lunch',
         icon: FaCloudSun,
-        startHour: 11,
-        endHour: 16,
-        greeting: 'Good Afternoon! ☀️',
+        greeting: 'Good Afternoon!',
         description: 'Satisfy your hunger with hearty lunch meals',
         color: 'from-amber-500 to-orange-400',
         categories: ['Main Course', 'Chinese', 'Pizza'],
@@ -30,87 +25,75 @@ const mealConfig = {
     dinner: {
         name: 'Dinner',
         icon: FaMoon,
-        startHour: 16,
-        endHour: 23,
-        greeting: 'Good Evening! 🌙',
+        greeting: 'Good Evening!',
         description: 'End your day with these comforting dinner dishes',
         color: 'from-purple-500 to-indigo-500',
         categories: ['Main Course', 'Chinese'],
         keywords: ['biryani', 'butter chicken', 'paneer', 'dal', 'naan', 'rogan josh', 'manchurian']
     },
-    lateNight: {
-        name: 'Late Night Cravings',
-        icon: FaMoon,
-        startHour: 23,
-        endHour: 6,
-        greeting: 'Midnight Munchies! 🌃',
-        description: 'Quick bites for your late night cravings',
-        color: 'from-gray-700 to-gray-900',
+    snacks: {
+        name: 'Snacks',
+        icon: FaUtensils,
+        greeting: 'Snack Time!',
+        description: 'Quick bites for your cravings',
+        color: 'from-rose-500 to-orange-500',
         categories: ['Snacks', 'Fast Food', 'Desserts'],
-        keywords: ['pizza', 'noodles', 'fried rice', 'ice cream', 'samosa']
+        keywords: ['pizza', 'noodles', 'fried rice', 'ice cream', 'samosa', 'burger', 'sandwich', 'fries']
     }
 }
 
+const mealOptions = ['breakfast', 'lunch', 'dinner', 'snacks']
+
+const getMealKeyByHour = (hour) => {
+    if (hour >= 6 && hour < 11) return 'breakfast'
+    if (hour >= 11 && hour < 16) return 'lunch'
+    if (hour >= 16 && hour < 23) return 'dinner'
+    return 'snacks'
+}
+
 function MealTimeSection({ items }) {
-    const [currentMeal, setCurrentMeal] = useState(null)
+    const [now, setNow] = useState(new Date())
+    const [selectedMeal, setSelectedMeal] = useState('auto')
     const [filteredItems, setFilteredItems] = useState([])
     const { isDark } = useTheme()
 
-    // Determine current meal based on time
+    const autoMealKey = useMemo(() => getMealKeyByHour(now.getHours()), [now])
+    const currentMealKey = selectedMeal === 'auto' ? autoMealKey : selectedMeal
+    const currentMeal = mealConfig[currentMealKey]
+
     useEffect(() => {
-        const updateMealTime = () => {
-            const hour = new Date().getHours()
-
-            let meal = null
-            if (hour >= 6 && hour < 11) {
-                meal = mealConfig.breakfast
-            } else if (hour >= 11 && hour < 16) {
-                meal = mealConfig.lunch
-            } else if (hour >= 16 && hour < 23) {
-                meal = mealConfig.dinner
-            } else {
-                meal = mealConfig.lateNight
-            }
-
-            setCurrentMeal(meal)
-        }
-
-        updateMealTime()
-        // Update every minute
-        const interval = setInterval(updateMealTime, 60000)
+        const interval = setInterval(() => setNow(new Date()), 60000)
         return () => clearInterval(interval)
     }, [])
 
-    // Filter items based on current meal
     useEffect(() => {
-        if (!currentMeal || !items || items.length === 0) return
+        if (!currentMeal || !items || items.length === 0) {
+            setFilteredItems([])
+            return
+        }
 
-        const filtered = items.filter(item => {
-            // Match by category
+        const filtered = items.filter((item) => {
             const categoryMatch = currentMeal.categories.some(
-                cat => item.category?.toLowerCase() === cat.toLowerCase()
+                (cat) => item.category?.toLowerCase() === cat.toLowerCase()
             )
 
-            // Match by keywords in name
             const keywordMatch = currentMeal.keywords.some(
-                keyword => item.name?.toLowerCase().includes(keyword.toLowerCase())
+                (keyword) => item.name?.toLowerCase().includes(keyword.toLowerCase())
             )
 
             return categoryMatch || keywordMatch
         })
 
-        // Shuffle and take up to 8 items
-        const shuffled = filtered.sort(() => 0.5 - Math.random())
+        const shuffled = [...filtered].sort(() => 0.5 - Math.random())
         setFilteredItems(shuffled.slice(0, 8))
     }, [currentMeal, items])
 
-    if (!currentMeal || filteredItems.length === 0) return null
+    if (!currentMeal || !items || items.length === 0) return null
 
     const MealIcon = currentMeal.icon
 
     return (
         <div className={`w-full max-w-6xl mx-auto p-4 sm:p-5 rounded-3xl shadow-xl mb-2 transition-colors ${isDark ? 'bg-[#16213e]' : 'bg-white'}`}>
-            {/* Header with gradient */}
             <div className={`bg-gradient-to-r ${currentMeal.color} rounded-2xl p-4 sm:p-6 mb-6 text-white`}>
                 <div className='flex items-center gap-3 mb-2'>
                     <div className='p-3 bg-white/20 rounded-full backdrop-blur-sm'>
@@ -122,23 +105,45 @@ function MealTimeSection({ items }) {
                     </div>
                 </div>
 
-                {/* Current time indicator */}
                 <div className='flex items-center gap-2 mt-4 text-sm opacity-80'>
                     <FaClock size={14} />
-                    <span>{new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
-                    <span className='mx-2'>•</span>
+                    <span>{now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                    <span className='mx-2'>|</span>
                     <span className='bg-white/20 px-3 py-1 rounded-full text-xs font-medium'>
-                        {currentMeal.name} Time
+                        {currentMeal.name}
                     </span>
+                </div>
+
+                <div className='mt-4 flex flex-wrap gap-2'>
+                    <button
+                        className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition ${selectedMeal === 'auto' ? 'bg-white text-gray-900' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                        onClick={() => setSelectedMeal('auto')}
+                    >
+                        Auto
+                    </button>
+                    {mealOptions.map((mealKey) => (
+                        <button
+                            key={mealKey}
+                            className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition ${selectedMeal === mealKey ? 'bg-white text-gray-900' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                            onClick={() => setSelectedMeal(mealKey)}
+                        >
+                            {mealConfig[mealKey].name}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Food items grid */}
-            <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
-                {filteredItems.map((item) => (
-                    <FoodCard key={item._id} data={item} />
-                ))}
-            </div>
+            {filteredItems.length === 0 ? (
+                <p className={`text-center py-8 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    No items available for {currentMeal.name.toLowerCase()} right now.
+                </p>
+            ) : (
+                <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
+                    {filteredItems.map((item) => (
+                        <FoodCard key={item._id} data={item} />
+                    ))}
+                </div>
+            )}
         </div>
     )
 }

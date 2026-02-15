@@ -13,6 +13,7 @@ function SignIn() {
   const primaryColor = "#ff4d2d";
   const bgColor = "#fff9f6";
   const borderColor = "#ddd";
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -58,6 +59,11 @@ function SignIn() {
   };
 
   const handleGoogleAuth = () => {
+    if (!googleClientId) {
+      toast.error("Google client ID is missing. Set VITE_GOOGLE_CLIENT_ID in frontend/.env");
+      return;
+    }
+
     if (typeof window === "undefined" || !window.google) {
       toast.error("Google Sign-In script not loaded");
       return;
@@ -65,9 +71,23 @@ function SignIn() {
 
     setGoogleLoading(true);
     const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: "165719685733-lpjbgm95ql9dfsb5k0f2roq0sb1k2phq.apps.googleusercontent.com",
+      client_id: googleClientId,
       scope: "email profile",
+      prompt: "select_account",
+      error_callback: (response) => {
+        const message = response?.type === "popup_closed"
+          ? "Google popup was closed before completion"
+          : "Google sign in could not be started";
+        toast.error(message);
+        setGoogleLoading(false);
+      },
       callback: async (tokenResponse) => {
+        if (tokenResponse?.error || !tokenResponse?.access_token) {
+          toast.error(tokenResponse?.error_description || tokenResponse?.error || "Google sign in failed");
+          setGoogleLoading(false);
+          return;
+        }
+
         try {
           const userInfo = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
             headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
