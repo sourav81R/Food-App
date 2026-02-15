@@ -7,6 +7,7 @@ import { Provider } from 'react-redux'
 import { store } from './redux/store.js'
 import { ToastProvider } from './context/ToastContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { SocketProvider } from './context/SocketContext.jsx'
 import Toast from './components/Toast.jsx'
 
 createRoot(document.getElementById('root')).render(
@@ -14,8 +15,10 @@ createRoot(document.getElementById('root')).render(
     <Provider store={store}>
       <ThemeProvider>
         <ToastProvider>
-          <App />
-          <Toast />
+          <SocketProvider>
+            <App />
+            <Toast />
+          </SocketProvider>
         </ToastProvider>
       </ThemeProvider>
     </Provider>

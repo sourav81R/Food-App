@@ -1,10 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { io } from 'socket.io-client';
-import { setSocket } from './redux/userSlice';
+import { useSelector } from 'react-redux';
 
-// ✅ Pages
 import SignUp from './pages/SignUp';
 import SignIn from './pages/SignIn';
 import ForgotPassword from './pages/ForgotPassword';
@@ -20,7 +17,6 @@ import TrackOrderPage from './pages/TrackOrderPage';
 import Shop from './pages/Shop';
 import Favorites from './pages/Favorites';
 
-// ✅ Hooks
 import useGetCurrentUser from './hooks/useGetCurrentUser';
 import useGetCity from './hooks/useGetCity';
 import useGetMyshop from './hooks/useGetMyShop';
@@ -29,14 +25,11 @@ import useGetItemsByCity from './hooks/useGetItemsByCity';
 import useGetMyOrders from './hooks/useGetMyOrders';
 import useUpdateLocation from './hooks/useUpdateLocation';
 
-// Backend server URL
-export const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
+export const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
 
 function App() {
   const { userData } = useSelector((state) => state.user);
-  const dispatch = useDispatch();
 
-  // ✅ Run essential hooks
   useGetCurrentUser();
   useUpdateLocation();
   useGetCity();
@@ -44,26 +37,6 @@ function App() {
   useGetShopByCity();
   useGetItemsByCity();
   useGetMyOrders();
-
-  // ✅ Socket connection setup
-  useEffect(() => {
-    if (!userData?._id) {
-      dispatch(setSocket(null));
-      return;
-    }
-
-    const socketInstance = io(serverUrl, { withCredentials: true });
-    dispatch(setSocket(socketInstance));
-
-    socketInstance.on('connect', () => {
-      socketInstance.emit('identity', { userId: userData._id });
-    });
-
-    return () => {
-      socketInstance.disconnect();
-      dispatch(setSocket(null));
-    };
-  }, [userData?._id, dispatch]);
 
   return (
     <Routes>

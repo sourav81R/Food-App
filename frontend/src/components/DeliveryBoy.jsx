@@ -8,9 +8,11 @@ import { useState } from 'react'
 import DeliveryBoyTracking from './DeliveryBoyTracking'
 import { ClipLoader } from 'react-spinners'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useSocket } from '../context/SocketContext'
 
 function DeliveryBoy() {
-  const {userData,socket}=useSelector(state=>state.user)
+  const { userData } = useSelector(state => state.user)
+  const socket = useSocket()
   const [currentOrder,setCurrentOrder]=useState()
   const [showOtpBox,setShowOtpBox]=useState(false)
   const [availableAssignments,setAvailableAssignments]=useState(null)
@@ -20,7 +22,7 @@ const [deliveryBoyLocation,setDeliveryBoyLocation]=useState(null)
 const [loading,setLoading]=useState(false)
 const [message,setMessage]=useState("")
   useEffect(()=>{
-if(!socket || userData.role!=="deliveryBoy") return
+if(!socket || !userData || userData.role!=="deliveryBoy") return
 let watchId
 if(navigator.geolocation){
 watchId=navigator.geolocation.watchPosition((position)=>{
@@ -45,7 +47,7 @@ return ()=>{
   if(watchId)navigator.geolocation.clearWatch(watchId)
 }
 
-  },[socket,userData])
+  },[socket,userData?._id,userData?.role])
 
 
 const ratePerDelivery=50
@@ -83,14 +85,16 @@ const totalEarning=todayDeliveries.reduce((sum,d)=>sum + d.count*ratePerDelivery
     }
   }
 
-  useEffect(()=>{
-    socket.on('newAssignment',(data)=>{
-      setAvailableAssignments(prev=>([...prev,data]))
-    })
-    return ()=>{
-      socket.off('newAssignment')
+  useEffect(() => {
+    if (!socket) return
+    const handleNewAssignment = (data) => {
+      setAvailableAssignments(prev => ([...(prev || []), data]))
     }
-  },[socket])
+    socket.on('newAssignment', handleNewAssignment)
+    return () => {
+      socket.off('newAssignment', handleNewAssignment)
+    }
+  }, [socket])
   
   const sendOtp=async () => {
     setLoading(true)

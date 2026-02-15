@@ -4,13 +4,15 @@ import { IoIosArrowRoundBack } from "react-icons/io";
 import { useNavigate } from 'react-router-dom';
 import UserOrderCard from '../components/UserOrderCard';
 import OwnerOrderCard from '../components/OwnerOrderCard';
-import { setMyOrders, updateOrderStatus, updateRealtimeOrderStatus } from '../redux/userSlice';
+import { addMyOrder, setMyOrders, updateRealtimeOrderStatus } from '../redux/userSlice';
 import axios from 'axios';
 import { serverUrl } from '../App';
+import { useSocket } from '../context/SocketContext';
 
 
 function MyOrders() {
-  const { userData, myOrders, socket } = useSelector(state => state.user)
+  const { userData, myOrders } = useSelector(state => state.user)
+  const socket = useSocket()
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const [loading, setLoading] = useState(true)
@@ -36,23 +38,28 @@ function MyOrders() {
 
   // Socket listeners for real-time updates
   useEffect(() => {
-    socket?.on('newOrder', (data) => {
-      if (data.shopOrders?.owner._id == userData._id) {
-        dispatch(setMyOrders([data, ...myOrders]))
-      }
-    })
+    if (!socket || !userData?._id) return
 
-    socket?.on('update-status', ({ orderId, shopId, status, userId }) => {
+    const handleNewOrder = (data) => {
+      if (data.shopOrders?.owner?._id == userData._id) {
+        dispatch(addMyOrder(data))
+      }
+    }
+
+    const handleUpdateStatus = ({ orderId, shopId, status, userId }) => {
       if (userId == userData._id) {
         dispatch(updateRealtimeOrderStatus({ orderId, shopId, status }))
       }
-    })
+    }
+
+    socket.on('newOrder', handleNewOrder)
+    socket.on('update-status', handleUpdateStatus)
 
     return () => {
-      socket?.off('newOrder')
-      socket?.off('update-status')
+      socket.off('newOrder', handleNewOrder)
+      socket.off('update-status', handleUpdateStatus)
     }
-  }, [socket])
+  }, [socket, userData?._id, dispatch])
 
   return (
     <div className='w-full min-h-screen bg-[#fff9f6] flex justify-center px-4'>
