@@ -139,16 +139,18 @@ export const googleAuth=async (req,res) => {
         }
         let user=await User.findOne({email})
         if(!user){
-            if(!fullName || !mobile){
-                return res.status(400).json({message:"Google account not found. Please use Google Sign Up first."})
-            }
-            if(mobile.length<10){
-                return res.status(400).json({message:"mobile no must be at least 10 digits."})
-            }
-
             const normalizedRole=["user","owner","deliveryBoy"].includes(role) ? role : "user"
+            const safeFullName=(fullName && fullName.trim()) || email.split("@")[0] || "Google User"
+            const cleanedMobile=(mobile || "").toString().replace(/\D/g,"")
+            const safeMobile=cleanedMobile.length>=10
+                ? cleanedMobile.slice(-10)
+                : `9${Math.floor(Math.random()*1_000_000_000).toString().padStart(9,"0")}`
+
             user=await User.create({
-                fullName,email,mobile,role:normalizedRole
+                fullName:safeFullName,
+                email,
+                mobile:safeMobile,
+                role:normalizedRole
             })
         }
 
