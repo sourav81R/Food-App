@@ -1,12 +1,13 @@
 import express from "express"
 import isAuth from "../middlewares/isAuth.js"
-import { acceptOrder, getCurrentOrder, getDeliveryBoyAssignment, getMyOrders, getOrderById, getTodayDeliveries, placeOrder, sendDeliveryOtp, updateOrderStatus, verifyDeliveryOtp, verifyPayment } from "../controllers/order.controllers.js"
+import { acceptOrder, getCurrentOrder, getDeliveryBoyAssignment, getMyOrders, getOrderById, getPaymentConfig, getTodayDeliveries, placeOrder, sendDeliveryOtp, updateOrderStatus, verifyDeliveryOtp, verifyPayment } from "../controllers/order.controllers.js"
 
 
 
 
 const orderRouter=express.Router()
 
+orderRouter.get("/payment-config",isAuth,getPaymentConfig)
 orderRouter.post("/place-order",isAuth,placeOrder)
 orderRouter.post("/verify-payment",isAuth,verifyPayment)
 orderRouter.get("/my-orders",isAuth,getMyOrders)

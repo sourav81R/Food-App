@@ -38,6 +38,8 @@ function CheckOut() {
   const toast = useToast()
   const [orderLoading, setOrderLoading] = useState(false)
   const [geoLoading, setGeoLoading] = useState(false)
+  const [onlinePaymentEnabled, setOnlinePaymentEnabled] = useState(true)
+  const [onlinePaymentReason, setOnlinePaymentReason] = useState("")
 
 
 
@@ -117,6 +119,10 @@ function CheckOut() {
     }
     if (cartItems.length === 0) {
       toast.warning("Your cart is empty")
+      return
+    }
+    if (paymentMethod === "online" && !onlinePaymentEnabled) {
+      toast.error(onlinePaymentReason || "Online payment is currently unavailable")
       return
     }
 
@@ -218,6 +224,27 @@ function CheckOut() {
     setAddressInput(address)
   }, [address])
 
+  useEffect(() => {
+    const getPaymentConfig = async () => {
+      try {
+        const { data } = await axios.get(`${serverUrl}/api/order/payment-config`, { withCredentials: true })
+        const isEnabled = Boolean(data?.onlinePaymentEnabled)
+        setOnlinePaymentEnabled(isEnabled)
+        setOnlinePaymentReason(data?.reason || "")
+
+        if (!isEnabled) {
+          setPaymentMethod("cod")
+        }
+      } catch (error) {
+        setOnlinePaymentEnabled(false)
+        setOnlinePaymentReason("Unable to validate online payment configuration")
+        setPaymentMethod("cod")
+      }
+    }
+
+    getPaymentConfig()
+  }, [])
+
   const mapCenter = [
     Number.isFinite(location?.lat) ? location.lat : 22.5726,
     Number.isFinite(location?.lon) ? location.lon : 88.3639
@@ -281,8 +308,16 @@ function CheckOut() {
               </div>
 
             </div>
-            <div className={`flex items-center gap-3 rounded-xl border p-4 text-left transition ${paymentMethod === "online" ? "border-[#ff4d2d] bg-orange-50 shadow" : "border-gray-200 hover:border-gray-300"
-              }`} onClick={() => setPaymentMethod("online")}>
+            <div
+              className={`flex items-center gap-3 rounded-xl border p-4 text-left transition ${paymentMethod === "online" ? "border-[#ff4d2d] bg-orange-50 shadow" : "border-gray-200 hover:border-gray-300"} ${onlinePaymentEnabled ? "cursor-pointer" : "opacity-60 cursor-not-allowed"}`}
+              onClick={() => {
+                if (!onlinePaymentEnabled) {
+                  toast.error(onlinePaymentReason || "Online payment is currently unavailable")
+                  return
+                }
+                setPaymentMethod("online")
+              }}
+            >
 
               <span className='inline-flex h-10 w-10 items-center justify-center rounded-full bg-purple-100'>
                 <FaMobileScreenButton className='text-purple-700 text-lg' />
@@ -292,7 +327,9 @@ function CheckOut() {
               </span>
               <div>
                 <p className='font-medium text-gray-800'>UPI / Credit / Debit Card</p>
-                <p className='text-xs text-gray-500'>Pay Securely Online</p>
+                <p className='text-xs text-gray-500'>
+                  {onlinePaymentEnabled ? "Pay Securely Online" : (onlinePaymentReason || "Online payment unavailable")}
+                </p>
               </div>
             </div>
           </div>

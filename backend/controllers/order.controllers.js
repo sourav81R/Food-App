@@ -6,20 +6,58 @@ import { sendDeliveryOtpMail } from "../utils/mail.js"
 import RazorPay from "razorpay"
 
 const ALLOWED_PAYMENT_METHODS = new Set(["cod", "online"])
+const SAMPLE_KEY_IDS = new Set([
+    "rzp_test_1DP5mmOlF5G5ag",
+    "rzp_test_xxxxxxxxxxxxxx"
+])
+const SAMPLE_SECRETS = new Set([
+    "qwertyui",
+    "your_razorpay_secret"
+])
+
+const normalizeEnvValue = (value = "") =>
+    String(value).trim().replace(/^['"]|['"]$/g, "")
 
 const getRazorpayClient = () => {
-    const keyId = process.env.RAZORPAY_KEY_ID
-    const keySecret = process.env.RAZORPAY_KEY_SECRET
+    const keyId = normalizeEnvValue(process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_API_KEY || "")
+    const keySecret = normalizeEnvValue(process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_API_SECRET || "")
+
     if (!keyId || !keySecret) {
         return {
             error: "Razorpay is not configured on server. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend/.env"
         }
     }
+
+    if (SAMPLE_KEY_IDS.has(keyId) || SAMPLE_SECRETS.has(keySecret)) {
+        return {
+            error: "Razorpay is using sample credentials. Replace RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET with real Dashboard API keys."
+        }
+    }
+
     return {
         client: new RazorPay({
             key_id: keyId,
             key_secret: keySecret
+        }),
+        keyId
+    }
+}
+
+export const getPaymentConfig = async (req, res) => {
+    try {
+        const { error, keyId } = getRazorpayClient()
+        if (error) {
+            return res.status(200).json({
+                onlinePaymentEnabled: false,
+                reason: error
+            })
+        }
+        return res.status(200).json({
+            onlinePaymentEnabled: true,
+            keyId
         })
+    } catch (error) {
+        return res.status(500).json({ message: `payment config error ${error}` })
     }
 }
 
@@ -74,7 +112,7 @@ export const placeOrder = async (req, res) => {
         ))
 
         if (paymentMethod == "online") {
-            const { client, error } = getRazorpayClient()
+            const { client, error, keyId } = getRazorpayClient()
             if (error) {
                 return res.status(503).json({ message: error })
             }
@@ -108,7 +146,7 @@ export const placeOrder = async (req, res) => {
             return res.status(200).json({
                 razorOrder,
                 orderId: newOrder._id,
-                razorpayKeyId: process.env.RAZORPAY_KEY_ID
+                razorpayKeyId: keyId
             })
 
         }
