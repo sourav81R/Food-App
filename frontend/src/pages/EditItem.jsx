@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaUtensils } from "react-icons/fa";
 import { useState } from 'react';
-import { useRef } from 'react';
 import axios from 'axios';
 import { serverUrl } from '../App';
 import { setMyShopData } from '../redux/ownerSlice';
@@ -98,30 +97,30 @@ function EditItem() {
                 </div>
                 <form className='space-y-5' onSubmit={handleSubmit}>
                     <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-1'>Name</label>
-                        <input type="text" placeholder='Enter Item Name' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
+                        <label htmlFor="edit-item-name" className='block text-sm font-medium text-gray-700 mb-1'>Name</label>
+                        <input id="edit-item-name" name="name" type="text" placeholder='Enter Item Name' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
                             onChange={(e) => setName(e.target.value)}
                             value={name}
                         />
                     </div>
                     <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-1'>Food Image</label>
-                        <input type="file" accept='image/*' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500' onChange={handleImage} />
+                        <label htmlFor="edit-item-image" className='block text-sm font-medium text-gray-700 mb-1'>Food Image</label>
+                        <input id="edit-item-image" name="image" type="file" accept='image/*' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500' onChange={handleImage} />
                         {frontendImage && <div className='mt-4'>
                             <img src={frontendImage} alt="" className='w-full h-48 object-cover rounded-lg border' />
                         </div>}
 
                     </div>
                     <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-1'>Price</label>
-                        <input type="number" placeholder='0' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
+                        <label htmlFor="edit-item-price" className='block text-sm font-medium text-gray-700 mb-1'>Price</label>
+                        <input id="edit-item-price" name="price" type="number" placeholder='0' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
                             onChange={(e) => setPrice(e.target.value)}
                             value={price}
                         />
                     </div>
                     <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-1'>Select Category</label>
-                        <select className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
+                        <label htmlFor="edit-item-category" className='block text-sm font-medium text-gray-700 mb-1'>Select Category</label>
+                        <select id="edit-item-category" name="category" className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
                             onChange={(e) => setCategory(e.target.value)}
                             value={category}
 
@@ -134,8 +133,8 @@ function EditItem() {
                         </select>
                     </div>
                     <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-1'>Select Food Type</label>
-                        <select className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
+                        <label htmlFor="edit-item-food-type" className='block text-sm font-medium text-gray-700 mb-1'>Select Food Type</label>
+                        <select id="edit-item-food-type" name="foodType" className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
                             onChange={(e) => setFoodType(e.target.value)}
                             value={foodType}
 

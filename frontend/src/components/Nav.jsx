@@ -62,11 +62,14 @@ function Nav() {
                     <div className='flex-1 flex items-center gap-[10px] pr-[15px]'>
                         <IoIosSearch size={24} className='text-[#ff4d2d] flex-shrink-0' />
                         <input
+                            id="mobile-search-input"
+                            name="search"
                             type="text"
                             placeholder='Search delicious food...'
                             className={`w-full py-2 text-sm outline-none bg-transparent placeholder:text-gray-400 ${isDark ? 'text-white' : 'text-gray-700'}`}
                             onChange={(e) => setQuery(e.target.value)}
                             value={query}
+                            aria-label='Search dishes and restaurants'
                         />
                     </div>
                 </div>
@@ -93,11 +96,14 @@ function Nav() {
                     <div className='flex-1 flex items-center gap-[12px] px-[16px] h-full'>
                         <IoIosSearch size={22} className='text-[#ff4d2d] flex-shrink-0 group-hover:scale-110 transition-transform' />
                         <input
+                            id="desktop-search-input"
+                            name="search"
                             type="text"
                             placeholder='Search for dishes, restaurants...'
                             className={`w-full py-2 text-sm outline-none bg-transparent font-medium placeholder:font-normal ${isDark ? 'text-white placeholder:text-gray-500' : 'text-gray-700 placeholder:text-gray-400'}`}
                             onChange={(e) => setQuery(e.target.value)}
                             value={query}
+                            aria-label='Search dishes and restaurants'
                         />
                         {query && (
                             <button

@@ -7,11 +7,23 @@ import { FaLocationDot } from "react-icons/fa6";
 import { FaUtensils } from "react-icons/fa";
 import FoodCard from '../components/FoodCard';
 import { FaArrowLeft } from "react-icons/fa";
+
+const fallbackHeroImages = [
+  "https://images.pexels.com/photos/260922/pexels-photo-260922.jpeg?auto=compress&cs=tinysrgb&w=1400",
+  "https://images.pexels.com/photos/941861/pexels-photo-941861.jpeg?auto=compress&cs=tinysrgb&w=1400",
+  "https://images.pexels.com/photos/67468/pexels-photo-67468.jpeg?auto=compress&cs=tinysrgb&w=1400",
+  "https://images.pexels.com/photos/696218/pexels-photo-696218.jpeg?auto=compress&cs=tinysrgb&w=1400"
+]
+
+const isNonFoodImageUrl = (url = "") =>
+  /cat|dog|kitten|puppy|animal|pet|loremflickr|placekitten|placebear/i.test(url);
 function Shop() {
     const {shopId}=useParams()
     const [items,setItems]=useState([])
     const [shop,setShop]=useState([])
     const navigate=useNavigate()
+    const fallbackHeroIndex = ([...(shop?.name || "shop")].reduce((acc, char) => acc + char.charCodeAt(0), 0) % fallbackHeroImages.length)
+    const resolvedShopImage = !shop?.image || isNonFoodImageUrl(shop.image) ? fallbackHeroImages[fallbackHeroIndex] : shop.image
     const handleShop=async () => {
         try {
            const result=await axios.get(`${serverUrl}/api/item/get-by-shop/${shopId}`,{withCredentials:true}) 
@@ -32,7 +44,18 @@ handleShop()
 <span>Back</span>
         </button>
       {shop && <div className='relative w-full h-64 md:h-80 lg:h-96'>
-          <img src={shop.image} alt="" className='w-full h-full object-cover'/>
+          <img
+            src={resolvedShopImage}
+            alt={shop.name}
+            loading='lazy'
+            className='w-full h-full object-cover'
+            onError={(event) => {
+              if (event.currentTarget.src === fallbackHeroImages[fallbackHeroIndex]) {
+                return
+              }
+              event.currentTarget.src = fallbackHeroImages[fallbackHeroIndex]
+            }}
+          />
           <div className='absolute inset-0 bg-gradient-to-b from-black/70 to-black/30 flex flex-col justify-center items-center text-center px-4'>
           <FaStore className='text-white text-4xl mb-3 drop-shadow-md'/>
           <h1 className='text-3xl md:text-5xl font-extrabold text-white drop-shadow-lg'>{shop.name}</h1>

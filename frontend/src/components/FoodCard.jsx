@@ -13,6 +13,18 @@ import { useToast } from '../context/ToastContext';
 import axios from 'axios';
 import { serverUrl } from '../App';
 
+const fallbackFoodImages = [
+    "https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?auto=compress&cs=tinysrgb&w=900",
+    "https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg?auto=compress&cs=tinysrgb&w=900",
+    "https://images.pexels.com/photos/461198/pexels-photo-461198.jpeg?auto=compress&cs=tinysrgb&w=900",
+    "https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=900",
+    "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=900",
+    "https://images.pexels.com/photos/1639562/pexels-photo-1639562.jpeg?auto=compress&cs=tinysrgb&w=900"
+]
+
+const isNonFoodImageUrl = (url = "") =>
+    /cat|dog|kitten|puppy|animal|pet|loremflickr|placekitten|placebear/i.test(url);
+
 function FoodCard({ data }) {
     const [quantity, setQuantity] = useState(0)
     const [favoriteLoading, setFavoriteLoading] = useState(false)
@@ -21,6 +33,10 @@ function FoodCard({ data }) {
     const toast = useToast()
     const isInCart = cartItems.some(i => i.id == data._id)
     const isFavorite = favorites.includes(data._id)
+    const fallbackItemImage = fallbackFoodImages[
+        ([...(data?.name || "food")].reduce((acc, char) => acc + char.charCodeAt(0), 0) % fallbackFoodImages.length)
+    ]
+    const resolvedItemImage = !data?.image || isNonFoodImageUrl(data.image) ? fallbackItemImage : data.image
 
     const renderStars = (rating) => {
         const stars = [];
@@ -91,7 +107,18 @@ function FoodCard({ data }) {
         <div className='w-full sm:w-[250px] rounded-2xl border-2 border-[#ff4d2d] bg-white shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col'>
             <div className='relative w-full h-[150px] sm:h-[170px] flex justify-center items-center bg-white overflow-hidden'>
                 {/* Image - behind buttons */}
-                <img src={data.image} alt={data.name} className='w-full h-full object-cover' />
+                <img
+                    src={resolvedItemImage}
+                    alt={data.name}
+                    loading='lazy'
+                    className='w-full h-full object-cover'
+                    onError={(event) => {
+                        if (event.currentTarget.src === fallbackItemImage) {
+                            return
+                        }
+                        event.currentTarget.src = fallbackItemImage
+                    }}
+                />
 
                 {/* Food type indicator - on top */}
                 <div className='absolute top-3 right-3 bg-white rounded-full p-1.5 shadow-md z-10'>

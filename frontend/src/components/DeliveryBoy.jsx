@@ -38,7 +38,7 @@ watchId=navigator.geolocation.watchPosition((position)=>{
       longitude,
       userId:userData._id
     })
-  }),
+  },
   (error)=>{
     console.log(error)
   },
@@ -46,7 +46,7 @@ watchId=navigator.geolocation.watchPosition((position)=>{
     enableHighAccuracy:true,
     maximumAge:10000,
     timeout:8000
-  }
+  })
 }
 
 return ()=>{
@@ -220,7 +220,8 @@ availableAssignments.map((a,index)=>(
 {loading?<ClipLoader size={20} color='white'/> :"Mark As Delivered"}
  </button>:<div className='mt-4 p-4 border rounded-xl bg-gray-50'>
 <p className='text-sm font-semibold mb-2'>Enter Otp send to <span className='text-orange-500'>{currentOrder.user.fullName}</span></p>
-<input type="text" className='w-full border px-3 py-2 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-orange-400' placeholder='Enter OTP' onChange={(e)=>setOtp(e.target.value)} value={otp}/>
+<label htmlFor="delivery-otp-input" className='sr-only'>Delivery OTP</label>
+<input id="delivery-otp-input" name="deliveryOtp" type="text" className='w-full border px-3 py-2 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-orange-400' placeholder='Enter OTP' onChange={(e)=>setOtp(e.target.value)} value={otp}/>
 {message && <p className='text-center text-green-400 text-2xl mb-4'>{message}</p>}
 
 <button className="w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition-all" onClick={verifyOtp}>Submit OTP</button>

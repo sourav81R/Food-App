@@ -1,196 +1,284 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import bcrypt from "bcryptjs";
 
-dotenv.config();
-
-// Import models
 import Shop from "./models/shop.model.js";
 import Item from "./models/item.model.js";
 import User from "./models/user.model.js";
 
+dotenv.config();
+
 const MONGODB_URL = process.env.MONGODB_URL;
 
-// Dummy shop data - Kolkata and Baruipur
-const dummyShops = [
-    // Kolkata shops
-    {
-        name: "Spice Garden",
-        city: "Kolkata",
+const TARGET_CITIES = [
+  "Baruipur",
+  "Kolkata",
+  "Bidhan Nagar",
+  "Salt Lake Sector-V",
+  "Medinipur",
+];
+
+const RESTAURANTS_BY_CITY = {
+  "Baruipur": [
+    { name: "Baruipur Biryani House", address: "Rail Gate Road, Baruipur" },
+    { name: "Sonar Tori Cafe", address: "Kulpi Road, Baruipur" },
+    { name: "Dakshin Flavours", address: "Subhashgram Crossing, Baruipur" },
+    { name: "Royal Spice Baruipur", address: "Station More, Baruipur" },
+    { name: "Green Leaf Diner", address: "Khasmallick, Baruipur" },
+  ],
+  "Kolkata": [
+    { name: "Park Street Fusion Hub", address: "Park Street, Kolkata" },
+    { name: "Howrah Spice Route", address: "Howrah Maidan, Kolkata" },
+    { name: "Ballygunge Taste Lab", address: "Ballygunge, Kolkata" },
+    { name: "Esplanade Food Studio", address: "Esplanade, Kolkata" },
+    { name: "North Kolkata Kitchen", address: "Shyambazar, Kolkata" },
+  ],
+  "Bidhan Nagar": [
+    { name: "Bidhannagar Tiffin Corner", address: "CA Block, Bidhan Nagar" },
+    { name: "Lakeview Bengal Kitchen", address: "Karunamoyee, Bidhan Nagar" },
+    { name: "City Center Bites", address: "City Centre, Bidhan Nagar" },
+    { name: "Nabanna Nook", address: "Sector 1, Bidhan Nagar" },
+    { name: "Eco Park Feast", address: "Eco Park Gate 2, Bidhan Nagar" },
+  ],
+  "Salt Lake Sector-V": [
+    { name: "Sector V Tech Eats", address: "DN Block, Sector-V" },
+    { name: "Night Owl Kitchen S5", address: "College More, Sector-V" },
+    { name: "Byte & Bite Hub", address: "Webel More, Sector-V" },
+    { name: "Silicon Spice Deck", address: "Godrej Waterside, Sector-V" },
+    { name: "Code & Curry Canteen", address: "Infinity Bench, Sector-V" },
+  ],
+  "Medinipur": [
+    { name: "Midnapore Matir Henshel", address: "Keranitola, Medinipur" },
+    { name: "Medinipur Food Junction", address: "Station Road, Medinipur" },
+    { name: "Rupnarayan Rasoi", address: "Colonelgola, Medinipur" },
+    { name: "Sajha Spice Point", address: "Vidyasagar Road, Medinipur" },
+    { name: "Mahalaya Meals", address: "Old Bus Stand, Medinipur" },
+  ],
+};
+
+const ITEM_TEMPLATES = [
+  { name: "Chicken Biryani", category: "Main Course", foodType: "non veg", basePrice: 220 },
+  { name: "Mutton Kosha", category: "Main Course", foodType: "non veg", basePrice: 280 },
+  { name: "Paneer Butter Masala", category: "Main Course", foodType: "veg", basePrice: 210 },
+  { name: "Veg Fried Rice", category: "Chinese", foodType: "veg", basePrice: 170 },
+  { name: "Chilli Chicken", category: "Chinese", foodType: "non veg", basePrice: 230 },
+  { name: "Chicken Roll", category: "Fast Food", foodType: "non veg", basePrice: 140 },
+  { name: "Paneer Roll", category: "Fast Food", foodType: "veg", basePrice: 130 },
+  { name: "Veg Burger", category: "Burgers", foodType: "veg", basePrice: 150 },
+  { name: "Chicken Burger", category: "Burgers", foodType: "non veg", basePrice: 180 },
+  { name: "Cheese Pizza", category: "Pizza", foodType: "veg", basePrice: 240 },
+  { name: "Farmhouse Pizza", category: "Pizza", foodType: "veg", basePrice: 260 },
+  { name: "Momos Platter", category: "Snacks", foodType: "non veg", basePrice: 160 },
+  { name: "Samosa Chaat", category: "Snacks", foodType: "veg", basePrice: 90 },
+  { name: "Masala Dosa", category: "South Indian", foodType: "veg", basePrice: 120 },
+  { name: "Idli Sambar", category: "South Indian", foodType: "veg", basePrice: 95 },
+  { name: "Butter Naan Combo", category: "North Indian", foodType: "veg", basePrice: 190 },
+  { name: "Kadai Chicken", category: "North Indian", foodType: "non veg", basePrice: 250 },
+  { name: "Chocolate Brownie", category: "Desserts", foodType: "veg", basePrice: 130 },
+  { name: "Misti Doi", category: "Desserts", foodType: "veg", basePrice: 85 },
+  { name: "Cold Coffee", category: "Others", foodType: "veg", basePrice: 110 },
+  { name: "Mango Lassi", category: "Others", foodType: "veg", basePrice: 95 },
+  { name: "Club Sandwich", category: "Sandwiches", foodType: "non veg", basePrice: 170 },
+  { name: "Veg Sandwich", category: "Sandwiches", foodType: "veg", basePrice: 130 },
+];
+
+const ITEMS_PER_SHOP = 10;
+const LEGACY_SEEDED_SHOP_NAMES = [
+  "Spice Garden",
+  "Tandoori Nights",
+  "Dragon Wok",
+  "Pizza Paradise",
+  "Biryani House",
+  "Baruipur Kitchen",
+  "Royal Dhaba",
+  "Mama's Kitchen",
+  "Garia Riverside Cafe",
+];
+
+const toSlug = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+const SHOP_IMAGE_POOL = [
+  "https://images.pexels.com/photos/67468/pexels-photo-67468.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/941861/pexels-photo-941861.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/260922/pexels-photo-260922.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/696218/pexels-photo-696218.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/262047/pexels-photo-262047.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/239975/pexels-photo-239975.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/6267/menu-restaurant-vintage-table.jpg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/1639562/pexels-photo-1639562.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200",
+];
+
+const ITEM_IMAGE_POOL = [
+  "https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/461198/pexels-photo-461198.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/1639562/pexels-photo-1639562.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/4553111/pexels-photo-4553111.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/2232/vegetables-italian-pizza-restaurant.jpg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/1279330/pexels-photo-1279330.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/699953/pexels-photo-699953.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/769289/pexels-photo-769289.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/461198/pexels-photo-461198.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/1279330/pexels-photo-1279330.jpeg?auto=compress&cs=tinysrgb&w=1200",
+];
+
+function seededNumber(seedText, min, max) {
+  const hash = [...seedText].reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const range = max - min + 1;
+  return min + (hash % range);
+}
+
+function pickFromPool(pool, seedText) {
+  const index = seededNumber(seedText, 0, pool.length - 1);
+  return pool[index];
+}
+
+function seededShopImage(seedText) {
+  return pickFromPool(SHOP_IMAGE_POOL, `shop-${seedText}`);
+}
+
+function seededItemImage(seedText, itemName, category) {
+  return pickFromPool(ITEM_IMAGE_POOL, `item-${seedText}-${itemName}-${category}`);
+}
+
+function buildSeedShops() {
+  const all = [];
+  for (const city of TARGET_CITIES) {
+    const entries = RESTAURANTS_BY_CITY[city] || [];
+    for (const entry of entries) {
+      all.push({
+        name: entry.name,
+        city,
         state: "West Bengal",
-        address: "Park Street, Kolkata",
-        image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400",
-        location: { type: "Point", coordinates: [88.3639, 22.5726] }
-    },
-    {
-        name: "Tandoori Nights",
-        city: "Kolkata",
-        state: "West Bengal",
-        address: "Salt Lake, Kolkata",
-        image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400",
-        location: { type: "Point", coordinates: [88.4100, 22.5800] }
-    },
-    {
-        name: "Dragon Wok",
-        city: "Kolkata",
-        state: "West Bengal",
-        address: "New Market, Kolkata",
-        image: "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=400",
-        location: { type: "Point", coordinates: [88.3500, 22.5600] }
-    },
-    {
-        name: "Pizza Paradise",
-        city: "Kolkata",
-        state: "West Bengal",
-        address: "Gariahat, Kolkata",
-        image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400",
-        location: { type: "Point", coordinates: [88.3700, 22.5200] }
-    },
-    {
-        name: "Biryani House",
-        city: "Kolkata",
-        state: "West Bengal",
-        address: "Howrah, Kolkata",
-        image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400",
-        location: { type: "Point", coordinates: [88.3100, 22.6000] }
-    },
-    // Baruipur shops
-    {
-        name: "Baruipur Kitchen",
-        city: "Baruipur",
-        state: "West Bengal",
-        address: "Main Road, Baruipur",
-        image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400",
-        location: { type: "Point", coordinates: [88.4333, 22.3583] }
-    },
-    {
-        name: "Royal Dhaba",
-        city: "Baruipur",
-        state: "West Bengal",
-        address: "Station Road, Baruipur",
-        image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400",
-        location: { type: "Point", coordinates: [88.4350, 22.3600] }
-    },
-    {
-        name: "Mama's Kitchen",
-        city: "Baruipur",
-        state: "West Bengal",
-        address: "College Para, Baruipur",
-        image: "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=400",
-        location: { type: "Point", coordinates: [88.4300, 22.3550] }
+        address: entry.address,
+        image: seededShopImage(`shop-${toSlug(entry.name)}`),
+      });
     }
-];
+  }
+  return all;
+}
 
-// Dummy food items - using correct enum values from schema
-const dummyItems = [
-    // Main Course
-    { name: "Butter Chicken", price: 320, category: "Main Course", foodType: "non veg", image: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=400", rating: { average: 4.5, count: 120 } },
-    { name: "Dal Makhani", price: 180, category: "Main Course", foodType: "veg", image: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400", rating: { average: 4.2, count: 95 } },
-    { name: "Chicken Biryani", price: 280, category: "Main Course", foodType: "non veg", image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400", rating: { average: 4.7, count: 200 } },
-    { name: "Veg Biryani", price: 220, category: "Main Course", foodType: "veg", image: "https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=400", rating: { average: 4.1, count: 75 } },
-    { name: "Mutton Rogan Josh", price: 380, category: "Main Course", foodType: "non veg", image: "https://images.unsplash.com/photo-1545247181-516773cae754?w=400", rating: { average: 4.6, count: 110 } },
-    { name: "Palak Paneer", price: 200, category: "Main Course", foodType: "veg", image: "https://images.unsplash.com/photo-1618449840665-9ed506d73a34?w=400", rating: { average: 4.0, count: 60 } },
+function buildSeedItems(seedShops) {
+  const items = [];
 
-    // Snacks
-    { name: "Paneer Tikka", price: 250, category: "Snacks", foodType: "veg", image: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=400", rating: { average: 4.3, count: 85 } },
-    { name: "Tandoori Chicken", price: 350, category: "Snacks", foodType: "non veg", image: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=400", rating: { average: 4.4, count: 130 } },
-    { name: "Samosa", price: 40, category: "Snacks", foodType: "veg", image: "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400", rating: { average: 4.2, count: 180 } },
+  for (let shopIndex = 0; shopIndex < seedShops.length; shopIndex += 1) {
+    const shop = seedShops[shopIndex];
 
-    // South Indian (Breakfast favorites)
-    { name: "Masala Dosa", price: 120, category: "South Indian", foodType: "veg", image: "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=400", rating: { average: 4.3, count: 90 } },
-    { name: "Idli Sambar", price: 80, category: "South Indian", foodType: "veg", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=400", rating: { average: 4.1, count: 70 } },
-    { name: "Medu Vada", price: 60, category: "South Indian", foodType: "veg", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=400", rating: { average: 4.2, count: 55 } },
-    { name: "Rava Dosa", price: 100, category: "South Indian", foodType: "veg", image: "https://images.unsplash.com/photo-1630383249896-424e482df921?w=400", rating: { average: 4.0, count: 45 } },
-    { name: "Uttapam", price: 90, category: "South Indian", foodType: "veg", image: "https://images.unsplash.com/photo-1567337710282-00832b415979?w=400", rating: { average: 4.1, count: 50 } },
+    for (let itemIndex = 0; itemIndex < ITEMS_PER_SHOP; itemIndex += 1) {
+      const template = ITEM_TEMPLATES[(shopIndex * 3 + itemIndex) % ITEM_TEMPLATES.length];
+      const priceOffset = seededNumber(`${shop.name}-${template.name}-price`, 5, 45);
+      const ratingAverageRaw = seededNumber(`${shop.name}-${template.name}-rating`, 38, 48) / 10;
+      const ratingCount = seededNumber(`${shop.name}-${template.name}-count`, 25, 220);
+      const shortShopName = shop.name.split(" ").slice(0, 2).join(" ");
 
-    // More Snacks (Breakfast/Evening)
-    { name: "Poha", price: 50, category: "Snacks", foodType: "veg", image: "https://images.unsplash.com/photo-1645177628172-a94c1f96e6db?w=400", rating: { average: 4.2, count: 80 } },
-    { name: "Aloo Paratha", price: 80, category: "Snacks", foodType: "veg", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400", rating: { average: 4.4, count: 120 } },
-    { name: "Upma", price: 45, category: "Snacks", foodType: "veg", image: "https://images.unsplash.com/photo-1567337710282-00832b415979?w=400", rating: { average: 3.9, count: 40 } },
-    { name: "Puri Bhaji", price: 70, category: "Snacks", foodType: "veg", image: "https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=400", rating: { average: 4.3, count: 95 } },
+      items.push({
+        name: `${template.name} - ${shortShopName}`,
+        price: template.basePrice + priceOffset,
+        category: template.category,
+        foodType: template.foodType,
+        image: seededItemImage(
+          `item-${toSlug(shop.name)}-${toSlug(template.name)}-${itemIndex + 1}`,
+          template.name,
+          template.category
+        ),
+        rating: {
+          average: Number(ratingAverageRaw.toFixed(1)),
+          count: ratingCount,
+        },
+        shopName: shop.name,
+      });
+    }
+  }
 
-    // Chinese
-    { name: "Veg Fried Rice", price: 150, category: "Chinese", foodType: "veg", image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400", rating: { average: 4.0, count: 55 } },
-    { name: "Chicken Manchurian", price: 220, category: "Chinese", foodType: "non veg", image: "https://images.unsplash.com/photo-1525755662778-989d0524087e?w=400", rating: { average: 4.2, count: 80 } },
-    { name: "Veg Manchurian", price: 180, category: "Chinese", foodType: "veg", image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=400", rating: { average: 4.0, count: 65 } },
-    { name: "Chilli Chicken", price: 240, category: "Chinese", foodType: "non veg", image: "https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=400", rating: { average: 4.5, count: 150 } },
-    { name: "Hakka Noodles", price: 160, category: "Chinese", foodType: "veg", image: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400", rating: { average: 4.1, count: 70 } },
-
-    // Pizza
-    { name: "Margherita Pizza", price: 299, category: "Pizza", foodType: "veg", image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400", rating: { average: 4.3, count: 100 } },
-    { name: "Pepperoni Pizza", price: 399, category: "Pizza", foodType: "non veg", image: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400", rating: { average: 4.6, count: 140 } },
-    { name: "Farmhouse Pizza", price: 349, category: "Pizza", foodType: "veg", image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400", rating: { average: 4.2, count: 85 } },
-
-    // Desserts
-    { name: "Gulab Jamun", price: 80, category: "Desserts", foodType: "veg", image: "https://images.unsplash.com/photo-1666190050431-e9e4e0eb3c6e?w=400", rating: { average: 4.4, count: 95 } },
-    { name: "Rasmalai", price: 100, category: "Desserts", foodType: "veg", image: "https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=400", rating: { average: 4.5, count: 110 } },
-    { name: "Ice Cream Sundae", price: 150, category: "Desserts", foodType: "veg", image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=400", rating: { average: 4.3, count: 80 } },
-
-    // Others
-    { name: "Mango Lassi", price: 70, category: "Others", foodType: "veg", image: "https://images.unsplash.com/photo-1626201850129-a96cf664e51e?w=400", rating: { average: 4.2, count: 60 } },
-    { name: "Masala Chai", price: 30, category: "Others", foodType: "veg", image: "https://images.unsplash.com/photo-1561336313-0bd5e0b27ec8?w=400", rating: { average: 4.0, count: 45 } },
-];
+  return items;
+}
 
 async function seedDatabase() {
-    try {
-        console.log("🔄 Connecting to MongoDB...");
-        await mongoose.connect(MONGODB_URL);
-        console.log("✅ Connected to MongoDB");
-
-        // Find an owner user or create a dummy owner
-        let owner = await User.findOne({ role: "owner" });
-
-        if (!owner) {
-            console.log("⚠️ No owner found. Creating dummy owner...");
-            owner = await User.create({
-                fullName: "Demo Restaurant Owner",
-                email: "owner@demo.com",
-                mobile: "9999999999",
-                password: "demo123",
-                role: "owner"
-            });
-            console.log("✅ Created dummy owner");
-        }
-
-        // Clear existing dummy data
-        console.log("🗑️ Clearing existing shops and items...");
-        await Shop.deleteMany({});
-        await Item.deleteMany({});
-
-        // Create shops
-        console.log("🏪 Creating shops...");
-        const createdShops = [];
-        for (const shopData of dummyShops) {
-            const shop = await Shop.create({
-                ...shopData,
-                owner: owner._id
-            });
-            createdShops.push(shop);
-            console.log(`  ✅ Created: ${shop.name}`);
-        }
-
-        // Create items and distribute among shops
-        console.log("🍔 Creating food items...");
-        for (let i = 0; i < dummyItems.length; i++) {
-            const itemData = dummyItems[i];
-            const shop = createdShops[i % createdShops.length];
-
-            await Item.create({
-                ...itemData,
-                shop: shop._id
-            });
-            console.log(`  ✅ Created: ${itemData.name} (${shop.name})`);
-        }
-
-        console.log("\n🎉 Database seeded successfully!");
-        console.log(`   📊 Created ${createdShops.length} shops`);
-        console.log(`   📊 Created ${dummyItems.length} food items`);
-
-        process.exit(0);
-
-    } catch (error) {
-        console.error("❌ Seed error:", error);
-        process.exit(1);
+  try {
+    if (!MONGODB_URL) {
+      throw new Error("MONGODB_URL is missing in backend/.env");
     }
+
+    console.log("Connecting to MongoDB...");
+    await mongoose.connect(MONGODB_URL);
+    console.log("Connected to MongoDB");
+
+    let owner = await User.findOne({ email: "owner@demo.com" });
+    if (!owner) {
+      const hashedPassword = await bcrypt.hash("demo123", 10);
+      owner = await User.create({
+        fullName: "Demo Restaurant Owner",
+        email: "owner@demo.com",
+        mobile: "9999999999",
+        password: hashedPassword,
+        role: "owner",
+      });
+      console.log("Created demo owner: owner@demo.com / demo123");
+    }
+
+    const seedShops = buildSeedShops();
+    const seedItems = buildSeedItems(seedShops);
+    const seededShopNames = seedShops.map((shop) => shop.name);
+    const namesToCleanup = [...new Set([...seededShopNames, ...LEGACY_SEEDED_SHOP_NAMES])];
+
+    const existingSeedShops = await Shop.find({ name: { $in: namesToCleanup } }).select("_id");
+    const existingShopIds = existingSeedShops.map((shop) => shop._id);
+    if (existingShopIds.length > 0) {
+      await Item.deleteMany({ shop: { $in: existingShopIds } });
+      await Shop.deleteMany({ _id: { $in: existingShopIds } });
+    }
+
+    const createdShops = await Shop.insertMany(
+      seedShops.map((shop) => ({
+        ...shop,
+        owner: owner._id,
+        items: [],
+      }))
+    );
+
+    const shopByName = new Map(createdShops.map((shop) => [shop.name, shop]));
+    let createdItemsCount = 0;
+
+    for (const item of seedItems) {
+      const shop = shopByName.get(item.shopName);
+      if (!shop) {
+        console.warn(`Skipped item "${item.name}" because shop "${item.shopName}" was not found.`);
+        continue;
+      }
+
+      const createdItem = await Item.create({
+        name: item.name,
+        image: item.image,
+        shop: shop._id,
+        category: item.category,
+        price: item.price,
+        foodType: item.foodType,
+        rating: item.rating,
+      });
+
+      shop.items.push(createdItem._id);
+      createdItemsCount += 1;
+    }
+
+    await Promise.all(createdShops.map((shop) => shop.save()));
+
+    console.log("Seed complete");
+    console.log(`Restaurants created: ${createdShops.length}`);
+    console.log(`Food items created: ${createdItemsCount}`);
+    console.log(`Items per restaurant: ${ITEMS_PER_SHOP}`);
+    console.log("Locations covered: Baruipur, Kolkata, Bidhan Nagar, Salt Lake Sector-V, Medinipur");
+  } catch (error) {
+    console.error("Seed error:", error.message);
+    process.exitCode = 1;
+  } finally {
+    await mongoose.disconnect();
+  }
 }
 
 seedDatabase();
