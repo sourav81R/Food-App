@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { FaLocationDot } from "react-icons/fa6";
 import { IoIosSearch } from "react-icons/io";
 import { FiShoppingCart } from "react-icons/fi";
@@ -10,7 +10,7 @@ import { setSearchItems, setUserData } from '../redux/userSlice';
 import { FaPlus } from "react-icons/fa6";
 import { TbReceipt2 } from "react-icons/tb";
 import { FaHeart, FaSun, FaMoon } from "react-icons/fa";
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "../config/firebase";
@@ -23,7 +23,17 @@ function Nav() {
     const [query, setQuery] = useState("")
     const dispatch = useDispatch()
     const navigate = useNavigate()
+    const location = useLocation()
+    const menuRef = useRef(null)
     const { isDark, toggleTheme } = useTheme()
+
+    if (!userData) return null
+
+    const roleLabel =
+        userData.role == "deliveryBoy"
+            ? "Delivery Partner"
+            : userData.role.charAt(0).toUpperCase() + userData.role.slice(1)
+
     const handleLogOut = async () => {
         try {
             await Promise.allSettled([
@@ -54,6 +64,34 @@ function Nav() {
         }
 
     }, [query])
+
+    useEffect(() => {
+        setShowInfo(false)
+    }, [location.pathname])
+
+    useEffect(() => {
+        if (!showInfo) return
+
+        const handleOutsideClick = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setShowInfo(false)
+            }
+        }
+
+        const handleEsc = (event) => {
+            if (event.key === "Escape") {
+                setShowInfo(false)
+            }
+        }
+
+        document.addEventListener("mousedown", handleOutsideClick)
+        document.addEventListener("keydown", handleEsc)
+        return () => {
+            document.removeEventListener("mousedown", handleOutsideClick)
+            document.removeEventListener("keydown", handleEsc)
+        }
+    }, [showInfo])
+
     return (
         <div className={`w-full h-[80px] flex items-center justify-between md:justify-center gap-[30px] px-[20px] fixed top-0 left-0 z-[9999] border-none outline-none transition-colors duration-300 ${isDark ? 'bg-[#1a1a2e]' : 'bg-[#fff9f6]'} overflow-visible`}>
 
@@ -175,19 +213,46 @@ function Nav() {
                         </button>
                     </>
                 )}
+                <div className='relative' ref={menuRef}>
+                    <div className='w-[40px] h-[40px] rounded-full flex items-center justify-center bg-[#ff4d2d] text-white text-[18px] shadow-xl font-semibold cursor-pointer select-none' onClick={() => setShowInfo(prev => !prev)}>
+                        {userData?.fullName?.slice(0, 1)}
+                    </div>
+                    {showInfo && (
+                        <div className={`absolute top-[52px] right-0 w-[240px] rounded-xl p-[14px] flex flex-col gap-[8px] z-[10000] border ${isDark ? 'bg-[#16213e] border-[#374151] text-white shadow-black/20' : 'bg-white border-gray-100 text-black shadow-2xl'}`}>
+                            <div className='text-[16px] font-semibold truncate'>{userData.fullName}</div>
+                            <div className={`text-[12px] ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>{roleLabel}</div>
 
+                            <button
+                                className={`text-left text-sm font-medium py-1.5 px-2 rounded-md transition ${isDark ? 'hover:bg-[#0f3460]' : 'hover:bg-gray-100'}`}
+                                onClick={() => navigate("/profile")}
+                            >
+                                View Profile
+                            </button>
 
+                            {(userData.role == "user" || userData.role == "owner") && (
+                                <button
+                                    className={`text-left text-sm font-medium py-1.5 px-2 rounded-md transition ${isDark ? 'hover:bg-[#0f3460]' : 'hover:bg-gray-100'}`}
+                                    onClick={() => navigate("/my-orders")}
+                                >
+                                    My Orders
+                                </button>
+                            )}
 
-                <div className='w-[40px] h-[40px] rounded-full flex items-center justify-center bg-[#ff4d2d] text-white text-[18px] shadow-xl font-semibold cursor-pointer' onClick={() => setShowInfo(prev => !prev)}>
-                    {userData?.fullName.slice(0, 1)}
+                            {userData.role == "owner" && (
+                                <button
+                                    className={`text-left text-sm font-medium py-1.5 px-2 rounded-md transition ${isDark ? 'hover:bg-[#0f3460]' : 'hover:bg-gray-100'}`}
+                                    onClick={() => navigate("/create-edit-shop")}
+                                >
+                                    {myShopData ? "Manage Shop" : "Create Shop"}
+                                </button>
+                            )}
+
+                            <button className='text-left text-sm font-semibold py-1.5 px-2 rounded-md transition text-[#ff4d2d] hover:bg-[#ff4d2d]/10' onClick={handleLogOut}>
+                                Log Out
+                            </button>
+                        </div>
+                    )}
                 </div>
-                {showInfo && <div className={`fixed top-[80px] right-[10px] 
-                    ${userData.role == "deliveryBoy" ? "md:right-[20%] lg:right-[40%]" : "md:right-[10%] lg:right-[25%]"} w-[180px] bg-white shadow-2xl rounded-xl p-[20px] flex flex-col gap-[10px] z-[9999]`}>
-                    <div className='text-[17px] font-semibold'>{userData.fullName}</div>
-                    {userData.role == "user" && <div className='md:hidden text-[#ff4d2d] font-semibold cursor-pointer' onClick={() => navigate("/my-orders")}>My Orders</div>}
-
-                    <div className='text-[#ff4d2d] font-semibold cursor-pointer' onClick={handleLogOut}>Log Out</div>
-                </div>}
 
             </div>
         </div>
