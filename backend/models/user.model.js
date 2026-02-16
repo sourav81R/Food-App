@@ -41,6 +41,14 @@ const userSchema = new mongoose.Schema({
         type:Boolean,
         default:false
     },
+    isSuspended: {
+        type: Boolean,
+        default: false
+    },
+    suspendedAt: {
+        type: Date,
+        default: null
+    },
    location:{
 type:{type:String,enum:['Point'],default:'Point'},
 coordinates:{type:[Number],default:[0,0]}

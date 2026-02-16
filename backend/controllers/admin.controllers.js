@@ -8,6 +8,51 @@ import User from "../models/user.model.js"
 const SAFE_USER_SELECT = "-password -resetOtp -otpExpires -__v"
 const MANAGEABLE_ROLES = new Set(["user", "owner", "deliveryBoy", "admin"])
 
+const hasText = (value) => typeof value === "string" && value.trim().length > 0
+const isValidMobile = (mobile) => {
+    const digits = (mobile || "").toString().replace(/\D/g, "")
+    if (digits.length < 10) return false
+    if (/^0+$/.test(digits)) return false
+    return true
+}
+
+const isUserDataUpdated = (user = {}) => {
+    return hasText(user.fullName) && hasText(user.email) && isValidMobile(user.mobile)
+}
+
+const withUserFlags = (user = {}) => ({
+    ...user,
+    isDataUpdated: isUserDataUpdated(user)
+})
+
+const cleanupUserRelatedData = async (userId, role) => {
+    if (role === "owner") {
+        const shops = await Shop.find({ owner: userId }).select("_id")
+        const shopIds = shops.map((shop) => shop._id)
+        const items = await Item.find({ shop: { $in: shopIds } }).select("_id")
+        const itemIds = items.map((item) => item._id)
+
+        if (itemIds.length > 0) {
+            await Favorite.deleteMany({ item: { $in: itemIds } })
+            await Item.deleteMany({ _id: { $in: itemIds } })
+        }
+        if (shopIds.length > 0) {
+            await Shop.deleteMany({ _id: { $in: shopIds } })
+        }
+    }
+
+    if (role === "deliveryBoy") {
+        await DeliveryAssignment.deleteMany({
+            $or: [{ assignedTo: userId }, { brodcastedTo: userId }]
+        })
+    }
+}
+
+const deleteUserByIdWithCleanup = async (userId, role) => {
+    await cleanupUserRelatedData(userId, role)
+    await User.findByIdAndDelete(userId)
+}
+
 const formatRoleCounts = (rows = []) => {
     const base = { user: 0, owner: 0, deliveryBoy: 0, admin: 0 }
     rows.forEach((row) => {
@@ -80,7 +125,8 @@ export const getAllUsersForAdmin = async (req, res) => {
             .sort({ createdAt: -1 })
             .lean()
 
-        return res.status(200).json(users)
+        const formattedUsers = users.map((user) => withUserFlags(user))
+        return res.status(200).json(formattedUsers)
     } catch (error) {
         return res.status(500).json({ message: `get all users error ${error}` })
     }
@@ -108,9 +154,39 @@ export const updateUserRoleByAdmin = async (req, res) => {
             return res.status(404).json({ message: "User not found" })
         }
 
-        return res.status(200).json({ message: "User role updated", user })
+        const formattedUser = withUserFlags(user.toObject())
+        return res.status(200).json({ message: "User role updated", user: formattedUser })
     } catch (error) {
         return res.status(500).json({ message: `update user role error ${error}` })
+    }
+}
+
+export const suspendUserByAdmin = async (req, res) => {
+    try {
+        const { userId } = req.params
+        const { suspended } = req.body
+
+        const user = await User.findById(userId).select(SAFE_USER_SELECT)
+        if (!user) {
+            return res.status(404).json({ message: "User not found" })
+        }
+
+        const shouldSuspend = typeof suspended === "boolean" ? suspended : !Boolean(user.isSuspended)
+        if (String(req.userId) === String(userId) && shouldSuspend) {
+            return res.status(400).json({ message: "Admin cannot suspend own account" })
+        }
+
+        user.isSuspended = shouldSuspend
+        user.suspendedAt = shouldSuspend ? new Date() : null
+        await user.save()
+
+        const formattedUser = withUserFlags(user.toObject())
+        return res.status(200).json({
+            message: shouldSuspend ? "User suspended successfully" : "User unsuspended successfully",
+            user: formattedUser
+        })
+    } catch (error) {
+        return res.status(500).json({ message: `suspend user error ${error}` })
     }
 }
 
@@ -126,31 +202,31 @@ export const deleteUserByAdmin = async (req, res) => {
             return res.status(404).json({ message: "User not found" })
         }
 
-        if (user.role === "owner") {
-            const shops = await Shop.find({ owner: userId }).select("_id")
-            const shopIds = shops.map((shop) => shop._id)
-            const items = await Item.find({ shop: { $in: shopIds } }).select("_id")
-            const itemIds = items.map((item) => item._id)
-
-            if (itemIds.length > 0) {
-                await Favorite.deleteMany({ item: { $in: itemIds } })
-                await Item.deleteMany({ _id: { $in: itemIds } })
-            }
-            if (shopIds.length > 0) {
-                await Shop.deleteMany({ _id: { $in: shopIds } })
-            }
-        }
-
-        if (user.role === "deliveryBoy") {
-            await DeliveryAssignment.deleteMany({
-                $or: [{ assignedTo: userId }, { brodcastedTo: userId }]
-            })
-        }
-
-        await User.findByIdAndDelete(userId)
+        await deleteUserByIdWithCleanup(userId, user.role)
         return res.status(200).json({ message: "User deleted successfully" })
     } catch (error) {
         return res.status(500).json({ message: `delete user error ${error}` })
+    }
+}
+
+export const clearAllUsersByAdmin = async (req, res) => {
+    try {
+        const users = await User.find({ role: { $ne: "admin" } }).select("_id role").lean()
+        const userIds = users.map((user) => user._id)
+
+        for (const user of users) {
+            await cleanupUserRelatedData(user._id, user.role)
+        }
+
+        if (userIds.length > 0) {
+            await User.deleteMany({ _id: { $in: userIds } })
+        }
+
+        return res.status(200).json({
+            message: `${userIds.length} user account(s) cleared successfully`
+        })
+    } catch (error) {
+        return res.status(500).json({ message: `clear all users error ${error}` })
     }
 }
 

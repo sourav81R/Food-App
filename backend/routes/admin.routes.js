@@ -1,5 +1,6 @@
 import express from "express"
 import {
+    clearAllUsersByAdmin,
     deleteItemByAdmin,
     deleteOrderByAdmin,
     deleteShopByAdmin,
@@ -9,6 +10,7 @@ import {
     getAllOrdersForAdmin,
     getAllShopsForAdmin,
     getAllUsersForAdmin,
+    suspendUserByAdmin,
     updateUserRoleByAdmin
 } from "../controllers/admin.controllers.js"
 import isAdmin from "../middlewares/isAdmin.js"
@@ -19,7 +21,9 @@ const adminRouter = express.Router()
 adminRouter.get("/overview", isAuth, isAdmin, getAdminOverview)
 
 adminRouter.get("/users", isAuth, isAdmin, getAllUsersForAdmin)
+adminRouter.delete("/users", isAuth, isAdmin, clearAllUsersByAdmin)
 adminRouter.patch("/users/:userId/role", isAuth, isAdmin, updateUserRoleByAdmin)
+adminRouter.patch("/users/:userId/suspend", isAuth, isAdmin, suspendUserByAdmin)
 adminRouter.delete("/users/:userId", isAuth, isAdmin, deleteUserByAdmin)
 
 adminRouter.get("/shops", isAuth, isAdmin, getAllShopsForAdmin)

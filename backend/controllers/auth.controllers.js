@@ -54,6 +54,10 @@ export const signIn=async (req,res) => {
         if(!user){
             return res.status(400).json({message:"User does not exist."})
         }
+        if(user.isSuspended){
+            res.clearCookie("token", getCookieOptions())
+            return res.status(403).json({message:"Your account is suspended. Contact admin."})
+        }
         
      const isMatch=await bcrypt.compare(password,user.password)
      if(!isMatch){
@@ -154,6 +158,10 @@ export const googleAuth=async (req,res) => {
                 mobile:safeMobile,
                 role:normalizedRole
             })
+        }
+        if(user.isSuspended){
+            res.clearCookie("token", getCookieOptions())
+            return res.status(403).json({message:"Your account is suspended. Contact admin."})
         }
 
         const token=await genToken(user._id)
