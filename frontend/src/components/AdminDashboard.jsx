@@ -233,7 +233,7 @@ function AdminDashboard() {
                     <th className="text-left px-4 py-3">Mobile</th>
                     <th className="text-left px-4 py-3">Role</th>
                     <th className="text-left px-4 py-3">Joined</th>
-                    <th className="text-center px-4 py-3">Data Updated</th>
+                    <th className="text-center px-4 py-3 w-[180px]">Data Updated</th>
                     <th className="text-center px-4 py-3">Actions</th>
                   </tr>
                 </thead>
@@ -265,12 +265,14 @@ function AdminDashboard() {
                         </select>
                       </td>
                       <td className="px-4 py-3">{new Date(user.createdAt).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 text-center">
-                        {hasRequiredUserData(user) ? (
-                          <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700">Updated</span>
-                        ) : (
-                          <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">Not Updated</span>
-                        )}
+                      <td className="px-4 py-3 w-[180px]">
+                        <div className="flex justify-center">
+                          {hasRequiredUserData(user) ? (
+                            <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700">Updated</span>
+                          ) : (
+                            <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">Not Updated</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
