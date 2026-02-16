@@ -250,29 +250,31 @@ function CheckOut() {
     Number.isFinite(location?.lon) ? location.lon : 88.3639
   ]
   return (
-    <div className='min-h-screen bg-[#fff9f6] flex items-center justify-center p-6'>
-      <div className=' absolute top-[20px] left-[20px] z-[10]' onClick={() => navigate("/")}>
+    <div className='min-h-screen bg-[#fff9f6] flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-6'>
+      <div className='fixed top-3 left-3 sm:top-[20px] sm:left-[20px] z-[20] bg-white/90 rounded-full p-1 shadow-sm cursor-pointer' onClick={() => navigate("/")}>
         <IoIosArrowRoundBack size={35} className='text-[#ff4d2d]' />
       </div>
-      <div className='w-full max-w-[900px] bg-white rounded-2xl shadow-xl p-6 space-y-6'>
+      <div className='w-full max-w-[900px] bg-white rounded-2xl shadow-xl p-4 sm:p-6 space-y-6'>
         <h1 className='text-2xl font-bold text-gray-800'>Checkout</h1>
 
         <section>
           <h2 className='text-lg font-semibold mb-2 flex items-center gap-2 text-gray-800'><IoLocationSharp className='text-[#ff4d2d]' /> Delivery Location</h2>
-          <div className='flex gap-2 mb-3'>
+          <div className='flex flex-col sm:flex-row gap-2 mb-3'>
             <label htmlFor="checkout-delivery-address" className='sr-only'>Delivery address</label>
             <input id="checkout-delivery-address" name="deliveryAddress" type="text" className='flex-1 border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2d]' placeholder='Enter Your Delivery Address..' value={addressInput} onChange={(e) => setAddressInput(e.target.value)} />
-            <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-3 py-2 rounded-lg flex items-center justify-center' onClick={getLatLngByAddress}><IoSearchOutline size={17} /></button>
-            <button
-              className='bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg flex items-center justify-center disabled:opacity-70'
-              onClick={getCurrentLocation}
-              disabled={geoLoading}
-            >
-              {geoLoading ? <ClipLoader size={14} color='white' /> : <TbCurrentLocation size={17} />}
-            </button>
+            <div className='flex gap-2'>
+              <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-3 py-2 rounded-lg flex-1 sm:flex-none flex items-center justify-center' onClick={getLatLngByAddress}><IoSearchOutline size={17} /></button>
+              <button
+                className='bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg flex-1 sm:flex-none flex items-center justify-center disabled:opacity-70'
+                onClick={getCurrentLocation}
+                disabled={geoLoading}
+              >
+                {geoLoading ? <ClipLoader size={14} color='white' /> : <TbCurrentLocation size={17} />}
+              </button>
+            </div>
           </div>
           <div className='rounded-xl border overflow-hidden'>
-            <div className='h-64 w-full flex items-center justify-center'>
+            <div className='h-56 sm:h-64 w-full flex items-center justify-center'>
               <MapContainer
                 className={"w-full h-full"}
                 center={mapCenter}
@@ -296,7 +298,7 @@ function CheckOut() {
         <section>
           <h2 className='text-lg font-semibold mb-3 text-gray-800'>Payment Method</h2>
           <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-            <div className={`flex items-center gap-3 rounded-xl border p-4 text-left transition ${paymentMethod === "cod" ? "border-[#ff4d2d] bg-orange-50 shadow" : "border-gray-200 hover:border-gray-300"
+            <div className={`flex items-start sm:items-center gap-3 rounded-xl border p-4 text-left transition ${paymentMethod === "cod" ? "border-[#ff4d2d] bg-orange-50 shadow" : "border-gray-200 hover:border-gray-300"
               }`} onClick={() => setPaymentMethod("cod")}>
 
               <span className='inline-flex h-10 w-10 items-center justify-center rounded-full bg-green-100'>
@@ -309,7 +311,7 @@ function CheckOut() {
 
             </div>
             <div
-              className={`flex items-center gap-3 rounded-xl border p-4 text-left transition ${paymentMethod === "online" ? "border-[#ff4d2d] bg-orange-50 shadow" : "border-gray-200 hover:border-gray-300"} ${onlinePaymentEnabled ? "cursor-pointer" : "opacity-60 cursor-not-allowed"}`}
+              className={`flex items-start sm:items-center gap-3 rounded-xl border p-4 text-left transition ${paymentMethod === "online" ? "border-[#ff4d2d] bg-orange-50 shadow" : "border-gray-200 hover:border-gray-300"} ${onlinePaymentEnabled ? "cursor-pointer" : "opacity-60 cursor-not-allowed"}`}
               onClick={() => {
                 if (!onlinePaymentEnabled) {
                   toast.error(onlinePaymentReason || "Online payment is currently unavailable")
@@ -339,24 +341,24 @@ function CheckOut() {
           <h2 className='text-lg font-semibold mb-3 text-gray-800'>Order Summary</h2>
           <div className='rounded-xl border bg-gray-50 p-4 space-y-2'>
             {cartItems.map((item, index) => (
-              <div key={index} className='flex justify-between text-sm text-gray-700'>
-                <span>{item.name} x {item.quantity}</span>
-                <span>₹{item.price * item.quantity}</span>
+              <div key={index} className='flex justify-between gap-3 text-sm text-gray-700'>
+                <span className='truncate'>{item.name} x {item.quantity}</span>
+                <span className='whitespace-nowrap'>Rs {item.price * item.quantity}</span>
               </div>
 
             ))}
             <hr className='border-gray-200 my-2' />
             <div className='flex justify-between font-medium text-gray-800'>
               <span>Subtotal</span>
-              <span>{totalAmount}</span>
+              <span>Rs {totalAmount}</span>
             </div>
             <div className='flex justify-between text-gray-700'>
               <span>Delivery Fee</span>
-              <span>{deliveryFee == 0 ? "Free" : deliveryFee}</span>
+              <span>{deliveryFee == 0 ? "Free" : `Rs ${deliveryFee}`}</span>
             </div>
             <div className='flex justify-between text-lg font-bold text-[#ff4d2d] pt-2'>
               <span>Total</span>
-              <span>{AmountWithDeliveryFee}</span>
+              <span>Rs {AmountWithDeliveryFee}</span>
             </div>
           </div>
         </section>

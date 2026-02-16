@@ -18,8 +18,8 @@ function OwnerItemCard({data}) {
       }
     }
   return (
-    <div className='flex bg-white rounded-lg shadow-md overflow-hidden border border-[#ff4d2d] w-full max-w-2xl'>
-      <div className='w-36  flex-shrink-0 bg-gray-50'>
+    <div className='flex flex-col sm:flex-row bg-white rounded-lg shadow-md overflow-hidden border border-[#ff4d2d] w-full max-w-2xl'>
+      <div className='w-full sm:w-36 h-40 sm:h-auto flex-shrink-0 bg-gray-50'>
         <img src={data.image} alt="" className='w-full h-full object-cover'/>
       </div>
       <div className='flex flex-col justify-between p-3 flex-1'>
@@ -29,7 +29,7 @@ function OwnerItemCard({data}) {
 <p><span className='font-medium text-gray-70'>Food Type:</span> {data.foodType}</p>
           </div>
           <div className='flex items-center justify-between'>
-            <div className='text-[#ff4d2d] font-bold'>{data.price}</div>
+            <div className='text-[#ff4d2d] font-bold'>Rs {data.price}</div>
           <div className='flex items-center gap-2'>
 <div className='p-2 cursor-pointer rounded-full hover:bg-[#ff4d2d]/10  text-[#ff4d2d]' onClick={()=>navigate(`/edit-item/${data._id}`)}>
 <FaPen size={16}/>

@@ -192,14 +192,14 @@ function UserDashboard() {
 
 
   return (
-    <div className={`w-screen min-h-screen flex flex-col gap-0 items-center overflow-y-auto pt-[75px] transition-colors duration-300 ${isDark ? 'bg-[#1a1a2e]' : 'bg-[#fff9f6]'}`}>
+    <div className={`w-full min-h-screen flex flex-col gap-0 items-center overflow-y-auto pt-[75px] px-3 sm:px-4 transition-colors duration-300 ${isDark ? 'bg-[#1a1a2e]' : 'bg-[#fff9f6]'}`}>
       <Nav />
 
       {/* Welcome Celebration Animation */}
       {showCelebration && <WelcomeCelebration onClose={() => setShowCelebration(false)} />}
 
       {searchItems && searchItems.length > 0 && (
-        <div className={`w-full max-w-6xl flex flex-col gap-5 items-start p-5 shadow-md rounded-2xl mt-4 transition-colors ${isDark ? 'bg-[#16213e]' : 'bg-white'}`}>
+        <div className={`w-full max-w-6xl flex flex-col gap-5 items-start p-4 sm:p-5 shadow-md rounded-2xl mt-4 transition-colors ${isDark ? 'bg-[#16213e]' : 'bg-white'}`}>
           <h1 className={`text-2xl sm:text-3xl font-semibold border-b pb-2 ${isDark ? 'text-white border-gray-700' : 'text-gray-900 border-gray-200'}`}>
             Search Results
           </h1>
@@ -216,11 +216,11 @@ function UserDashboard() {
         <MealTimeSection items={itemsInMyCity} />
       )}
 
-      <div className="w-full max-w-6xl flex flex-col gap-5 items-start p-[10px]">
+      <div className="w-full max-w-6xl flex flex-col gap-5 items-start px-1 sm:px-[10px]">
 
         <h1 className={`text-2xl sm:text-3xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Inspiration for your first order</h1>
         <div className='w-full relative'>
-          {showLeftCateButton && <button className='absolute left-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={() => scrollHandler(cateScrollRef, "left")}><FaCircleChevronLeft />
+          {showLeftCateButton && <button className='hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={() => scrollHandler(cateScrollRef, "left")}><FaCircleChevronLeft />
           </button>}
 
 
@@ -234,17 +234,17 @@ function UserDashboard() {
               <CategoryCard name={cate.category} image={cate.image} key={index} onClick={() => handleFilterByCategory(cate.category)} />
             ))}
           </div>
-          {showRightCateButton && <button className='absolute right-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={() => scrollHandler(cateScrollRef, "right")}>
+          {showRightCateButton && <button className='hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={() => scrollHandler(cateScrollRef, "right")}>
             <FaCircleChevronRight />
           </button>}
 
         </div>
       </div>
 
-      <div className='w-full max-w-6xl flex flex-col gap-5 items-start p-[10px]'>
+      <div className='w-full max-w-6xl flex flex-col gap-5 items-start px-1 sm:px-[10px]'>
         <h1 className={`text-2xl sm:text-3xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Best Shop in {currentCity}</h1>
         <div className='w-full relative'>
-          {showLeftShopButton && <button className='absolute left-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={() => scrollHandler(shopScrollRef, "left")}><FaCircleChevronLeft />
+          {showLeftShopButton && <button className='hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={() => scrollHandler(shopScrollRef, "left")}><FaCircleChevronLeft />
           </button>}
 
 
@@ -258,14 +258,14 @@ function UserDashboard() {
               <CategoryCard name={shop.name} image={shop.image} key={index} onClick={() => navigate(`/shop/${shop._id}`)} />
             ))}
           </div>
-          {showRightShopButton && <button className='absolute right-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={() => scrollHandler(shopScrollRef, "right")}>
+          {showRightShopButton && <button className='hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={() => scrollHandler(shopScrollRef, "right")}>
             <FaCircleChevronRight />
           </button>}
 
         </div>
       </div>
 
-      <div className='w-full max-w-6xl flex flex-col gap-5 items-start p-[10px]'>
+      <div className='w-full max-w-6xl flex flex-col gap-5 items-start px-1 sm:px-[10px]'>
         <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-3'>
           <h1 className='text-gray-800 text-2xl sm:text-3xl'>
             Suggested Food Items

@@ -52,7 +52,7 @@ function DeliveryBoyTracking({ data }) {
         !Number.isFinite(customerlon)
     ) {
         return (
-            <div className='w-full h-[400px] mt-3 rounded-xl overflow-hidden shadow-md bg-gray-100 flex items-center justify-center text-sm text-gray-600'>
+            <div className='w-full h-[280px] sm:h-[400px] mt-3 rounded-xl overflow-hidden shadow-md bg-gray-100 flex items-center justify-center text-sm text-gray-600'>
                 Live tracking will appear once both locations are available.
             </div>
         )
@@ -78,7 +78,7 @@ function DeliveryBoyTracking({ data }) {
     }, [deliveryBoyLat, deliveryBoylon, customerLat, customerlon])
 
     return (
-        <div className='w-full h-[400px] mt-3 rounded-xl overflow-hidden shadow-md relative'>
+        <div className='w-full h-[280px] sm:h-[400px] mt-3 rounded-xl overflow-hidden shadow-md relative'>
             <div className='absolute top-3 left-3 z-[500] bg-white/95 rounded-lg px-3 py-2 shadow text-xs'>
                 <p className='font-semibold text-gray-700'>Distance: {stats.distanceKm} km</p>
                 <p className='text-gray-600'>ETA: ~{stats.etaMinutes} min</p>

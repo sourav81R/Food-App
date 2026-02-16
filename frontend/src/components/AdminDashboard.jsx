@@ -158,10 +158,10 @@ function AdminDashboard() {
   if (!userData || userData.role !== "admin") return null;
 
   return (
-    <div className={`w-screen min-h-screen ${isDark ? "bg-[#1a1a2e]" : "bg-[#fff9f6]"}`}>
+    <div className={`w-full min-h-screen ${isDark ? "bg-[#1a1a2e]" : "bg-[#fff9f6]"}`}>
       <Nav />
       <div className="max-w-7xl mx-auto px-4 pt-[95px] pb-8">
-        <h1 className={`text-3xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>Admin Panel</h1>
+        <h1 className={`text-2xl sm:text-3xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>Admin Panel</h1>
         <p className={`text-sm mt-1 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
           Manage all users, shops, food items, and orders
         </p>

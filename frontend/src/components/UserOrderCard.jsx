@@ -92,7 +92,7 @@ function UserOrderCard({ data }) {
 
     return (
         <div className='bg-white rounded-lg shadow p-4 space-y-4'>
-            <div className='flex justify-between border-b pb-2'>
+            <div className='flex flex-col sm:flex-row sm:justify-between border-b pb-2 gap-2'>
                 <div>
                     <p className='font-semibold'>
                         Order #{String(data?._id || "").slice(-6)}
@@ -141,25 +141,25 @@ function UserOrderCard({ data }) {
                             )
                         })}
                     </div>
-                    <div className='flex justify-between items-center border-t pt-2'>
+                    <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center border-t pt-2 gap-2'>
                         <p className='font-semibold'>Subtotal: Rs {shopOrder?.subtotal || 0}</p>
                         <span className='text-sm font-medium text-blue-600'>{shopOrder?.status || "pending"}</span>
                     </div>
                 </div>
             ))}
 
-            <div className='flex justify-between items-center border-t pt-2 gap-2'>
+            <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center border-t pt-2 gap-3'>
                 <p className='font-semibold'>Total: Rs {data?.totalAmount || 0}</p>
-                <div className='flex gap-2'>
+                <div className='flex flex-col sm:flex-row gap-2 w-full sm:w-auto'>
                     <button
-                        className='flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm transition disabled:opacity-50'
+                        className='flex items-center justify-center gap-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm transition disabled:opacity-50 w-full sm:w-auto'
                         onClick={handleQuickReorder}
                         disabled={reordering}
                     >
                         <FaRedo size={12} />
                         <span className='hidden sm:inline'>Reorder</span>
                     </button>
-                    <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-4 py-2 rounded-lg text-sm' onClick={() => navigate(`/track-order/${data?._id}`)}>Track Order</button>
+                    <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-4 py-2 rounded-lg text-sm w-full sm:w-auto' onClick={() => navigate(`/track-order/${data?._id}`)}>Track Order</button>
                 </div>
             </div>
         </div>

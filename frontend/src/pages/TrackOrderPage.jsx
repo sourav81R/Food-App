@@ -58,10 +58,11 @@ function TrackOrderPage() {
   }, [currentOrder?.shopOrders])
 
   return (
-    <div className='max-w-4xl mx-auto p-4 flex flex-col gap-6'>
-      <div className='relative flex items-center gap-4 top-[20px] left-[20px] z-[10] mb-[10px]' onClick={() => navigate("/")}>
+    <div className='min-h-screen bg-[#fff9f6] px-3 sm:px-4 py-4 sm:py-6'>
+      <div className='max-w-4xl mx-auto flex flex-col gap-6'>
+      <div className='flex items-center gap-3 sm:gap-4 cursor-pointer' onClick={() => navigate("/")}>
         <IoIosArrowRoundBack size={35} className='text-[#ff4d2d]' />
-        <h1 className='text-2xl font-bold md:text-center'>Track Order</h1>
+        <h1 className='text-xl sm:text-2xl font-bold md:text-center'>Track Order</h1>
       </div>
       <div className='flex flex-wrap items-center justify-between gap-2 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2 text-sm text-gray-700'>
         <span>Active deliveries: <span className='font-semibold text-[#ff4d2d]'>{activeShopOrdersCount}</span></span>
@@ -72,9 +73,9 @@ function TrackOrderPage() {
         <div className='bg-white p-4 rounded-2xl shadow-md border border-orange-100 space-y-4' key={index}>
           <div>
             <p className='text-lg font-bold mb-2 text-[#ff4d2d]'>{shopOrder.shop.name}</p>
-            <p className='font-semibold'><span>Items:</span> {shopOrder.shopOrderItems?.map(i => i.name).join(",")}</p>
-            <p><span className='font-semibold'>Subtotal:</span> {shopOrder.subtotal}</p>
-            <p className='mt-6'><span className='font-semibold'>Delivery address:</span> {currentOrder.deliveryAddress?.text}</p>
+            <p className='font-semibold break-words'><span>Items:</span> {shopOrder.shopOrderItems?.map(i => i.name).join(",")}</p>
+            <p><span className='font-semibold'>Subtotal:</span> Rs {shopOrder.subtotal}</p>
+            <p className='mt-6 break-words'><span className='font-semibold'>Delivery address:</span> {currentOrder.deliveryAddress?.text}</p>
           </div>
 
           {/* Order Progress Animation */}
@@ -89,7 +90,7 @@ function TrackOrderPage() {
           </> : <p className='text-green-600 font-semibold text-lg'>Delivered</p>}
 
           {(shopOrder.assignedDeliveryBoy && shopOrder.status !== "delivered") && (
-            <div className="h-[400px] w-full rounded-2xl overflow-hidden shadow-md">
+            <div className="h-[280px] sm:h-[360px] w-full rounded-2xl overflow-hidden shadow-md">
               <DeliveryBoyTracking data={{
                 deliveryBoyLocation: liveLocations[shopOrder.assignedDeliveryBoy._id] || {
                   lat: shopOrder.assignedDeliveryBoy.location.coordinates[1],
@@ -107,9 +108,7 @@ function TrackOrderPage() {
 
         </div>
       ))}
-
-
-
+      </div>
     </div>
   )
 }

@@ -39,7 +39,7 @@ function Favorites() {
     }, [userData])
 
     return (
-        <div className='w-screen min-h-screen bg-[#fff9f6] p-4 sm:p-6'>
+        <div className='w-full min-h-screen bg-[#fff9f6] p-4 sm:p-6'>
             {/* Header */}
             <div className='flex items-center gap-4 mb-6'>
                 <button

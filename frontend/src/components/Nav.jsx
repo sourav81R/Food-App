@@ -93,16 +93,16 @@ function Nav() {
     }, [showInfo])
 
     return (
-        <div className={`w-full h-[80px] flex items-center justify-between md:justify-center gap-[30px] px-[20px] fixed top-0 left-0 z-[9999] border-none outline-none transition-colors duration-300 ${isDark ? 'bg-[#1a1a2e]' : 'bg-[#fff9f6]'} overflow-visible`}>
+        <div className={`w-full min-h-[72px] sm:h-[80px] flex items-center justify-between md:justify-center gap-3 sm:gap-6 md:gap-[30px] px-3 sm:px-5 fixed top-0 left-0 z-[9999] border-none outline-none transition-colors duration-300 ${isDark ? 'bg-[#1a1a2e]' : 'bg-[#fff9f6]'} overflow-visible`}>
 
             {/* Mobile Search Bar */}
             {showSearch && userData.role == "user" && (
-                <div className={`w-[90%] h-[70px] rounded-2xl items-center gap-[15px] flex fixed top-[90px] left-[5%] md:hidden transition-all duration-300 ${isDark ? 'bg-[#16213e] border border-[#374151]' : 'bg-white/80 backdrop-blur-lg border border-white/20'} shadow-2xl`}>
-                    <div className={`flex items-center w-[35%] overflow-hidden gap-[10px] px-[15px] border-r-2 ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                <div className={`w-[94%] min-h-[64px] rounded-2xl items-center gap-3 flex fixed top-[78px] left-[3%] px-3 py-2 md:hidden transition-all duration-300 ${isDark ? 'bg-[#16213e] border border-[#374151]' : 'bg-white/80 backdrop-blur-lg border border-white/20'} shadow-2xl`}>
+                    <div className={`flex items-center w-[40%] min-w-[108px] overflow-hidden gap-[10px] pr-3 border-r-2 ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
                         <FaLocationDot size={22} className="text-[#ff4d2d] flex-shrink-0" />
-                        <div className={`w-[80%] truncate text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{currentCity}</div>
+                        <div className={`w-full truncate text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{currentCity}</div>
                     </div>
-                    <div className='flex-1 flex items-center gap-[10px] pr-[15px]'>
+                    <div className='flex-1 flex items-center gap-[10px] pr-1'>
                         <IoIosSearch size={24} className='text-[#ff4d2d] flex-shrink-0' />
                         <input
                             id="mobile-search-input"
@@ -119,7 +119,7 @@ function Nav() {
             )}
 
             {/* Logo */}
-            <h1 className='text-3xl font-bold mb-2 italic text-[#ff4d2d] drop-shadow-sm'>PetPooja</h1>
+            <h1 className='text-xl sm:text-2xl md:text-3xl font-bold italic text-[#ff4d2d] drop-shadow-sm shrink-0'>PetPooja</h1>
 
             {/* Desktop Search Bar - Enhanced */}
             {userData.role == "user" && (
@@ -160,7 +160,7 @@ function Nav() {
                 </div>
             )}
 
-            <div className='flex items-center gap-4'>
+            <div className='flex items-center gap-2 sm:gap-4'>
                 {userData.role == "user" && (showSearch ? <RxCross2 size={25} className='text-[#ff4d2d] md:hidden' onClick={() => setShowSearch(false)} /> : <IoIosSearch size={25} className='text-[#ff4d2d] md:hidden' onClick={() => setShowSearch(true)} />)
                 }
                 {userData.role == "owner" ? <>
@@ -185,7 +185,7 @@ function Nav() {
                     <>
                         {userData.role == "user" && <div className='relative cursor-pointer' onClick={() => navigate("/cart")}>
                             <FiShoppingCart size={25} className='text-[#ff4d2d]' />
-                            <span className='absolute right-[-9px] top-[-12px] text-[#ff4d2d]'>{cartItems.length}</span>
+                            <span className='absolute right-[-6px] top-[-8px] text-[#ff4d2d] text-xs'>{cartItems.length}</span>
                         </div>}
 
                         {/* Favorites Link */}
@@ -226,7 +226,7 @@ function Nav() {
                         {userData?.fullName?.slice(0, 1)}
                     </div>
                     {showInfo && (
-                        <div className={`absolute top-[52px] right-0 w-[240px] rounded-xl p-[14px] flex flex-col gap-[8px] z-[10000] border ${isDark ? 'bg-[#16213e] border-[#374151] text-white shadow-black/20' : 'bg-white border-gray-100 text-black shadow-2xl'}`}>
+                        <div className={`absolute top-[52px] right-0 w-[min(90vw,240px)] rounded-xl p-[14px] flex flex-col gap-[8px] z-[10000] border ${isDark ? 'bg-[#16213e] border-[#374151] text-white shadow-black/20' : 'bg-white border-gray-100 text-black shadow-2xl'}`}>
                             <div className='text-[16px] font-semibold truncate'>{userData.fullName}</div>
                             <div className={`text-[12px] ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>{roleLabel}</div>
 

@@ -44,12 +44,12 @@ function OwnerOrderCard({ data }) {
                 ))}
             </div>
 
-            <div className='flex justify-between items-center mt-auto pt-3 border-t border-gray-100'>
+            <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center mt-auto pt-3 border-t border-gray-100 gap-2'>
                 <span className='text-sm'>status: <span className='font-semibold capitalize text-[#ff4d2d]'>{data.shopOrders.status}</span>
                 </span>
 
                 <label htmlFor={`order-status-${data._id}`} className='sr-only'>Change order status</label>
-                <select id={`order-status-${data._id}`} name="orderStatus" className='rounded-md border px-3 py-1 text-sm focus:outline-none focus:ring-2 border-[#ff4d2d] text-[#ff4d2d]' onChange={(e) => handleUpdateStatus(data._id, data.shopOrders.shop._id, e.target.value)}>
+                <select id={`order-status-${data._id}`} name="orderStatus" className='rounded-md border px-3 py-1 text-sm focus:outline-none focus:ring-2 border-[#ff4d2d] text-[#ff4d2d] w-full sm:w-auto' onChange={(e) => handleUpdateStatus(data._id, data.shopOrders.shop._id, e.target.value)}>
                     <option value="">Change</option>
                     <option value="pending">Pending</option>
                     <option value="preparing">Preparing</option>
@@ -59,7 +59,7 @@ function OwnerOrderCard({ data }) {
             </div>
 
             {data.shopOrders.status == "out of delivery" &&
-                <div className="mt-3 p-2 border rounded-lg text-sm bg-orange-50 gap-4">
+                <div className="mt-3 p-2 border rounded-lg text-sm bg-orange-50 gap-4 break-words">
                     {data.shopOrders.assignedDeliveryBoy ? <p>Assigned Delivery Boy:</p> : <p>Available Delivery Boys:</p>}
                     {availableBoys?.length > 0 ? (
                         availableBoys.map((b, index) => (

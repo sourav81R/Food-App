@@ -11,7 +11,7 @@ function OrderPlaced() {
       <p className='text-gray-600 max-w-md mb-6'>Thank you for your purchase. Your order is being prepared.  
         You can track your order status in the "My Orders" section.
      </p>
-     <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-6 py-3 rounded-lg text-lg font-medium transition' onClick={()=>navigate("/my-orders")}>Back to my orders</button>
+     <button className='w-full sm:w-auto bg-[#ff4d2d] hover:bg-[#e64526] text-white px-6 py-3 rounded-lg text-base sm:text-lg font-medium transition' onClick={()=>navigate("/my-orders")}>Back to my orders</button>
     </div>
   )
 }

@@ -11,7 +11,7 @@ function OwnerDashboard() {
 
   
   return (
-    <div className='w-full min-h-screen bg-[#fff9f6] flex flex-col items-center'>
+    <div className='w-full min-h-screen bg-[#fff9f6] flex flex-col items-center pt-[90px] px-3 sm:px-4'>
       <Nav />
       {!myShopData &&
         <div className='flex justify-center items-center p-4 sm:p-6'>
