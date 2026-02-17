@@ -89,14 +89,41 @@ body,
 }
 
 * {
-  /* Hide scrollbar */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none;  /* IE/Edge */
+  /* Show thin, visible scrollbars for easier navigation */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #ff4d2d #f3f4f6; /* Firefox */
 }
 
-::-webkit-scrollbar, 
 ::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ff4d2d;
+  border-radius: 10px;
+  border: 2px solid #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e64323;
+}
+
+[data-theme="dark"] * {
+  scrollbar-color: #ff4d2d #16213e;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #16213e;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  border-color: #16213e;
 }
 
 /* Toast animations */
