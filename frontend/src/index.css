@@ -136,6 +136,16 @@ input:focus, button:focus {
   outline-offset: 2px;
 }
 
+/* Keep nav search input visually clean without extra focus border */
+.search-input-reset,
+.search-input-reset:focus,
+.search-input-reset:focus-visible,
+.search-input-reset:active {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
 /* Touch-friendly tap targets */
 @media (max-width: 768px) {
   button, a, .clickable {

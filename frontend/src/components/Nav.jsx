@@ -109,7 +109,7 @@ function Nav() {
                             name="search"
                             type="text"
                             placeholder='Search delicious food...'
-                            className={`w-full py-2 text-sm outline-none bg-transparent placeholder:text-gray-400 ${isDark ? 'text-white' : 'text-gray-700'}`}
+                            className={`search-input-reset w-full py-2 text-sm outline-none focus:outline-none focus:ring-0 focus-visible:outline-none bg-transparent placeholder:text-gray-400 ${isDark ? 'text-white' : 'text-gray-700'}`}
                             onChange={(e) => setQuery(e.target.value)}
                             value={query}
                             aria-label='Search dishes and restaurants'
@@ -143,7 +143,7 @@ function Nav() {
                             name="search"
                             type="text"
                             placeholder='Search for dishes, restaurants...'
-                            className={`w-full py-2 text-sm outline-none bg-transparent font-medium placeholder:font-normal ${isDark ? 'text-white placeholder:text-gray-500' : 'text-gray-700 placeholder:text-gray-400'}`}
+                            className={`search-input-reset w-full py-2 text-sm outline-none focus:outline-none focus:ring-0 focus-visible:outline-none bg-transparent font-medium placeholder:font-normal ${isDark ? 'text-white placeholder:text-gray-500' : 'text-gray-700 placeholder:text-gray-400'}`}
                             onChange={(e) => setQuery(e.target.value)}
                             value={query}
                             aria-label='Search dishes and restaurants'
