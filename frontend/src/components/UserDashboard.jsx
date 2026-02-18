@@ -29,8 +29,10 @@ function UserDashboard() {
     foodType: 'all',
     minPrice: 0,
     maxPrice: 1000,
-    minRating: 0
+    minRating: 0,
+    sortBy: 'default'
   })
+  const isLatestItemsView = filters.sortBy === 'latest'
   const { isDark } = useTheme()
 
   // Auto-slide state
@@ -92,6 +94,15 @@ function UserDashboard() {
       filtered = filtered.filter(item =>
         (item.rating?.average || 0) >= filterOptions.minRating
       )
+    }
+
+    // Sort filter
+    if (filterOptions.sortBy === 'latest') {
+      filtered.sort((a, b) => {
+        const first = a?.createdAt ? new Date(a.createdAt).getTime() : 0
+        const second = b?.createdAt ? new Date(b.createdAt).getTime() : 0
+        return second - first
+      })
     }
 
     setUpdatedItemsList(filtered)
@@ -211,7 +222,7 @@ function UserDashboard() {
         </div>
       )}
 
-      {/* Meal Time Section - Breakfast/Lunch/Evening/Snacks based on time */}
+      {/* Meal Time Section - Breakfast/Lunch/Tea Break/Evening/Snacks based on time */}
       {itemsInMyCity && itemsInMyCity.length > 0 && (
         <MealTimeSection items={itemsInMyCity} />
       )}
@@ -273,12 +284,20 @@ function UserDashboard() {
           <FilterBar onFilterChange={handleFilterChange} currentFilters={filters} />
         </div>
 
+        {isLatestItemsView && (
+          <div className='w-full'>
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${isDark ? 'bg-[#16213e] text-orange-200 border-orange-300/30' : 'bg-orange-50 text-[#ff4d2d] border-orange-200'}`}>
+              Showing: Latest Items
+            </span>
+          </div>
+        )}
+
         {updatedItemsList?.length === 0 ? (
           <div className='w-full py-10 text-center'>
             <p className='text-gray-500 text-lg'>No items match your filters</p>
             <button
               className='mt-2 text-[#ff4d2d] hover:underline'
-              onClick={() => handleFilterChange({ foodType: 'all', minPrice: 0, maxPrice: 1000, minRating: 0 })}
+              onClick={() => handleFilterChange({ foodType: 'all', minPrice: 0, maxPrice: 1000, minRating: 0, sortBy: 'default' })}
             >
               Reset Filters
             </button>

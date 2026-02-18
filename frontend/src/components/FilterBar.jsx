@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { FaFilter, FaLeaf, FaDrumstickBite, FaStar } from 'react-icons/fa'
+import React, { useEffect, useState } from 'react'
+import { FaFilter, FaLeaf, FaDrumstickBite, FaStar, FaClock } from 'react-icons/fa'
 
 function FilterBar({ onFilterChange, currentFilters }) {
     const [showFilters, setShowFilters] = useState(false)
@@ -7,8 +7,19 @@ function FilterBar({ onFilterChange, currentFilters }) {
         foodType: currentFilters?.foodType || 'all',
         minPrice: currentFilters?.minPrice || 0,
         maxPrice: currentFilters?.maxPrice || 1000,
-        minRating: currentFilters?.minRating || 0
+        minRating: currentFilters?.minRating || 0,
+        sortBy: currentFilters?.sortBy || 'default'
     })
+
+    useEffect(() => {
+        setFilters({
+            foodType: currentFilters?.foodType || 'all',
+            minPrice: currentFilters?.minPrice || 0,
+            maxPrice: currentFilters?.maxPrice || 1000,
+            minRating: currentFilters?.minRating || 0,
+            sortBy: currentFilters?.sortBy || 'default'
+        })
+    }, [currentFilters])
 
     const handleFilterChange = (key, value) => {
         const newFilters = { ...filters, [key]: value }
@@ -21,7 +32,8 @@ function FilterBar({ onFilterChange, currentFilters }) {
             foodType: 'all',
             minPrice: 0,
             maxPrice: 1000,
-            minRating: 0
+            minRating: 0,
+            sortBy: 'default'
         }
         setFilters(defaultFilters)
         onFilterChange(defaultFilters)
@@ -31,23 +43,37 @@ function FilterBar({ onFilterChange, currentFilters }) {
         filters.foodType !== 'all',
         filters.minPrice > 0,
         filters.maxPrice < 1000,
-        filters.minRating > 0
+        filters.minRating > 0,
+        filters.sortBy !== 'default'
     ].filter(Boolean).length
 
     return (
         <div className='w-full mb-4'>
-            <button
-                className='flex items-center gap-2 px-4 py-2 bg-white border-2 border-[#ff4d2d] rounded-full text-[#ff4d2d] font-medium hover:bg-[#ff4d2d] hover:text-white transition-all'
-                onClick={() => setShowFilters(!showFilters)}
-            >
-                <FaFilter size={14} />
-                <span>Filters</span>
-                {activeFilterCount > 0 && (
-                    <span className='bg-[#ff4d2d] text-white px-2 py-0.5 rounded-full text-xs'>
-                        {activeFilterCount}
-                    </span>
-                )}
-            </button>
+            <div className='flex items-center gap-2 flex-wrap'>
+                <button
+                    className='flex items-center gap-2 px-4 py-2 bg-white border-2 border-[#ff4d2d] rounded-full text-[#ff4d2d] font-medium hover:bg-[#ff4d2d] hover:text-white transition-all'
+                    onClick={() => setShowFilters(!showFilters)}
+                >
+                    <FaFilter size={14} />
+                    <span>Filters</span>
+                    {activeFilterCount > 0 && (
+                        <span className='bg-[#ff4d2d] text-white px-2 py-0.5 rounded-full text-xs'>
+                            {activeFilterCount}
+                        </span>
+                    )}
+                </button>
+
+                <button
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 font-medium transition-all ${filters.sortBy === 'latest'
+                        ? 'bg-[#ff4d2d] border-[#ff4d2d] text-white'
+                        : 'bg-white border-[#ff4d2d] text-[#ff4d2d] hover:bg-[#ff4d2d] hover:text-white'
+                        }`}
+                    onClick={() => handleFilterChange('sortBy', filters.sortBy === 'latest' ? 'default' : 'latest')}
+                >
+                    <FaClock size={14} />
+                    <span>Latest Update</span>
+                </button>
+            </div>
 
             {showFilters && (
                 <div className='mt-3 p-4 bg-white rounded-xl shadow-lg border animate-slide-in'>
@@ -147,6 +173,31 @@ function FilterBar({ onFilterChange, currentFilters }) {
                                     )}
                                 </button>
                             ))}
+                        </div>
+                    </div>
+
+                    <div className='mt-4'>
+                        <p className='block text-sm font-medium text-gray-700 mb-2'>Latest Item</p>
+                        <div className='flex gap-2 flex-wrap'>
+                            <button
+                                className={`px-3 py-1.5 rounded-full text-sm transition ${filters.sortBy === 'default'
+                                    ? 'bg-[#ff4d2d] text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                onClick={() => handleFilterChange('sortBy', 'default')}
+                            >
+                                Default
+                            </button>
+                            <button
+                                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition ${filters.sortBy === 'latest'
+                                    ? 'bg-[#ff4d2d] text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                onClick={() => handleFilterChange('sortBy', 'latest')}
+                            >
+                                <FaClock size={12} />
+                                Latest Item
+                            </button>
                         </div>
                     </div>
                 </div>

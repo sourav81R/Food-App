@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { FaSun, FaCloudSun, FaMoon, FaClock, FaUtensils } from 'react-icons/fa'
+import { FaSun, FaCloudSun, FaMoon, FaClock, FaUtensils, FaMugHot } from 'react-icons/fa'
 import { useTheme } from '../context/ThemeContext'
 import FoodCard from './FoodCard'
 
@@ -22,6 +22,15 @@ const mealConfig = {
         categories: ['Main Course', 'Chinese', 'Pizza'],
         keywords: ['biryani', 'curry', 'rice', 'paneer', 'chicken', 'thali', 'roti', 'naan']
     },
+    teaBreak: {
+        name: 'Tea Break',
+        icon: FaMugHot,
+        greeting: 'Tea Break Time!',
+        description: 'Take a break with tea-time snacks',
+        color: 'from-orange-500 to-amber-400',
+        categories: ['Snacks', 'Fast Food', 'Desserts'],
+        keywords: ['tea', 'chai', 'coffee', 'pakora', 'samosa', 'sandwich', 'biscuit', 'toast']
+    },
     dinner: {
         name: 'Evening',
         icon: FaMoon,
@@ -42,11 +51,12 @@ const mealConfig = {
     }
 }
 
-const mealOptions = ['breakfast', 'lunch', 'dinner', 'snacks']
+const mealOptions = ['breakfast', 'lunch', 'teaBreak', 'dinner', 'snacks']
 
 const getMealKeyByHour = (hour) => {
     if (hour >= 6 && hour < 12) return 'breakfast'
-    if (hour >= 12 && hour < 18) return 'lunch'
+    if (hour >= 12 && hour < 15) return 'lunch'
+    if (hour >= 15 && hour < 18) return 'teaBreak'
     if (hour >= 18 && hour < 24) return 'dinner'
     return 'snacks' // 12:00 AM to 5:59 AM
 }
