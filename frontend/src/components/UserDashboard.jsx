@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Nav from './Nav'
 import { categories } from '../category'
 import CategoryCard from './CategoryCard'
@@ -13,6 +13,10 @@ import FilterBar from './FilterBar';
 import MealTimeSection from './MealTimeSection';
 import WelcomeCelebration from './WelcomeCelebration';
 import { useTheme } from '../context/ThemeContext';
+
+const TEA_BREAK_CATEGORIES = ['Snacks', 'Fast Food', 'Desserts', 'Sandwiches', 'Others']
+const TEA_BREAK_KEYWORDS = ['tea', 'chai', 'coffee', 'cappuccino', 'espresso', 'latte', 'mocha', 'cold brew', 'samosa', 'toast', 'biscuit', 'sandwich']
+const TEA_BREAK_SHOP_KEYWORDS = ['tea', 'chai', 'coffee', 'cafe', 'brew']
 
 function UserDashboard() {
   const { userData, currentCity, shopInMyCity, itemsInMyCity, searchItems } = useSelector(state => state.user)
@@ -74,13 +78,10 @@ function UserDashboard() {
 
     // Category filter
     if (category === 'Tea Break') {
-      const teaBreakCategories = ['Snacks', 'Fast Food', 'Desserts', 'Sandwiches']
-      const teaBreakKeywords = ['tea', 'chai', 'coffee', 'pakora', 'samosa', 'biscuit', 'toast', 'sandwich']
-
       filtered = filtered.filter((item) => {
-        const categoryMatch = teaBreakCategories.includes(item.category)
+        const categoryMatch = TEA_BREAK_CATEGORIES.includes(item.category)
         const name = item?.name?.toLowerCase() || ''
-        const keywordMatch = teaBreakKeywords.some((keyword) => name.includes(keyword))
+        const keywordMatch = TEA_BREAK_KEYWORDS.some((keyword) => name.includes(keyword))
         return categoryMatch || keywordMatch
       })
     } else if (category !== 'All') {
@@ -118,9 +119,29 @@ function UserDashboard() {
     setUpdatedItemsList(filtered)
   }
 
+  const displayedShops = useMemo(() => {
+    const sourceShops = Array.isArray(shopInMyCity) ? shopInMyCity : []
+    if (activeCategory !== 'Tea Break') {
+      return sourceShops
+    }
+
+    return sourceShops.filter((shop) => {
+      const shopName = (shop?.name || '').toLowerCase()
+      const shopNameMatch = TEA_BREAK_SHOP_KEYWORDS.some((keyword) => shopName.includes(keyword))
+      const itemMatch = Array.isArray(shop?.items) && shop.items.some((item) => {
+        const categoryMatch = TEA_BREAK_CATEGORIES.includes(item?.category)
+        const itemName = (item?.name || '').toLowerCase()
+        const keywordMatch = TEA_BREAK_KEYWORDS.some((keyword) => itemName.includes(keyword))
+        return categoryMatch || keywordMatch
+      })
+
+      return shopNameMatch || itemMatch
+    })
+  }, [activeCategory, shopInMyCity])
+
   useEffect(() => {
-    setUpdatedItemsList(itemsInMyCity)
-  }, [itemsInMyCity])
+    applyFilters(itemsInMyCity || [], activeCategory, filters)
+  }, [itemsInMyCity, activeCategory, filters])
 
 
   const updateButton = (ref, setLeftButton, setRightButton) => {
@@ -275,7 +296,7 @@ function UserDashboard() {
             onMouseEnter={() => setIsShopPaused(true)}
             onMouseLeave={() => setIsShopPaused(false)}
           >
-            {shopInMyCity?.map((shop, index) => (
+            {displayedShops?.map((shop, index) => (
               <CategoryCard name={shop.name} image={shop.image} key={index} onClick={() => navigate(`/shop/${shop._id}`)} />
             ))}
           </div>
