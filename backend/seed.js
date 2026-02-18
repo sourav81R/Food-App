@@ -83,6 +83,18 @@ const ITEM_TEMPLATES = [
 ];
 
 const ITEMS_PER_SHOP = 10;
+const TEA_BREAK_DUMMY_SHOP = {
+  name: "Tea Break Junction",
+  city: "Kolkata",
+  state: "West Bengal",
+  address: "Camac Street, Kolkata",
+};
+const TEA_BREAK_DUMMY_ITEM = {
+  name: "Adrak Chai & Samosa Combo",
+  category: "Snacks",
+  foodType: "veg",
+  price: 79,
+};
 const LEGACY_SEEDED_SHOP_NAMES = [
   "Spice Garden",
   "Tandoori Nights",
@@ -161,6 +173,12 @@ function buildSeedShops() {
       });
     }
   }
+
+  all.push({
+    ...TEA_BREAK_DUMMY_SHOP,
+    image: seededShopImage(`shop-${toSlug(TEA_BREAK_DUMMY_SHOP.name)}`),
+  });
+
   return all;
 }
 
@@ -194,6 +212,26 @@ function buildSeedItems(seedShops) {
         shopName: shop.name,
       });
     }
+  }
+
+  const teaBreakShop = seedShops.find((shop) => shop.name === TEA_BREAK_DUMMY_SHOP.name);
+  if (teaBreakShop) {
+    items.push({
+      name: TEA_BREAK_DUMMY_ITEM.name,
+      price: TEA_BREAK_DUMMY_ITEM.price,
+      category: TEA_BREAK_DUMMY_ITEM.category,
+      foodType: TEA_BREAK_DUMMY_ITEM.foodType,
+      image: seededItemImage(
+        `item-${toSlug(TEA_BREAK_DUMMY_SHOP.name)}-${toSlug(TEA_BREAK_DUMMY_ITEM.name)}`,
+        TEA_BREAK_DUMMY_ITEM.name,
+        TEA_BREAK_DUMMY_ITEM.category
+      ),
+      rating: {
+        average: 4.6,
+        count: 120,
+      },
+      shopName: TEA_BREAK_DUMMY_SHOP.name,
+    });
   }
 
   return items;
@@ -271,7 +309,7 @@ async function seedDatabase() {
     console.log("Seed complete");
     console.log(`Restaurants created: ${createdShops.length}`);
     console.log(`Food items created: ${createdItemsCount}`);
-    console.log(`Items per restaurant: ${ITEMS_PER_SHOP}`);
+    console.log(`Items per restaurant: ${ITEMS_PER_SHOP} (+ Tea Break dummy item)`);
     console.log("Locations covered: Baruipur, Kolkata, Bidhan Nagar, Salt Lake Sector-V, Medinipur");
   } catch (error) {
     console.error("Seed error:", error.message);

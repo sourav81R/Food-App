@@ -73,7 +73,17 @@ function UserDashboard() {
     let filtered = [...items]
 
     // Category filter
-    if (category !== 'All') {
+    if (category === 'Tea Break') {
+      const teaBreakCategories = ['Snacks', 'Fast Food', 'Desserts', 'Sandwiches']
+      const teaBreakKeywords = ['tea', 'chai', 'coffee', 'pakora', 'samosa', 'biscuit', 'toast', 'sandwich']
+
+      filtered = filtered.filter((item) => {
+        const categoryMatch = teaBreakCategories.includes(item.category)
+        const name = item?.name?.toLowerCase() || ''
+        const keywordMatch = teaBreakKeywords.some((keyword) => name.includes(keyword))
+        return categoryMatch || keywordMatch
+      })
+    } else if (category !== 'All') {
       filtered = filtered.filter(item => item.category === category)
     }
 
