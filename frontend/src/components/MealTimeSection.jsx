@@ -23,10 +23,10 @@ const mealConfig = {
         keywords: ['biryani', 'curry', 'rice', 'paneer', 'chicken', 'thali', 'roti', 'naan']
     },
     dinner: {
-        name: 'Dinner',
+        name: 'Evening',
         icon: FaMoon,
         greeting: 'Good Evening!',
-        description: 'End your day with these comforting dinner dishes',
+        description: 'Enjoy comforting evening dishes',
         color: 'from-purple-500 to-indigo-500',
         categories: ['Main Course', 'Chinese'],
         keywords: ['biryani', 'butter chicken', 'paneer', 'dal', 'naan', 'rogan josh', 'manchurian']
@@ -45,10 +45,10 @@ const mealConfig = {
 const mealOptions = ['breakfast', 'lunch', 'dinner', 'snacks']
 
 const getMealKeyByHour = (hour) => {
-    if (hour >= 6 && hour < 11) return 'breakfast'
-    if (hour >= 11 && hour < 16) return 'lunch'
-    if (hour >= 16 && hour < 23) return 'dinner'
-    return 'snacks'
+    if (hour >= 6 && hour < 12) return 'breakfast'
+    if (hour >= 12 && hour < 18) return 'lunch'
+    if (hour >= 18 && hour < 24) return 'dinner'
+    return 'snacks' // 12:00 AM to 5:59 AM
 }
 
 function MealTimeSection({ items }) {

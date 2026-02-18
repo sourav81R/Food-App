@@ -211,7 +211,7 @@ function UserDashboard() {
         </div>
       )}
 
-      {/* Meal Time Section - Breakfast/Lunch/Dinner based on time */}
+      {/* Meal Time Section - Breakfast/Lunch/Evening/Snacks based on time */}
       {itemsInMyCity && itemsInMyCity.length > 0 && (
         <MealTimeSection items={itemsInMyCity} />
       )}
