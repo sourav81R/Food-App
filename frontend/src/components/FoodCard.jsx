@@ -104,14 +104,14 @@ function FoodCard({ data }) {
     }
 
     return (
-        <div className='w-full sm:w-[250px] rounded-2xl border-2 border-[#ff4d2d] bg-white shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col'>
+        <div className='group w-full sm:w-[250px] rounded-2xl border-2 border-[#ff4d2d] bg-white shadow-md overflow-hidden hover:shadow-2xl hover:-translate-y-1 hover:border-[#ff6b50] transition-all duration-300 flex flex-col'>
             <div className='relative w-full h-[150px] sm:h-[170px] flex justify-center items-center bg-white overflow-hidden'>
                 {/* Image - behind buttons */}
                 <img
                     src={resolvedItemImage}
                     alt={data.name}
                     loading='lazy'
-                    className='w-full h-full object-cover'
+                    className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
                     onError={(event) => {
                         if (event.currentTarget.src === fallbackItemImage) {
                             return
@@ -145,8 +145,8 @@ function FoodCard({ data }) {
                 </button>
             </div>
 
-            <div className="flex-1 flex flex-col p-3 sm:p-4">
-                <h1 className='font-semibold text-gray-900 text-sm sm:text-base truncate'>{data.name}</h1>
+            <div className="flex-1 flex flex-col p-3 sm:p-4 transition-colors duration-300 group-hover:bg-orange-50/40">
+                <h1 className='font-semibold text-gray-900 text-sm sm:text-base truncate transition-colors duration-300 group-hover:text-[#ff4d2d]'>{data.name}</h1>
                 <div className='flex items-center gap-1 mt-1'>
                     {renderStars(data.rating?.average || 0)}
                     <span className='text-xs text-gray-500'>
