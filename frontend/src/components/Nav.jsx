@@ -119,7 +119,7 @@ function Nav() {
             )}
 
             {/* Logo */}
-            <h1 className='text-xl sm:text-2xl md:text-3xl font-bold italic text-[#ff4d2d] drop-shadow-sm shrink-0'>PetPooja</h1>
+            <h1 className='text-xl sm:text-2xl md:text-3xl font-bold italic text-[#ff4d2d] drop-shadow-sm shrink-0'>Foodooza</h1>
 
             {/* Desktop Search Bar - Enhanced */}
             {userData.role == "user" && (

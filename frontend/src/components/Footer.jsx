@@ -11,7 +11,7 @@ function Footer() {
   const companyInfo = {
     about: {
       title: 'About Us',
-      text: 'PetPooja is a full-stack food delivery project where users can discover restaurants, search food items, place orders, and track deliveries. It includes role-based dashboards for users, restaurant owners, delivery partners, and admin management.'
+      text: 'Foodooza is a full-stack food delivery project where users can discover restaurants, search food items, place orders, and track deliveries. It includes role-based dashboards for users, restaurant owners, delivery partners, and admin management.'
     },
     careers: {
       title: 'Careers',
@@ -19,11 +19,11 @@ function Footer() {
     },
     privacy: {
       title: 'Privacy Policy',
-      text: 'PetPooja stores only required account and order data to provide food delivery features. We do not sell personal information, and data access is limited to relevant roles in the platform.'
+      text: 'Foodooza stores only required account and order data to provide food delivery features. We do not sell personal information, and data access is limited to relevant roles in the platform.'
     },
     terms: {
       title: 'Terms of Service',
-      text: 'By using PetPooja, users agree to provide accurate account details, follow platform rules, and use the service lawfully. Orders, delivery updates, and account actions are subject to application workflows.'
+      text: 'By using Foodooza, users agree to provide accurate account details, follow platform rules, and use the service lawfully. Orders, delivery updates, and account actions are subject to application workflows.'
     }
   };
 
@@ -35,7 +35,7 @@ function Footer() {
       <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:py-12">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5">
           <div>
-            <h3 className="mb-4 text-2xl font-bold italic text-[#ff4d2d]">PetPooja</h3>
+            <h3 className="mb-4 text-2xl font-bold italic text-[#ff4d2d]">Foodooza</h3>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Delivering happiness, one order at a time.</p>
             <div className="mt-5 flex items-center gap-3">
               <a
@@ -155,7 +155,7 @@ function Footer() {
               </li>
               <li className="flex items-start gap-3">
                 <FiMail className="mt-1 text-[#ff4d2d]" />
-                <span>support@petpooja.com</span>
+                <span>support@foodooza.com</span>
               </li>
             </ul>
           </div>
@@ -207,7 +207,7 @@ function Footer() {
         )}
 
         <div className="mt-10 border-t pt-5 text-center text-sm" style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
-          <p>&copy; {currentYear} PetPooja. All rights reserved.</p>
+          <p>&copy; {currentYear} Foodooza. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -7,9 +7,9 @@ import { getAuth } from "firebase/auth";
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey:import.meta.env.VITE_FIREBASE_APIKEY,
-  authDomain: "petpooja.firebaseapp.com",
-  projectId: "petpooja-food-delivery",
-  storageBucket: "petpooja-food-delivery.firebasestorage.app",
+  authDomain: "foodooza.firebaseapp.com",
+  projectId: "foodooza-food-delivery",
+  storageBucket: "foodooza-food-delivery.firebasestorage.app",
   messagingSenderId: "693314883513",
   appId: "1:693314883513:web:4840c943ecf3fb61a33068"
 };

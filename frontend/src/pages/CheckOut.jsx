@@ -182,7 +182,7 @@ function CheckOut() {
       key: keyToUse,
       amount: razorOrder.amount,
       currency: 'INR',
-      name: "PetPooja",
+      name: "Foodooza",
       description: "Food Delivery Order",
       order_id: razorOrder.id,
       handler: async function (response) {

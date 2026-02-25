@@ -90,7 +90,7 @@ function SignIn() {
     <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6" style={{ backgroundColor: bgColor }}>
       <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 sm:p-8 border-[1px]" style={{ border: `1px solid ${borderColor}` }}>
         <h1 className="text-2xl sm:text-3xl font-bold mb-2 italic" style={{ color: primaryColor }}>
-          PetPooja
+          Foodooza
         </h1>
 
         <p className="text-gray-600 mb-6 sm:mb-8 text-sm sm:text-base">Sign In to your account to get started with delicious food deliveries</p>

@@ -13,7 +13,7 @@ export const useTheme = () => {
 export const ThemeProvider = ({ children }) => {
     const [theme, setTheme] = useState(() => {
         // Check localStorage first
-        const savedTheme = localStorage.getItem('petpooja-theme');
+        const savedTheme = localStorage.getItem('foodooza-theme');
         if (savedTheme) return savedTheme;
 
         // Check system preference
@@ -25,7 +25,7 @@ export const ThemeProvider = ({ children }) => {
 
     useEffect(() => {
         // Update localStorage
-        localStorage.setItem('petpooja-theme', theme);
+        localStorage.setItem('foodooza-theme', theme);
 
         // Update document attribute
         document.documentElement.setAttribute('data-theme', theme);

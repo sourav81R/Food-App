@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { setCurrentAddress, setCurrentCity, setCurrentState } from '../redux/userSlice'
 import { setAddress, setLocation } from '../redux/mapSlice'
 
-const LOCATION_CACHE_KEY = 'petpooja:lastReverseGeo'
+const LOCATION_CACHE_KEY = 'foodooza:lastReverseGeo'
 const CACHE_TTL_MS = 10 * 60 * 1000
 
 function useGetCity() {

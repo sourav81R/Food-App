@@ -1,6 +1,6 @@
-# 🍕 PetPooja - Real-Time Food Delivery App
+# 🍕 Foodooza - Real-Time Food Delivery App
 
-**PetPooja** is a **real-time food delivery web application** built using the **MERN stack (MongoDB, Express.js, React, Node.js)**.  
+**Foodooza** is a **real-time food delivery web application** built using the **MERN stack (MongoDB, Express.js, React, Node.js)**.  
 It allows users to browse restaurants, order food, and track delivery status live — all within a modern, responsive, and interactive interface.  
 The app also includes an **admin panel** for managing orders, restaurants, and users efficiently.
 
@@ -51,8 +51,8 @@ The app also includes an **admin panel** for managing orders, restaurants, and u
 
 ### 1️⃣ Clone the Repository
 ```bash
-git clone https://github.com/sourav81R/petpooja.git
-cd petpooja
+git clone https://github.com/sourav81R/foodooza.git
+cd foodooza
 
 cd backend
 npm install
