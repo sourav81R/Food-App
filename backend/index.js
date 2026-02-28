@@ -24,6 +24,7 @@ import favoriteRouter from "./routes/favorite.routes.js";
 import couponRouter from "./routes/coupon.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import deliveryRouter from "./routes/delivery.routes.js";
+import reviewRouter from "./routes/review.routes.js";
 import { socketHandler } from "./socket.js";
 import { bootstrapAdminFromEnv } from "./utils/bootstrapAdmin.js";
 
@@ -65,6 +66,7 @@ app.use("/api/favorite", favoriteRouter);
 app.use("/api/coupon", couponRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/delivery", deliveryRouter);
+app.use("/api/reviews", reviewRouter);
 
 // ✅ Socket handler
 socketHandler(io);

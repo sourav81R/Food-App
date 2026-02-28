@@ -17,6 +17,7 @@ const SAMPLE_SECRETS = new Set([
 ])
 const ACTIVE_DELIVERY_STATUSES = new Set(["assigned", "picked_up", "on_the_way"])
 const FIXED_DELIVERY_DURATION_SECONDS = 30 * 60
+const DELIVERY_CHARGE_PER_ORDER = 15
 
 const normalizeEnvValue = (value = "") =>
     String(value).trim().replace(/^['"]|['"]$/g, "")
@@ -858,21 +859,28 @@ export const getTodayDeliveries=async (req,res) => {
         const deliveryBoyId=req.userId
         const startsOfDay=new Date()
         startsOfDay.setHours(0,0,0,0)
+        const endsOfDay = new Date(startsOfDay)
+        endsOfDay.setDate(endsOfDay.getDate() + 1)
 
         const orders=await Order.find({
-           "shopOrders.assignedDeliveryBoy":deliveryBoyId,
-           "shopOrders.status":"delivered",
-           "shopOrders.deliveredAt":{$gte:startsOfDay}
-        }).lean()
+           shopOrders: {
+            $elemMatch: {
+                assignedDeliveryBoy: deliveryBoyId,
+                status: "delivered",
+                deliveredAt: { $gte: startsOfDay, $lt: endsOfDay }
+            }
+           }
+        }).select("shopOrders.assignedDeliveryBoy shopOrders.status shopOrders.deliveredAt").lean()
 
      let todaysDeliveries=[] 
      
      orders.forEach(order=>{
         order.shopOrders.forEach(shopOrder=>{
-            if(shopOrder.assignedDeliveryBoy==deliveryBoyId &&
-                shopOrder.status=="delivered" &&
+            if(String(shopOrder.assignedDeliveryBoy) === String(deliveryBoyId) &&
+                shopOrder.status === "delivered" &&
                 shopOrder.deliveredAt &&
-                shopOrder.deliveredAt>=startsOfDay
+                new Date(shopOrder.deliveredAt) >= startsOfDay &&
+                new Date(shopOrder.deliveredAt) < endsOfDay
             ){
                 todaysDeliveries.push(shopOrder)
             }
@@ -893,7 +901,15 @@ let formattedStats=Object.keys(stats).map(hour=>({
 
 formattedStats.sort((a,b)=>a.hour-b.hour)
 
-return res.status(200).json(formattedStats)
+const totalDeliveries=todaysDeliveries.length
+const totalEarning=totalDeliveries * DELIVERY_CHARGE_PER_ORDER
+
+return res.status(200).json({
+    hourlyStats: formattedStats,
+    totalDeliveries,
+    ratePerDelivery: DELIVERY_CHARGE_PER_ORDER,
+    totalEarning
+})
   
 
     } catch (error) {

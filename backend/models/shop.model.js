@@ -29,7 +29,18 @@ const shopSchema=new mongoose.Schema({
     items:[{
         type:mongoose.Schema.Types.ObjectId,
         ref:"Item"
-    }]
+    }],
+    averageRating: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5
+    },
+    totalReviews: {
+        type: Number,
+        default: 0,
+        min: 0
+    }
 
 },{timestamps:true})
 

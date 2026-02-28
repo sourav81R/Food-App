@@ -21,6 +21,10 @@ function Shop() {
     const {shopId}=useParams()
     const [items,setItems]=useState([])
     const [shop,setShop]=useState([])
+    const [shopReviews, setShopReviews] = useState([])
+    const [reviewLoading, setReviewLoading] = useState(true)
+    const [reviewError, setReviewError] = useState("")
+    const [reviewSummary, setReviewSummary] = useState({ averageRating: 0, totalReviews: 0 })
     const navigate=useNavigate()
     const fallbackHeroIndex = ([...(shop?.name || "shop")].reduce((acc, char) => acc + char.charCodeAt(0), 0) % fallbackHeroImages.length)
     const resolvedShopImage = !shop?.image || isNonFoodImageUrl(shop.image) ? fallbackHeroImages[fallbackHeroIndex] : shop.image
@@ -29,13 +33,57 @@ function Shop() {
            const result=await axios.get(`${serverUrl}/api/item/get-by-shop/${shopId}`,{withCredentials:true}) 
            setShop(result.data.shop)
            setItems(result.data.items)
+           setReviewSummary((prev) => ({
+            averageRating: Number(result?.data?.shop?.averageRating ?? prev.averageRating ?? 0),
+            totalReviews: Number(result?.data?.shop?.totalReviews ?? prev.totalReviews ?? 0)
+           }))
         } catch (error) {
             console.log(error)
         }
     }
 
+    const handleShopReviews = async () => {
+      try {
+        setReviewLoading(true)
+        setReviewError("")
+        const result = await axios.get(`${serverUrl}/api/reviews/restaurant/${shopId}`, { withCredentials: true })
+        const restaurant = result?.data?.restaurant || {}
+        setShopReviews(Array.isArray(result?.data?.reviews) ? result.data.reviews : [])
+        setReviewSummary({
+          averageRating: Number(restaurant?.averageRating || 0),
+          totalReviews: Number(restaurant?.totalReviews || 0)
+        })
+      } catch (error) {
+        setReviewError("Unable to load reviews right now.")
+        console.log(error)
+      } finally {
+        setReviewLoading(false)
+      }
+    }
+
+    const formatReviewDate = (dateString) => {
+      if (!dateString) return "-"
+      const date = new Date(dateString)
+      if (Number.isNaN(date.getTime())) return "-"
+      return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      })
+    }
+
+    const renderStars = (rating = 0) => {
+      const rounded = Math.round(Number(rating) || 0)
+      return [1, 2, 3, 4, 5].map((star) => (
+        <span key={star} className={rounded >= star ? "text-yellow-400" : "text-gray-300"}>
+          &#9733;
+        </span>
+      ))
+    }
+
     useEffect(()=>{
 handleShop()
+handleShopReviews()
     },[shopId])
   return (
     <div className='min-h-screen bg-gray-50'>
@@ -63,6 +111,11 @@ handleShop()
           <FaLocationDot size={22} color='red'/>
              <p className='text-sm sm:text-lg font-medium text-gray-200'>{shop.address}</p>
              </div>
+            <div className='mt-3 rounded-full bg-white/15 px-4 py-2 backdrop-blur-sm'>
+              <p className='text-white text-sm sm:text-base font-semibold'>
+                {Number(reviewSummary.averageRating || 0).toFixed(1)} / 5 | {reviewSummary.totalReviews} review{reviewSummary.totalReviews === 1 ? "" : "s"}
+              </p>
+            </div>
           </div>
        
         </div>}
@@ -77,6 +130,35 @@ handleShop()
         ))}
     </div>
 ):<p className='text-center text-gray-500 text-lg'>No Items Available</p>}
+</div>
+
+<div className='max-w-7xl mx-auto px-3 sm:px-6 pb-10'>
+<h2 className='text-2xl sm:text-3xl font-bold mb-6 text-gray-800'>Customer Reviews</h2>
+
+{reviewLoading ? (
+  <div className='flex justify-center py-8'>
+    <div className='w-8 h-8 border-4 border-[#ff4d2d] border-t-transparent rounded-full animate-spin'></div>
+  </div>
+) : reviewError ? (
+  <p className='rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-700'>{reviewError}</p>
+) : shopReviews.length === 0 ? (
+  <p className='rounded-lg border border-gray-200 bg-white px-4 py-6 text-gray-500 text-center'>No reviews yet. Be the first to review this restaurant.</p>
+) : (
+  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+    {shopReviews.map((review) => (
+      <div key={review?._id} className='rounded-xl border border-orange-100 bg-white p-4 shadow-sm space-y-2'>
+        <div className='flex justify-between items-start gap-3'>
+          <div>
+            <p className='font-semibold text-gray-800'>{review?.user?.fullName || "Foodooza User"}</p>
+            <p className='text-xs text-gray-500'>{formatReviewDate(review?.createdAt)}</p>
+          </div>
+          <div className='text-lg'>{renderStars(review?.rating)}</div>
+        </div>
+        <p className='text-sm text-gray-700 leading-relaxed'>{review?.comment || "-"}</p>
+      </div>
+    ))}
+  </div>
+)}
 </div>
 
 

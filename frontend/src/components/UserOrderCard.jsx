@@ -14,6 +14,9 @@ function UserOrderCard({ data }) {
     const dispatch = useDispatch()
     const toast = useToast()
     const [selectedRating, setSelectedRating] = useState({})
+    const [reviewDrafts, setReviewDrafts] = useState({})
+    const [reviewSubmittingByOrder, setReviewSubmittingByOrder] = useState({})
+    const [reviewStateByOrder, setReviewStateByOrder] = useState({})
     const [reordering, setReordering] = useState(false)
 
     const shopOrders = Array.isArray(data?.shopOrders) ? data.shopOrders : []
@@ -41,6 +44,77 @@ function UserOrderCard({ data }) {
         } catch (error) {
             toast.error("Failed to submit rating")
             console.log(error)
+        }
+    }
+
+    const updateReviewDraft = (shopOrderId, updates) => {
+        setReviewDrafts(prev => ({
+            ...prev,
+            [shopOrderId]: {
+                rating: prev?.[shopOrderId]?.rating || 0,
+                comment: prev?.[shopOrderId]?.comment || "",
+                ...updates
+            }
+        }))
+    }
+
+    const handleSubmitRestaurantReview = async (shopOrder) => {
+        const orderId = data?._id
+        const shopOrderId = shopOrder?._id
+        const restaurantId = shopOrder?.shop?._id || shopOrder?.shop
+
+        if (!orderId || !shopOrderId || !restaurantId) {
+            toast.error("Invalid order details for review")
+            return
+        }
+
+        const draft = reviewDrafts?.[shopOrderId] || {}
+        const rating = Number(draft.rating || 0)
+        const comment = String(draft.comment || "").trim()
+
+        if (rating < 1 || rating > 5) {
+            toast.warning("Please select a rating between 1 and 5")
+            return
+        }
+        if (!comment) {
+            toast.warning("Please add a short comment")
+            return
+        }
+
+        setReviewSubmittingByOrder(prev => ({ ...prev, [orderId]: true }))
+        try {
+            await axios.post(
+                `${serverUrl}/api/reviews`,
+                { orderId, restaurantId, rating, comment },
+                { withCredentials: true }
+            )
+
+            setReviewStateByOrder(prev => ({
+                ...prev,
+                [orderId]: { status: "submitted", message: "Thanks for your review." }
+            }))
+            setReviewDrafts(prev => ({
+                ...prev,
+                [shopOrderId]: { rating: 0, comment: "" }
+            }))
+            toast.success("Review submitted successfully")
+        } catch (error) {
+            const statusCode = Number(error?.response?.status)
+            const apiMessage = error?.response?.data?.message
+
+            if (statusCode === 409) {
+                setReviewStateByOrder(prev => ({
+                    ...prev,
+                    [orderId]: { status: "exists", message: "Review already submitted for this order." }
+                }))
+                toast.info("You already reviewed this order")
+                return
+            }
+
+            toast.error(apiMessage || "Failed to submit review")
+            console.log(error)
+        } finally {
+            setReviewSubmittingByOrder(prev => ({ ...prev, [orderId]: false }))
         }
     }
 
@@ -92,6 +166,17 @@ function UserOrderCard({ data }) {
 
     return (
         <div className='bg-white rounded-lg shadow p-4 space-y-4'>
+            {reviewStateByOrder?.[data?._id]?.message && (
+                <div
+                    className={`rounded-lg px-3 py-2 text-sm ${
+                        reviewStateByOrder?.[data?._id]?.status === "submitted"
+                            ? "border border-green-200 bg-green-50 text-green-700"
+                            : "border border-amber-200 bg-amber-50 text-amber-700"
+                    }`}
+                >
+                    {reviewStateByOrder?.[data?._id]?.message}
+                </div>
+            )}
             <div className='flex flex-col sm:flex-row sm:justify-between border-b pb-2 gap-2'>
                 <div>
                     <p className='font-semibold'>
@@ -141,6 +226,43 @@ function UserOrderCard({ data }) {
                             )
                         })}
                     </div>
+
+                    {shopOrder?.status == "delivered" && !reviewStateByOrder?.[data?._id] && (
+                        <div className='rounded-lg border border-orange-200 bg-orange-50 p-3 space-y-3'>
+                            <p className='text-sm font-semibold text-gray-800'>Rate your restaurant experience</p>
+                            <div className='flex items-center gap-1'>
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                        key={star}
+                                        type='button'
+                                        className={`text-2xl ${Number(reviewDrafts?.[shopOrder?._id]?.rating || 0) >= star ? 'text-yellow-400' : 'text-gray-300'} hover:text-yellow-400`}
+                                        onClick={() => updateReviewDraft(shopOrder?._id, { rating: star })}
+                                    >
+                                        &#9733;
+                                    </button>
+                                ))}
+                            </div>
+                            <textarea
+                                className='w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none focus:border-[#ff4d2d]'
+                                rows={3}
+                                placeholder='Share your feedback about food quality, delivery, and service'
+                                value={reviewDrafts?.[shopOrder?._id]?.comment || ""}
+                                onChange={(event) => updateReviewDraft(shopOrder?._id, { comment: event.target.value })}
+                                maxLength={1000}
+                            />
+                            <div className='flex justify-end'>
+                                <button
+                                    type='button'
+                                    className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-4 py-2 rounded-lg text-sm disabled:opacity-60'
+                                    disabled={Boolean(reviewSubmittingByOrder?.[data?._id])}
+                                    onClick={() => handleSubmitRestaurantReview(shopOrder)}
+                                >
+                                    {reviewSubmittingByOrder?.[data?._id] ? "Submitting..." : "Submit Review"}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center border-t pt-2 gap-2'>
                         <p className='font-semibold'>Subtotal: Rs {shopOrder?.subtotal || 0}</p>
                         <span className='text-sm font-medium text-blue-600'>{shopOrder?.status || "pending"}</span>

@@ -19,6 +19,11 @@ function DeliveryBoy() {
   const [availableAssignments,setAvailableAssignments]=useState(null)
   const [otp,setOtp]=useState("")
   const [todayDeliveries,setTodayDeliveries]=useState([])
+  const [earningSummary, setEarningSummary] = useState({
+    totalDeliveries: 0,
+    ratePerDelivery: 15,
+    totalEarning: 0
+  })
 const [deliveryBoyLocation,setDeliveryBoyLocation]=useState(null)
 const [loading,setLoading]=useState(false)
 const [message,setMessage]=useState("")
@@ -54,12 +59,6 @@ return ()=>{
 }
 
   },[socket,userData?._id,userData?.role])
-
-
-const ratePerDelivery=50
-const totalEarning=todayDeliveries.reduce((sum,d)=>sum + d.count*ratePerDelivery,0)
-
-
 
   const getAssignments=async () => {
     try {
@@ -135,8 +134,31 @@ const totalEarning=todayDeliveries.reduce((sum,d)=>sum + d.count*ratePerDelivery
     
     try {
       const result=await axios.get(`${serverUrl}/api/order/get-today-deliveries`,{withCredentials:true})
-    console.log(result.data)
-   setTodayDeliveries(result.data)
+      const payload = result.data
+
+      if (Array.isArray(payload)) {
+        const totalDeliveries = payload.reduce((sum, entry) => sum + Number(entry?.count || 0), 0)
+        const ratePerDelivery = 15
+        setTodayDeliveries(payload)
+        setEarningSummary({
+          totalDeliveries,
+          ratePerDelivery,
+          totalEarning: totalDeliveries * ratePerDelivery
+        })
+        return
+      }
+
+      const hourlyStats = Array.isArray(payload?.hourlyStats) ? payload.hourlyStats : []
+      const totalDeliveries = Number(payload?.totalDeliveries || 0)
+      const ratePerDelivery = Number(payload?.ratePerDelivery || 15)
+      const totalEarning = Number(payload?.totalEarning || (totalDeliveries * ratePerDelivery))
+
+      setTodayDeliveries(hourlyStats)
+      setEarningSummary({
+        totalDeliveries,
+        ratePerDelivery,
+        totalEarning
+      })
     } catch (error) {
       console.log(error)
     }
@@ -172,7 +194,10 @@ handleTodayDeliveries()
 
   <div className='w-full max-w-sm mx-auto mt-6 p-5 sm:p-6 bg-white rounded-2xl shadow-lg text-center'>
 <h1 className='text-xl font-semibold text-gray-800 mb-2'>Today's Earning</h1>
-<span className='text-3xl font-bold text-green-600'>₹{totalEarning}</span>
+<p className='text-sm text-gray-500 mb-1'>
+  {earningSummary.totalDeliveries} delivered x Rs {earningSummary.ratePerDelivery}
+</p>
+<span className='text-3xl font-bold text-green-600'>Rs {earningSummary.totalEarning}</span>
   </div>
 </div>
 
@@ -236,3 +261,4 @@ availableAssignments.map((a,index)=>(
 }
 
 export default DeliveryBoy
+
