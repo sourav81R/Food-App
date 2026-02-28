@@ -406,7 +406,7 @@ export const getMyOrders = async (req, res) => {
                 _id: order._id,
                 paymentMethod: order.paymentMethod,
                 user: order.user,
-                shopOrders: order.shopOrders.find(o => o.owner._id == req.userId),
+                shopOrders: order.shopOrders.find((o) => String(o.owner._id) === String(req.userId)),
                 createdAt: order.createdAt,
                 deliveryAddress: order.deliveryAddress,
                 payment: order.payment
@@ -433,7 +433,7 @@ export const updateOrderStatus = async (req, res) => {
             return res.status(404).json({ message: "order not found" })
         }
 
-        const shopOrder = order.shopOrders.find(o => o.shop == shopId)
+        const shopOrder = order.shopOrders.find((o) => String(o.shop) === String(shopId))
         if (!shopOrder) {
             return res.status(400).json({ message: "shop order not found" })
         }
@@ -516,7 +516,7 @@ export const updateOrderStatus = async (req, res) => {
 
 
         await order.save()
-        const updatedShopOrder = order.shopOrders.find(o => o.shop == shopId)
+        const updatedShopOrder = order.shopOrders.find((o) => String(o.shop) === String(shopId))
         await order.populate("shopOrders.shop", "name")
         await order.populate("shopOrders.assignedDeliveryBoy", "fullName email mobile")
         await order.populate("user", "socketId")
@@ -609,6 +609,9 @@ export const acceptOrder = async (req, res) => {
         }
 
         let shopOrder = order.shopOrders.id(assignment.shopOrderId)
+        if (!shopOrder) {
+            return res.status(400).json({ message: "shop order not found" })
+        }
         shopOrder.assignedDeliveryBoy = req.userId
         await order.save()
 
@@ -811,9 +814,12 @@ export const sendDeliveryOtp = async (req, res) => {
     try {
         const { orderId, shopOrderId } = req.body
         const order = await Order.findById(orderId).populate("user")
+        if (!order) {
+            return res.status(400).json({ message: "order not found" })
+        }
         const shopOrder = order.shopOrders.id(shopOrderId)
-        if (!order || !shopOrder) {
-            return res.status(400).json({ message: "enter valid order/shopOrderid" })
+        if (!shopOrder) {
+            return res.status(400).json({ message: "shop order not found" })
         }
         const otp = Math.floor(1000 + Math.random() * 9000).toString()
         shopOrder.deliveryOtp = otp
@@ -830,9 +836,12 @@ export const verifyDeliveryOtp = async (req, res) => {
     try {
         const { orderId, shopOrderId, otp } = req.body
         const order = await Order.findById(orderId).populate("user")
+        if (!order) {
+            return res.status(400).json({ message: "order not found" })
+        }
         const shopOrder = order.shopOrders.id(shopOrderId)
-        if (!order || !shopOrder) {
-            return res.status(400).json({ message: "enter valid order/shopOrderid" })
+        if (!shopOrder) {
+            return res.status(400).json({ message: "shop order not found" })
         }
         if (shopOrder.deliveryOtp !== otp || !shopOrder.otpExpires || shopOrder.otpExpires < Date.now()) {
             return res.status(400).json({ message: "Invalid/Expired Otp" })

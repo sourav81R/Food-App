@@ -14,6 +14,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "../config/firebase";
+import { isAdminRole, isDeliveryRole, isOwnerRole, isUserRole, normalizeClientRole } from '../utils/roles';
 
 function Nav() {
     const { userData, currentCity, cartItems } = useSelector(state => state.user)
@@ -29,10 +30,11 @@ function Nav() {
 
     if (!userData) return null
 
+    const normalizedRole = normalizeClientRole(userData.role)
     const roleLabel =
-        userData.role == "deliveryBoy"
+        isDeliveryRole(normalizedRole)
             ? "Delivery Partner"
-            : userData.role.charAt(0).toUpperCase() + userData.role.slice(1)
+            : normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1)
 
     const handleLogOut = async () => {
         try {
@@ -96,7 +98,7 @@ function Nav() {
         <div className={`w-full min-h-[72px] sm:h-[80px] flex items-center justify-between md:justify-center gap-3 sm:gap-6 md:gap-[30px] px-3 sm:px-5 fixed top-0 left-0 z-[9999] border-none outline-none transition-colors duration-300 ${isDark ? 'bg-[#1a1a2e]' : 'bg-[#fff9f6]'} overflow-visible`}>
 
             {/* Mobile Search Bar */}
-            {showSearch && userData.role == "user" && (
+            {showSearch && isUserRole(normalizedRole) && (
                 <div className={`w-[94%] min-h-[64px] rounded-2xl items-center gap-3 flex fixed top-[78px] left-[3%] px-3 py-2 md:hidden transition-all duration-300 ${isDark ? 'bg-[#16213e] border border-[#374151]' : 'bg-white/80 backdrop-blur-lg border border-white/20'} shadow-2xl`}>
                     <div className={`flex items-center w-[40%] min-w-[108px] overflow-hidden gap-[10px] pr-3 border-r-2 ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
                         <FaLocationDot size={22} className="text-[#ff4d2d] flex-shrink-0" />
@@ -122,7 +124,7 @@ function Nav() {
             <h1 className='text-xl sm:text-2xl md:text-3xl font-bold italic text-[#ff4d2d] drop-shadow-sm shrink-0'>Foodooza</h1>
 
             {/* Desktop Search Bar - Enhanced */}
-            {userData.role == "user" && (
+            {isUserRole(normalizedRole) && (
                 <div className={`md:w-[55%] lg:w-[45%] h-[56px] rounded-2xl items-center hidden md:flex transition-all duration-300 overflow-hidden group ${isDark ? 'bg-[#16213e] border border-[#374151] hover:border-[#ff4d2d]/50' : 'bg-white/90 backdrop-blur-lg border border-gray-100 hover:border-[#ff4d2d]/30'} shadow-lg hover:shadow-xl hover:shadow-[#ff4d2d]/10`}>
                     {/* Location Section */}
                     <div className={`flex items-center min-w-[140px] max-w-[200px] gap-[12px] px-[16px] h-full border-r ${isDark ? 'border-gray-600 hover:bg-[#0f3460]' : 'border-gray-200 hover:bg-gray-50'} transition-colors cursor-pointer`}>
@@ -161,9 +163,9 @@ function Nav() {
             )}
 
             <div className='flex items-center gap-2 sm:gap-4'>
-                {userData.role == "user" && (showSearch ? <RxCross2 size={25} className='text-[#ff4d2d] md:hidden' onClick={() => setShowSearch(false)} /> : <IoIosSearch size={25} className='text-[#ff4d2d] md:hidden' onClick={() => setShowSearch(true)} />)
+                {isUserRole(normalizedRole) && (showSearch ? <RxCross2 size={25} className='text-[#ff4d2d] md:hidden' onClick={() => setShowSearch(false)} /> : <IoIosSearch size={25} className='text-[#ff4d2d] md:hidden' onClick={() => setShowSearch(true)} />)
                 }
-                {userData.role == "owner" ? <>
+                {isOwnerRole(normalizedRole) ? <>
                     {myShopData && <> <button className='hidden md:flex items-center gap-1 p-2 cursor-pointer rounded-full bg-[#ff4d2d]/10 text-[#ff4d2d]' onClick={() => navigate("/add-item")}>
                         <FaPlus size={20} />
                         <span>Add Food Item</span>
@@ -183,25 +185,25 @@ function Nav() {
                     </div>
                 </> : (
                     <>
-                        {userData.role == "user" && <div className='relative cursor-pointer' onClick={() => navigate("/cart")}>
+                        {isUserRole(normalizedRole) && <div className='relative cursor-pointer' onClick={() => navigate("/cart")}>
                             <FiShoppingCart size={25} className='text-[#ff4d2d]' />
                             <span className='absolute right-[-6px] top-[-8px] text-[#ff4d2d] text-xs'>{cartItems.length}</span>
                         </div>}
 
                         {/* Favorites Link */}
-                        {userData.role == "user" && <div className='cursor-pointer p-2 rounded-full hover:bg-[#ff4d2d]/10 transition' onClick={() => navigate("/favorites")}>
+                        {isUserRole(normalizedRole) && <div className='cursor-pointer p-2 rounded-full hover:bg-[#ff4d2d]/10 transition' onClick={() => navigate("/favorites")}>
                             <FaHeart size={22} className='text-[#ff4d2d]' />
                         </div>}
 
 
 
-                        {userData.role == "user" && (
+                        {isUserRole(normalizedRole) && (
                             <button className='hidden md:block px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] text-sm font-medium' onClick={() => navigate("/my-orders")}>
                                 My Orders
                             </button>
                         )}
 
-                        {userData.role == "admin" && (
+                        {isAdminRole(normalizedRole) && (
                             <button className='hidden md:block px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] text-sm font-medium' onClick={() => navigate("/admin")}>
                                 Admin Panel
                             </button>
@@ -237,7 +239,7 @@ function Nav() {
                                 View Profile
                             </button>
 
-                            {(userData.role == "user" || userData.role == "owner") && (
+                            {(isUserRole(normalizedRole) || isOwnerRole(normalizedRole)) && (
                                 <button
                                     className={`text-left text-sm font-medium py-1.5 px-2 rounded-md transition ${isDark ? 'hover:bg-[#0f3460]' : 'hover:bg-gray-100'}`}
                                     onClick={() => navigate("/my-orders")}
@@ -246,7 +248,7 @@ function Nav() {
                                 </button>
                             )}
 
-                            {userData.role == "admin" && (
+                            {isAdminRole(normalizedRole) && (
                                 <button
                                     className={`text-left text-sm font-medium py-1.5 px-2 rounded-md transition ${isDark ? 'hover:bg-[#0f3460]' : 'hover:bg-gray-100'}`}
                                     onClick={() => navigate("/admin")}
@@ -255,7 +257,7 @@ function Nav() {
                                 </button>
                             )}
 
-                            {userData.role == "owner" && (
+                            {isOwnerRole(normalizedRole) && (
                                 <button
                                     className={`text-left text-sm font-medium py-1.5 px-2 rounded-md transition ${isDark ? 'hover:bg-[#0f3460]' : 'hover:bg-gray-100'}`}
                                     onClick={() => navigate("/create-edit-shop")}

@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Nav from "../components/Nav";
 import { useTheme } from "../context/ThemeContext";
+import { isAdminRole, isDeliveryRole, isOwnerRole, isUserRole, normalizeClientRole } from "../utils/roles";
 
 const getRoleLabel = (role) => {
-  if (role === "deliveryBoy") return "Delivery Partner";
-  if (!role) return "N/A";
-  return role.charAt(0).toUpperCase() + role.slice(1);
+  const normalizedRole = normalizeClientRole(role);
+  if (normalizedRole === "deliveryBoy") return "Delivery Partner";
+  if (!normalizedRole) return "N/A";
+  return normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1);
 };
 
 function Profile() {
@@ -17,6 +19,7 @@ function Profile() {
   const { myShopData } = useSelector((state) => state.owner);
 
   if (!userData) return null;
+  const normalizedRole = normalizeClientRole(userData.role);
 
   const joinedDate = userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : "N/A";
   const deliveryLat = userData?.location?.coordinates?.[1];
@@ -64,7 +67,7 @@ function Profile() {
           </div>
         </div>
 
-        {userData.role === "user" && (
+        {isUserRole(normalizedRole) && (
           <div className={`rounded-2xl border p-6 mt-5 ${isDark ? "bg-[#16213e] border-[#374151] text-white" : "bg-white border-gray-100 text-gray-900"}`}>
             <h2 className="text-xl font-bold">User Actions</h2>
             <div className="flex flex-wrap gap-3 mt-4">
@@ -75,7 +78,7 @@ function Profile() {
           </div>
         )}
 
-        {userData.role === "owner" && (
+        {isOwnerRole(normalizedRole) && (
           <div className={`rounded-2xl border p-6 mt-5 ${isDark ? "bg-[#16213e] border-[#374151] text-white" : "bg-white border-gray-100 text-gray-900"}`}>
             <h2 className="text-xl font-bold">Owner Panel</h2>
             <p className={`mt-2 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
@@ -91,7 +94,7 @@ function Profile() {
           </div>
         )}
 
-        {userData.role === "deliveryBoy" && (
+        {isDeliveryRole(normalizedRole) && (
           <div className={`rounded-2xl border p-6 mt-5 ${isDark ? "bg-[#16213e] border-[#374151] text-white" : "bg-white border-gray-100 text-gray-900"}`}>
             <h2 className="text-xl font-bold">Delivery Panel</h2>
             <p className={`mt-2 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
@@ -103,7 +106,7 @@ function Profile() {
           </div>
         )}
 
-        {userData.role === "admin" && (
+        {isAdminRole(normalizedRole) && (
           <div className={`rounded-2xl border p-6 mt-5 ${isDark ? "bg-[#16213e] border-[#374151] text-white" : "bg-white border-gray-100 text-gray-900"}`}>
             <h2 className="text-xl font-bold">Admin Panel</h2>
             <p className={`mt-2 ${isDark ? "text-gray-300" : "text-gray-600"}`}>

@@ -8,6 +8,7 @@ import { addMyOrder, setMyOrders, updateRealtimeOrderStatus } from '../redux/use
 import axios from 'axios';
 import { serverUrl } from '../App';
 import { useSocket } from '../context/SocketContext';
+import { isOwnerRole, isUserRole, normalizeClientRole } from '../utils/roles';
 
 
 function MyOrders() {
@@ -16,6 +17,7 @@ function MyOrders() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const [loading, setLoading] = useState(true)
+  const normalizedRole = normalizeClientRole(userData?.role)
 
   // Fetch orders on component mount
   useEffect(() => {
@@ -42,8 +44,8 @@ function MyOrders() {
 
     const handleNewOrder = (data) => {
       const hasOwnerMatch = Array.isArray(data?.shopOrders)
-        ? data.shopOrders.some(shopOrder => shopOrder?.owner?._id == userData._id)
-        : data?.shopOrders?.owner?._id == userData._id
+        ? data.shopOrders.some((shopOrder) => String(shopOrder?.owner?._id) === String(userData?._id))
+        : String(data?.shopOrders?.owner?._id) === String(userData?._id)
 
       if (hasOwnerMatch) {
         dispatch(addMyOrder(data))
@@ -51,7 +53,7 @@ function MyOrders() {
     }
 
     const handleUpdateStatus = ({ orderId, shopId, status, userId }) => {
-      if (userId == userData._id) {
+      if (String(userId) === String(userData?._id)) {
         dispatch(updateRealtimeOrderStatus({ orderId, shopId, status }))
       }
     }
@@ -83,12 +85,12 @@ function MyOrders() {
         ) : myOrders && myOrders.length > 0 ? (
           <div className='space-y-6'>
             {myOrders.map((order, index) => (
-              userData.role == "user" ?
+              isUserRole(normalizedRole) ?
                 (
                   <UserOrderCard data={order} key={index} />
                 )
                 :
-                userData.role == "owner" ? (
+                isOwnerRole(normalizedRole) ? (
                   <OwnerOrderCard data={order} key={index} />
                 )
                   :

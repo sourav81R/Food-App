@@ -9,6 +9,7 @@ import DeliveryBoyTracking from './DeliveryBoyTracking'
 import { ClipLoader } from 'react-spinners'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useSocket } from '../context/SocketContext'
+import { isDeliveryRole } from '../utils/roles'
 
 function DeliveryBoy() {
   const { userData } = useSelector(state => state.user)
@@ -28,7 +29,7 @@ const [deliveryBoyLocation,setDeliveryBoyLocation]=useState(null)
 const [loading,setLoading]=useState(false)
 const [message,setMessage]=useState("")
   useEffect(()=>{
-if(!socket || !userData || userData.role!=="deliveryBoy") return
+if(!socket || !userData || !isDeliveryRole(userData.role)) return
 let watchId
 if(navigator.geolocation){
 watchId=navigator.geolocation.watchPosition((position)=>{
