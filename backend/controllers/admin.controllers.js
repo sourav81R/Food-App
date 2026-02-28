@@ -4,9 +4,10 @@ import Item from "../models/item.model.js"
 import Order from "../models/order.model.js"
 import Shop from "../models/shop.model.js"
 import User from "../models/user.model.js"
+import { ROLE, normalizeRole } from "../utils/roles.js"
 
 const SAFE_USER_SELECT = "-password -resetOtp -otpExpires -__v"
-const MANAGEABLE_ROLES = new Set(["user", "owner", "deliveryBoy", "admin"])
+const MANAGEABLE_ROLES = new Set([ROLE.USER, ROLE.RESTAURANT, ROLE.DELIVERY, ROLE.ADMIN])
 
 const hasText = (value) => typeof value === "string" && value.trim().length > 0
 const isValidMobile = (mobile) => {
@@ -26,7 +27,9 @@ const withUserFlags = (user = {}) => ({
 })
 
 const cleanupUserRelatedData = async (userId, role) => {
-    if (role === "owner") {
+    const normalizedRole = normalizeRole(role)
+
+    if (normalizedRole === ROLE.RESTAURANT) {
         const shops = await Shop.find({ owner: userId }).select("_id")
         const shopIds = shops.map((shop) => shop._id)
         const items = await Item.find({ shop: { $in: shopIds } }).select("_id")
@@ -41,7 +44,7 @@ const cleanupUserRelatedData = async (userId, role) => {
         }
     }
 
-    if (role === "deliveryBoy") {
+    if (normalizedRole === ROLE.DELIVERY) {
         await DeliveryAssignment.deleteMany({
             $or: [{ assignedTo: userId }, { brodcastedTo: userId }]
         })
@@ -54,12 +57,20 @@ const deleteUserByIdWithCleanup = async (userId, role) => {
 }
 
 const formatRoleCounts = (rows = []) => {
-    const base = { user: 0, owner: 0, deliveryBoy: 0, admin: 0 }
+    const base = {
+        [ROLE.USER]: 0,
+        [ROLE.RESTAURANT]: 0,
+        [ROLE.DELIVERY]: 0,
+        [ROLE.ADMIN]: 0
+    }
+
     rows.forEach((row) => {
-        if (row?._id && Object.prototype.hasOwnProperty.call(base, row._id)) {
-            base[row._id] = row.count
+        const normalizedRole = normalizeRole(row?._id)
+        if (normalizedRole && Object.prototype.hasOwnProperty.call(base, normalizedRole)) {
+            base[normalizedRole] += row.count
         }
     })
+
     return base
 }
 
@@ -136,17 +147,18 @@ export const updateUserRoleByAdmin = async (req, res) => {
     try {
         const { userId } = req.params
         const { role } = req.body
+        const normalizedRole = normalizeRole(role)
 
-        if (!MANAGEABLE_ROLES.has(role)) {
+        if (!MANAGEABLE_ROLES.has(normalizedRole)) {
             return res.status(400).json({ message: "Invalid role" })
         }
-        if (String(req.userId) === String(userId) && role !== "admin") {
+        if (String(req.userId) === String(userId) && normalizedRole !== ROLE.ADMIN) {
             return res.status(400).json({ message: "Admin cannot remove own admin access" })
         }
 
         const user = await User.findByIdAndUpdate(
             userId,
-            { role },
+            { role: normalizedRole },
             { new: true }
         ).select(SAFE_USER_SELECT)
 
@@ -312,6 +324,7 @@ export const getAllOrdersForAdmin = async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(200)
             .populate("user", "fullName email mobile role")
+            .populate("deliveryPartner", "fullName email mobile vehicleNumber")
             .populate("shopOrders.shop", "name city")
             .populate("shopOrders.owner", "fullName email")
             .populate("shopOrders.assignedDeliveryBoy", "fullName mobile")

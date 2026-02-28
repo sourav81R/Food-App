@@ -60,7 +60,21 @@ export const getMyFavorites = async (req, res) => {
             })
             .sort({ createdAt: -1 });
 
-        const items = favorites.map(f => f.item);
+        const staleFavoriteIds = [];
+        const items = [];
+
+        favorites.forEach((favorite) => {
+            if (favorite?.item?._id) {
+                items.push(favorite.item);
+            } else if (favorite?._id) {
+                staleFavoriteIds.push(favorite._id);
+            }
+        });
+
+        if (staleFavoriteIds.length > 0) {
+            await Favorite.deleteMany({ _id: { $in: staleFavoriteIds } });
+        }
+
         return res.status(200).json(items);
     } catch (error) {
         return res.status(500).json({ message: `Get favorites error: ${error.message}` });

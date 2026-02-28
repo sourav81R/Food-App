@@ -2,6 +2,7 @@ import User from "../models/user.model.js"
 import bcrypt from "bcryptjs"
 import genToken from "../utils/token.js"
 import { sendOtpMail } from "../utils/mail.js"
+import { ALL_SUPPORTED_ROLES } from "../utils/roles.js"
 
 const getCookieOptions = () => {
     const isProduction = process.env.NODE_ENV === "production"
@@ -16,7 +17,7 @@ const getCookieOptions = () => {
 export const signUp=async (req,res) => {
     try {
         const {fullName,email,password,mobile,role}=req.body
-        const normalizedRole=["user","owner","deliveryBoy"].includes(role) ? role : "user"
+        const normalizedRole=ALL_SUPPORTED_ROLES.includes(role) ? role : "user"
         let user=await User.findOne({email})
         if(user){
             return res.status(400).json({message:"User Already exist."})
@@ -145,7 +146,7 @@ export const googleAuth=async (req,res) => {
         }
         let user=await User.findOne({email})
         if(!user){
-            const normalizedRole=["user","owner","deliveryBoy"].includes(role) ? role : "user"
+            const normalizedRole=ALL_SUPPORTED_ROLES.includes(role) ? role : "user"
             const safeFullName=(fullName && fullName.trim()) || email.split("@")[0] || "Google User"
             const cleanedMobile=(mobile || "").toString().replace(/\D/g,"")
             const safeMobile=cleanedMobile.length>=10

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { serverUrl } from '../App'
 import { useEffect } from 'react'
@@ -16,6 +16,7 @@ function TrackOrderPage() {
   const navigate = useNavigate()
   const socket = useSocket()
   const [liveLocations, setLiveLocations] = useState({})
+  const autoCompletionInFlightRef = useRef(false)
   const handleGetOrder = useCallback(async () => {
     try {
       const result = await axios.get(`${serverUrl}/api/order/get-order-by-id/${orderId}`, { withCredentials: true })
@@ -46,12 +47,52 @@ function TrackOrderPage() {
   }, [socket])
 
   useEffect(() => {
+    if (!socket) return
+
+    const refreshWhenCurrentOrderChanges = (payload) => {
+      if (!payload?.orderId) return
+      if (String(payload.orderId) !== String(orderId)) return
+      void handleGetOrder()
+    }
+
+    const refreshWhenShopOrderChanges = (payload) => {
+      if (!payload?.orderId) return
+      if (String(payload.orderId) !== String(orderId)) return
+      void handleGetOrder()
+    }
+
+    socket.on("orderStatusUpdated", refreshWhenCurrentOrderChanges)
+    socket.on("update-status", refreshWhenShopOrderChanges)
+
+    return () => {
+      socket.off("orderStatusUpdated", refreshWhenCurrentOrderChanges)
+      socket.off("update-status", refreshWhenShopOrderChanges)
+    }
+  }, [socket, orderId, handleGetOrder])
+
+  useEffect(() => {
     void handleGetOrder()
     const intervalId = setInterval(() => {
       void handleGetOrder()
     }, 30000)
     return () => clearInterval(intervalId)
   }, [handleGetOrder])
+
+  const handleAutoCompleteByEta = useCallback(async () => {
+    if (!currentOrder?._id || autoCompletionInFlightRef.current) return
+
+    autoCompletionInFlightRef.current = true
+    try {
+      await axios.patch(`${serverUrl}/api/order/auto-complete-by-eta/${currentOrder._id}`, {}, { withCredentials: true })
+      await handleGetOrder()
+    } catch (error) {
+      const remainingSeconds = Number(error?.response?.data?.remainingEtaSeconds)
+      autoCompletionInFlightRef.current = false
+      if (!Number.isFinite(remainingSeconds) || remainingSeconds <= 0) {
+        console.log(error)
+      }
+    }
+  }, [currentOrder?._id, handleGetOrder])
 
   const activeShopOrdersCount = useMemo(() => {
     return currentOrder?.shopOrders?.filter(order => order.status !== "delivered")?.length || 0
@@ -71,6 +112,27 @@ function TrackOrderPage() {
       {fetchError && <p className='text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg'>{fetchError}</p>}
       {currentOrder?.shopOrders?.map((shopOrder, index) => (
         <div className='bg-white p-4 rounded-2xl shadow-md border border-orange-100 space-y-4' key={index}>
+          {(() => {
+            const assignedPartner = shopOrder?.assignedDeliveryBoy || currentOrder?.deliveryPartner || null
+            const defaultPartnerLocation =
+              Array.isArray(assignedPartner?.location?.coordinates) && assignedPartner.location.coordinates.length === 2
+                ? {
+                  lat: assignedPartner.location.coordinates[1],
+                  lon: assignedPartner.location.coordinates[0]
+                }
+                : null
+            const livePartnerLocation = assignedPartner?._id ? liveLocations[assignedPartner._id] : null
+            const partnerLocation = livePartnerLocation || defaultPartnerLocation
+            const hasCustomerLocation = Number.isFinite(Number(currentOrder?.deliveryAddress?.latitude)) &&
+              Number.isFinite(Number(currentOrder?.deliveryAddress?.longitude))
+            const progressStatus = shopOrder?.status === "delivered"
+              ? "delivered"
+              : (assignedPartner ? "out of delivery" : (currentOrder?.deliveryStatus || shopOrder?.status))
+            const eta = currentOrder?.liveEta || null
+            const canAutoComplete = progressStatus !== "delivered"
+
+            return (
+              <>
           <div>
             <p className='text-lg font-bold mb-2 text-[#ff4d2d]'>{shopOrder.shop.name}</p>
             <p className='font-semibold break-words'><span>Items:</span> {shopOrder.shopOrderItems?.map(i => i.name).join(",")}</p>
@@ -79,23 +141,34 @@ function TrackOrderPage() {
           </div>
 
           {/* Order Progress Animation */}
-          <OrderProgress currentStatus={shopOrder.status} createdAt={currentOrder.createdAt} />
+          <OrderProgress
+            currentStatus={progressStatus}
+            etaSecondsRemaining={eta?.remainingSeconds}
+            canAutoComplete={canAutoComplete}
+            onEtaComplete={handleAutoCompleteByEta}
+          />
 
           {shopOrder.status != "delivered" ? <>
-            {shopOrder.assignedDeliveryBoy ?
-              <div className='text-sm text-gray-700'>
-                <p className='font-semibold'><span>Delivery Boy Name:</span> {shopOrder.assignedDeliveryBoy.fullName}</p>
-                <p className='font-semibold'><span>Delivery Boy contact No.:</span> {shopOrder.assignedDeliveryBoy.mobile}</p>
-              </div> : <p className='font-semibold'>Delivery Boy is not assigned yet.</p>}
+            {assignedPartner ?
+              <div className='text-sm text-gray-700 bg-orange-50 border border-orange-100 rounded-xl p-3'>
+                <p className='font-semibold'><span>Delivery Partner:</span> {assignedPartner.fullName || "Not available"}</p>
+                <p className='font-semibold'><span>Contact:</span> {assignedPartner.mobile || "Not available"}</p>
+                {assignedPartner?.vehicleNumber && <p className='font-semibold'><span>Vehicle:</span> {assignedPartner.vehicleNumber}</p>}
+                {assignedPartner?.mobile && (
+                  <a
+                    href={`tel:${assignedPartner.mobile}`}
+                    className='inline-block mt-2 text-white bg-[#ff4d2d] px-3 py-1 rounded-lg font-medium hover:bg-[#e64526] transition'
+                  >
+                    Call Delivery Partner
+                  </a>
+                )}
+              </div> : <p className='font-semibold'>Delivery Partner is not assigned yet.</p>}
           </> : <p className='text-green-600 font-semibold text-lg'>Delivered</p>}
 
-          {(shopOrder.assignedDeliveryBoy && shopOrder.status !== "delivered") && (
+          {(assignedPartner && partnerLocation && hasCustomerLocation && shopOrder.status !== "delivered") && (
             <div className="h-[280px] sm:h-[360px] w-full rounded-2xl overflow-hidden shadow-md">
               <DeliveryBoyTracking data={{
-                deliveryBoyLocation: liveLocations[shopOrder.assignedDeliveryBoy._id] || {
-                  lat: shopOrder.assignedDeliveryBoy.location.coordinates[1],
-                  lon: shopOrder.assignedDeliveryBoy.location.coordinates[0]
-                },
+                deliveryBoyLocation: partnerLocation,
                 customerLocation: {
                   lat: currentOrder.deliveryAddress.latitude,
                   lon: currentOrder.deliveryAddress.longitude
@@ -103,9 +176,9 @@ function TrackOrderPage() {
               }} />
             </div>
           )}
-
-
-
+              </>
+            )
+          })()}
         </div>
       ))}
       </div>

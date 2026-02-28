@@ -20,9 +20,13 @@ function Favorites() {
         const fetchFavorites = async () => {
             try {
                 const result = await axios.get(`${serverUrl}/api/favorite/my-favorites`, { withCredentials: true })
-                setFavoriteItems(result.data)
+                const safeItems = Array.isArray(result.data)
+                    ? result.data.filter((item) => item && item._id)
+                    : []
+
+                setFavoriteItems(safeItems)
                 // Update favorites IDs in Redux
-                const favoriteIds = result.data.map(item => item._id)
+                const favoriteIds = safeItems.map(item => item._id)
                 dispatch(setFavorites(favoriteIds))
             } catch (error) {
                 console.log(error)
@@ -36,7 +40,7 @@ function Favorites() {
         } else {
             setLoading(false)
         }
-    }, [userData])
+    }, [userData, dispatch])
 
     return (
         <div className='w-full min-h-screen bg-[#fff9f6] p-4 sm:p-6'>
@@ -85,8 +89,8 @@ function Favorites() {
                 <div className='max-w-6xl mx-auto'>
                     <p className='text-gray-600 mb-4'>{favoriteItems.length} favorite{favoriteItems.length > 1 ? 's' : ''}</p>
                     <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
-                        {favoriteItems.map((item) => (
-                            <FoodCard key={item._id} data={item} />
+                        {favoriteItems.map((item, index) => (
+                            <FoodCard key={item?._id || index} data={item} />
                         ))}
                     </div>
                 </div>

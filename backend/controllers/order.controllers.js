@@ -4,6 +4,7 @@ import Shop from "../models/shop.model.js"
 import User from "../models/user.model.js"
 import { sendDeliveryOtpMail } from "../utils/mail.js"
 import RazorPay from "razorpay"
+import { ROLE, expandRoleValues, normalizeRole } from "../utils/roles.js"
 
 const ALLOWED_PAYMENT_METHODS = new Set(["cod", "online"])
 const SAMPLE_KEY_IDS = new Set([
@@ -14,6 +15,8 @@ const SAMPLE_SECRETS = new Set([
     "qwertyui",
     "your_razorpay_secret"
 ])
+const ACTIVE_DELIVERY_STATUSES = new Set(["assigned", "picked_up", "on_the_way"])
+const FIXED_DELIVERY_DURATION_SECONDS = 30 * 60
 
 const normalizeEnvValue = (value = "") =>
     String(value).trim().replace(/^['"]|['"]$/g, "")
@@ -40,6 +43,111 @@ const getRazorpayClient = () => {
             key_secret: keySecret
         }),
         keyId
+    }
+}
+
+const assignFirstAvailableDeliveryPartner = async () => {
+    const deliveryPartner = await User.findOneAndUpdate(
+        {
+            role: { $in: expandRoleValues(ROLE.DELIVERY) },
+            isAvailable: true,
+            isSuspended: false
+        },
+        { $set: { isAvailable: false } },
+        { new: true, sort: { createdAt: 1 } }
+    )
+
+    if (!deliveryPartner) {
+        return {}
+    }
+
+    return {
+        deliveryPartner: deliveryPartner._id,
+        deliveryStatus: "assigned"
+    }
+}
+
+const attachDeliveryPartnerToOrder = async (order) => {
+    if (!order) return order
+    if (order.deliveryPartner) return order
+
+    const deliveryAssignmentData = await assignFirstAvailableDeliveryPartner()
+    if (!deliveryAssignmentData.deliveryPartner) {
+        return order
+    }
+
+    order.deliveryPartner = deliveryAssignmentData.deliveryPartner
+    order.deliveryStatus = deliveryAssignmentData.deliveryStatus
+    order.shopOrders.forEach((shopOrder) => {
+        if (!shopOrder.assignedDeliveryBoy) {
+            shopOrder.assignedDeliveryBoy = deliveryAssignmentData.deliveryPartner
+        }
+    })
+
+    try {
+        await order.save()
+    } catch (error) {
+        await User.findByIdAndUpdate(deliveryAssignmentData.deliveryPartner, { isAvailable: true })
+        throw error
+    }
+
+    return order
+}
+
+const getOrderProgressStatus = (order = {}) => {
+    if (order?.deliveryStatus === "delivered") return "delivered"
+    if ((order?.shopOrders || []).every((shopOrder) => shopOrder?.status === "delivered")) return "delivered"
+    if (order?.deliveryStatus) return order.deliveryStatus
+    if ((order?.shopOrders || []).some((shopOrder) => String(shopOrder?.status || "").toLowerCase() === "out of delivery")) return "out of delivery"
+    if ((order?.shopOrders || []).some((shopOrder) => String(shopOrder?.status || "").toLowerCase() === "preparing")) return "preparing"
+    if (order?.deliveryPartner) return "out of delivery"
+    return "placed"
+}
+
+const getRemainingEtaSeconds = (order = {}, now = new Date()) => {
+    if (getOrderProgressStatus(order) === "delivered") return 0
+
+    const createdAtMs = new Date(order?.createdAt).getTime()
+    if (!Number.isFinite(createdAtMs)) return FIXED_DELIVERY_DURATION_SECONDS
+
+    const elapsedSeconds = Math.max(0, Math.floor((now.getTime() - createdAtMs) / 1000))
+    return Math.max(0, FIXED_DELIVERY_DURATION_SECONDS - elapsedSeconds)
+}
+
+const emitOrderStatusUpdated = (io, order) => {
+    if (!io || !order) return
+
+    const payload = {
+        orderId: order._id,
+        deliveryStatus: order.deliveryStatus,
+        updatedAt: new Date().toISOString()
+    }
+
+    if (order.user?.socketId) {
+        io.to(order.user.socketId).emit("orderStatusUpdated", payload)
+    }
+
+    const ownerSocketIds = new Set(
+        (order.shopOrders || [])
+            .map((shopOrder) => shopOrder?.owner?.socketId)
+            .filter(Boolean)
+    )
+
+    ownerSocketIds.forEach((socketId) => {
+        io.to(socketId).emit("orderStatusUpdated", payload)
+    })
+}
+
+const setDeliveryPartnerAvailabilityIfIdle = async (deliveryPartnerId) => {
+    if (!deliveryPartnerId) return
+
+    const activeOrderCount = await Order.countDocuments({
+        deliveryPartner: deliveryPartnerId,
+        deliveryStatus: { $in: [...ACTIVE_DELIVERY_STATUSES] }
+    })
+
+    if (activeOrderCount === 0) {
+        await User.findByIdAndUpdate(deliveryPartnerId, { isAvailable: true })
     }
 }
 
@@ -110,7 +218,6 @@ export const placeOrder = async (req, res) => {
             }
         }
         ))
-
         if (paymentMethod == "online") {
             const { client, error, keyId } = getRazorpayClient()
             if (error) {
@@ -158,6 +265,7 @@ export const placeOrder = async (req, res) => {
             totalAmount,
             shopOrders
         })
+        await attachDeliveryPartnerToOrder(newOrder)
 
         await newOrder.populate("shopOrders.shopOrderItems.item", "name image price")
         await newOrder.populate("shopOrders.shop", "name")
@@ -232,6 +340,7 @@ export const verifyPayment = async (req, res) => {
         order.payment = true
         order.razorpayPaymentId = razorpay_payment_id
         await order.save()
+        await attachDeliveryPartnerToOrder(order)
 
         await order.populate("shopOrders.shopOrderItems.item", "name image price")
         await order.populate("shopOrders.shop", "name")
@@ -270,21 +379,25 @@ export const verifyPayment = async (req, res) => {
 export const getMyOrders = async (req, res) => {
     try {
         const user = await User.findById(req.userId)
-        if (user.role == "user") {
+        const normalizedRole = normalizeRole(user?.role)
+
+        if (normalizedRole === ROLE.USER) {
             const orders = await Order.find({ user: req.userId })
                 .sort({ createdAt: -1 })
                 .populate("shopOrders.shop", "name")
                 .populate("shopOrders.owner", "name email mobile")
                 .populate("shopOrders.shopOrderItems.item", "name image price")
+                .populate("deliveryPartner", "fullName mobile vehicleNumber")
 
             return res.status(200).json(orders)
-        } else if (user.role == "owner") {
+        } else if (normalizedRole === ROLE.RESTAURANT) {
             const orders = await Order.find({ "shopOrders.owner": req.userId })
                 .sort({ createdAt: -1 })
                 .populate("shopOrders.shop", "name")
                 .populate("user")
                 .populate("shopOrders.shopOrderItems.item", "name image price")
                 .populate("shopOrders.assignedDeliveryBoy", "fullName mobile")
+                .populate("deliveryPartner", "fullName mobile vehicleNumber")
 
 
 
@@ -301,6 +414,8 @@ export const getMyOrders = async (req, res) => {
 
             return res.status(200).json(filteredOrders)
         }
+
+        return res.status(403).json({ message: "Forbidden" })
 
     } catch (error) {
         return res.status(500).json({ message: `get User order error ${error}` })
@@ -326,7 +441,7 @@ export const updateOrderStatus = async (req, res) => {
         if (status == "out of delivery" && !shopOrder.assignment) {
             const { longitude, latitude } = order.deliveryAddress
             const nearByDeliveryBoys = await User.find({
-                role: "deliveryBoy",
+                role: { $in: expandRoleValues(ROLE.DELIVERY) },
                 location: {
                     $near: {
                         $geometry: { type: "Point", coordinates: [Number(longitude), Number(latitude)] },
@@ -564,15 +679,27 @@ export const getCurrentOrder = async (req, res) => {
 export const getOrderById = async (req, res) => {
     try {
         const { orderId } = req.params
+        const requester = await User.findById(req.userId).select("role")
+        if (!requester) {
+            return res.status(401).json({ message: "Unauthorized" })
+        }
+
         const order = await Order.findById(orderId)
-            .populate("user")
+            .populate("user", "fullName email mobile")
+            .populate("deliveryPartner", "fullName email mobile vehicleNumber location socketId")
             .populate({
                 path: "shopOrders.shop",
                 model: "Shop"
             })
             .populate({
+                path: "shopOrders.owner",
+                model: "User",
+                select: "fullName email mobile socketId"
+            })
+            .populate({
                 path: "shopOrders.assignedDeliveryBoy",
-                model: "User"
+                model: "User",
+                select: "fullName email mobile vehicleNumber location socketId"
             })
             .populate({
                 path: "shopOrders.shopOrderItems.item",
@@ -583,9 +710,99 @@ export const getOrderById = async (req, res) => {
         if (!order) {
             return res.status(400).json({ message: "order not found" })
         }
+
+        const requesterId = String(req.userId)
+        const requesterRole = normalizeRole(requester.role)
+        const isAdmin = requesterRole === ROLE.ADMIN
+        const isOrderUser = String(order?.user?._id) === requesterId
+        const isRestaurantOwner = (order.shopOrders || []).some(
+            (shopOrder) => String(shopOrder?.owner?._id) === requesterId
+        )
+        const isAssignedDelivery = String(order?.deliveryPartner?._id) === requesterId ||
+            (order.shopOrders || []).some(
+                (shopOrder) => String(shopOrder?.assignedDeliveryBoy?._id) === requesterId
+            )
+
+        if (!isAdmin && !isOrderUser && !isRestaurantOwner && !isAssignedDelivery) {
+            return res.status(403).json({ message: "Forbidden: you are not allowed to view this order" })
+        }
+
+        if (order.deliveryPartner) {
+            order.shopOrders = (order.shopOrders || []).map((shopOrder) => ({
+                ...shopOrder,
+                assignedDeliveryBoy: shopOrder.assignedDeliveryBoy || order.deliveryPartner
+            }))
+        }
+
+        const progressStatus = getOrderProgressStatus(order)
+        order.liveEta = {
+            provider: "fixed_30m",
+            source: "fixed",
+            remainingSeconds: getRemainingEtaSeconds(order),
+            trafficLevel: "n/a",
+            fetchedAt: new Date().toISOString(),
+            progressStatus
+        }
+
         return res.status(200).json(order)
     } catch (error) {
         return res.status(500).json({ message: `get by id order error ${error}` })
+    }
+}
+
+export const autoCompleteOrderByEta = async (req, res) => {
+    try {
+        const { orderId } = req.params
+        const order = await Order.findById(orderId)
+            .populate("user", "socketId")
+            .populate("deliveryPartner", "location")
+            .populate("shopOrders.owner", "socketId")
+
+        if (!order) {
+            return res.status(404).json({ message: "order not found" })
+        }
+        if (String(order.user?._id || order.user) !== String(req.userId)) {
+            return res.status(403).json({ message: "Forbidden: this order does not belong to you" })
+        }
+
+        const remainingEtaSeconds = getRemainingEtaSeconds(order)
+        if (remainingEtaSeconds > 0) {
+            return res.status(400).json({
+                message: "ETA has not completed yet",
+                remainingEtaSeconds,
+                eta: {
+                    provider: "fixed_30m",
+                    source: "fixed",
+                    remainingSeconds: remainingEtaSeconds
+                }
+            })
+        }
+
+        if (order.deliveryStatus === "delivered" && (order.shopOrders || []).every((shopOrder) => shopOrder.status === "delivered")) {
+            return res.status(200).json({ message: "Order already delivered", order })
+        }
+
+        order.deliveryStatus = "delivered"
+        order.shopOrders.forEach((shopOrder) => {
+            shopOrder.status = "delivered"
+            if (!shopOrder.deliveredAt) {
+                shopOrder.deliveredAt = new Date()
+            }
+        })
+        await order.save()
+        if (order.deliveryPartner) {
+            await setDeliveryPartnerAvailabilityIfIdle(order.deliveryPartner?._id || order.deliveryPartner)
+        }
+
+        const io = req.app.get("io")
+        emitOrderStatusUpdated(io, order)
+
+        return res.status(200).json({
+            message: "Order marked delivered automatically",
+            order
+        })
+    } catch (error) {
+        return res.status(500).json({ message: `auto complete order error ${error}` })
     }
 }
 

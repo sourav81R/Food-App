@@ -1,6 +1,6 @@
 import express from "express"
 import isAuth from "../middlewares/isAuth.js"
-import { acceptOrder, getCurrentOrder, getDeliveryBoyAssignment, getMyOrders, getOrderById, getPaymentConfig, getTodayDeliveries, placeOrder, sendDeliveryOtp, updateOrderStatus, verifyDeliveryOtp, verifyPayment } from "../controllers/order.controllers.js"
+import { acceptOrder, autoCompleteOrderByEta, getCurrentOrder, getDeliveryBoyAssignment, getMyOrders, getOrderById, getPaymentConfig, getTodayDeliveries, placeOrder, sendDeliveryOtp, updateOrderStatus, verifyDeliveryOtp, verifyPayment } from "../controllers/order.controllers.js"
 
 
 
@@ -18,6 +18,7 @@ orderRouter.post("/verify-delivery-otp",isAuth,verifyDeliveryOtp)
 orderRouter.post("/update-status/:orderId/:shopId",isAuth,updateOrderStatus)
 orderRouter.get('/accept-order/:assignmentId',isAuth,acceptOrder)
 orderRouter.get('/get-order-by-id/:orderId',isAuth,getOrderById)
+orderRouter.patch('/auto-complete-by-eta/:orderId',isAuth,autoCompleteOrderByEta)
 orderRouter.get('/get-today-deliveries',isAuth,getTodayDeliveries)
 
 export default orderRouter

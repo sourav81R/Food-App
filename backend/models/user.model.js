@@ -1,27 +1,44 @@
 import mongoose from "mongoose";
-import { type } from "os";
+import { ALL_SUPPORTED_ROLES } from "../utils/roles.js";
 
 const userSchema = new mongoose.Schema({
     fullName: {
         type: String,
-        required: true
+        required: true,
+        trim: true,
+        alias: "name"
     },
     email: {
         type: String,
         required: true,
-        unique:true
+        unique:true,
+        trim: true,
+        lowercase: true
     },
     password:{
         type: String,
     },
     mobile:{
         type: String,
-        required: true, 
+        required: true,
+        trim: true,
+        alias: "phone"
     },
     role:{
         type:String,
-        enum:["user","owner","deliveryBoy","admin"],
-        required:true
+        enum:ALL_SUPPORTED_ROLES,
+        required:true,
+        default:"user",
+        alias: "roles"
+    },
+    vehicleNumber: {
+        type: String,
+        trim: true,
+        default: ""
+    },
+    isAvailable: {
+        type: Boolean,
+        default: true
     },
     resetOtp:{
         type:String

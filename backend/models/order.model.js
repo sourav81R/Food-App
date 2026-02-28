@@ -56,6 +56,16 @@ const orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
     },
+    deliveryPartner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: null
+    },
+    deliveryStatus: {
+        type: String,
+        enum: ["assigned", "picked_up", "on_the_way", "delivered"],
+        default: null
+    },
     paymentMethod: {
         type: String,
         enum: ['cod', "online"],
@@ -84,6 +94,8 @@ const orderSchema = new mongoose.Schema({
        default:""
    }
 }, { timestamps: true })
+
+orderSchema.index({ deliveryPartner: 1, deliveryStatus: 1 })
 
 const Order=mongoose.model("Order",orderSchema)
 export default Order
