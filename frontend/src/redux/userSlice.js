@@ -13,7 +13,8 @@ const userSlice = createSlice({
     totalAmount: 0,
     myOrders: [],
     searchItems: null,
-    favorites: []
+    favorites: [],
+    liveEtaByOrderId: {}
   },
   reducers: {
     setUserData: (state, action) => {
@@ -130,9 +131,23 @@ const userSlice = createSlice({
       } else {
         state.favorites.push(itemId);
       }
+    },
+
+    setOrderEta: (state, action) => {
+      const { orderId, etaSeconds } = action.payload || {}
+      if (!orderId) return
+
+      const safeEta = Number(etaSeconds)
+      state.liveEtaByOrderId[orderId] = Number.isFinite(safeEta)
+        ? Math.max(0, Math.round(safeEta))
+        : null
+    },
+
+    clearOrderEta: (state, action) => {
+      delete state.liveEtaByOrderId[action.payload]
     }
   }
 })
 
-export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, setMyOrders, addMyOrder, updateOrderStatus, setSearchItems, setTotalAmount, updateRealtimeOrderStatus, clearCart, setFavorites, toggleFavoriteItem } = userSlice.actions
+export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, setMyOrders, addMyOrder, updateOrderStatus, setSearchItems, setTotalAmount, updateRealtimeOrderStatus, clearCart, setFavorites, toggleFavoriteItem, setOrderEta, clearOrderEta } = userSlice.actions
 export default userSlice.reducer

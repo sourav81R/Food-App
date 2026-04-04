@@ -62,6 +62,54 @@ const fetchWithTimeout = async (url) => {
     }
 }
 
+/**
+ * Prevents active orders from surfacing a premature 0-second ETA.
+ *
+ * @param {number} seconds
+ * @param {{ allowZero?: boolean }} [options]
+ * @returns {number}
+ */
+const normalizeActiveEtaSeconds = (seconds, options = {}) => {
+    const safeSeconds = Math.max(0, Math.round(Number(seconds) || 0))
+    if (options.allowZero || safeSeconds === 0) return safeSeconds
+    return Math.max(60, safeSeconds)
+}
+
+/**
+ * Fetches a live ETA from the public OSRM routing API for a driver/customer pair.
+ *
+ * @param {{ from: { lat: number, lon: number }, to: { lat: number, lon: number } }} params
+ * @returns {Promise<{provider: string, source: string, remainingSeconds: number, trafficLevel: string, distanceKm: number, fetchedAt: string}>}
+ */
+const fetchOsrmEta = async ({ from, to }) => {
+    const coordinates = `${from.lon},${from.lat};${to.lon},${to.lat}`
+    const url = new URL(`https://router.project-osrm.org/route/v1/driving/${coordinates}`)
+    url.searchParams.set("overview", "false")
+
+    const response = await fetchWithTimeout(url.toString())
+    if (!response.ok) {
+        throw new Error(`OSRM route API failed with status ${response.status}`)
+    }
+
+    const payload = await response.json()
+    const route = payload?.routes?.[0]
+    if (!route) {
+        throw new Error("OSRM route API returned no route")
+    }
+
+    const durationSeconds = Number(route.duration || 0)
+    const distanceKm = Number(route.distance || 0) / 1000
+
+    return {
+        provider: "osrm",
+        source: "live",
+        remainingSeconds: normalizeActiveEtaSeconds(durationSeconds),
+        trafficLevel: classifyTraffic(durationSeconds, distanceKm),
+        distanceKm,
+        fetchedAt: new Date().toISOString()
+    }
+}
+
 const fetchGoogleTrafficEta = async ({ from, to, apiKey }) => {
     const url = new URL("https://maps.googleapis.com/maps/api/distancematrix/json")
     url.searchParams.set("origins", `${from.lat},${from.lon}`)
@@ -87,7 +135,7 @@ const fetchGoogleTrafficEta = async ({ from, to, apiKey }) => {
     return {
         provider: "google",
         source: "live",
-        remainingSeconds: Math.max(0, Math.round(durationSeconds)),
+        remainingSeconds: normalizeActiveEtaSeconds(durationSeconds),
         trafficLevel: classifyTraffic(durationSeconds, distanceKm),
         distanceKm,
         fetchedAt: new Date().toISOString()
@@ -119,7 +167,7 @@ const fetchMapboxTrafficEta = async ({ from, to, token }) => {
     return {
         provider: "mapbox",
         source: "live",
-        remainingSeconds: Math.max(0, Math.round(durationSeconds)),
+        remainingSeconds: normalizeActiveEtaSeconds(durationSeconds),
         trafficLevel: classifyTraffic(durationSeconds, distanceKm),
         distanceKm,
         fetchedAt: new Date().toISOString()
@@ -150,10 +198,11 @@ const writeCache = (key, value) => {
 
 const getConfiguredProvider = () => {
     const configured = String(process.env.TRAFFIC_PROVIDER || "").trim().toLowerCase()
+    if (configured === "osrm") return configured
     if (configured === "google" || configured === "mapbox") return configured
     if (process.env.GOOGLE_MAPS_API_KEY) return "google"
     if (process.env.MAPBOX_ACCESS_TOKEN) return "mapbox"
-    return "heuristic"
+    return "osrm"
 }
 
 const fallbackEtaFromCreatedAt = ({ createdAt, statusIndex, now = new Date() }) => {
@@ -162,7 +211,7 @@ const fallbackEtaFromCreatedAt = ({ createdAt, statusIndex, now = new Date() }) 
         return {
             provider: "heuristic",
             source: "heuristic",
-            remainingSeconds: 0,
+            remainingSeconds: normalizeActiveEtaSeconds(0, { allowZero: true }),
             trafficLevel: traffic.level,
             fetchedAt: new Date().toISOString()
         }
@@ -173,7 +222,7 @@ const fallbackEtaFromCreatedAt = ({ createdAt, statusIndex, now = new Date() }) 
         return {
             provider: "heuristic",
             source: "heuristic",
-            remainingSeconds: traffic.totalMinutes * 60,
+            remainingSeconds: normalizeActiveEtaSeconds(traffic.totalMinutes * 60),
             trafficLevel: traffic.level,
             fetchedAt: new Date().toISOString()
         }
@@ -190,7 +239,7 @@ const fallbackEtaFromCreatedAt = ({ createdAt, statusIndex, now = new Date() }) 
     return {
         provider: "heuristic",
         source: "heuristic",
-        remainingSeconds: Math.max(0, targetSeconds - elapsedSeconds),
+        remainingSeconds: normalizeActiveEtaSeconds(targetSeconds - elapsedSeconds),
         trafficLevel: traffic.level,
         fetchedAt: new Date().toISOString()
     }
@@ -204,7 +253,7 @@ const fallbackEtaFromDistance = ({ from, to, now = new Date() }) => {
     return {
         provider: "heuristic",
         source: "heuristic",
-        remainingSeconds: durationSeconds,
+        remainingSeconds: normalizeActiveEtaSeconds(durationSeconds),
         trafficLevel: traffic.level,
         distanceKm,
         fetchedAt: new Date().toISOString()
@@ -216,13 +265,14 @@ export const resolveOrderEta = async ({
     statusIndex,
     now = new Date(),
     fromCoords,
-    destinationCoords
+    destinationCoords,
+    providerOverride
 }) => {
     if (statusIndex >= 3) {
         return {
             provider: "system",
             source: "delivered",
-            remainingSeconds: 0,
+            remainingSeconds: normalizeActiveEtaSeconds(0, { allowZero: true }),
             trafficLevel: "low",
             fetchedAt: new Date().toISOString()
         }
@@ -238,7 +288,7 @@ export const resolveOrderEta = async ({
         return fallbackEtaFromCreatedAt({ createdAt: order?.createdAt, statusIndex, now })
     }
 
-    const provider = getConfiguredProvider()
+    const provider = String(providerOverride || getConfiguredProvider()).trim().toLowerCase()
     if (provider === "heuristic") {
         return fallbackEtaFromDistance({ from: safeFrom, to: safeTo, now })
     }
@@ -246,6 +296,18 @@ export const resolveOrderEta = async ({
     const key = getCacheKey(provider, safeFrom, safeTo)
     const cached = readCache(key)
     if (cached) return cached
+
+    if (provider === "osrm") {
+        try {
+            const value = await fetchOsrmEta({ from: safeFrom, to: safeTo })
+            writeCache(key, value)
+            return value
+        } catch (error) {
+            const fallback = fallbackEtaFromDistance({ from: safeFrom, to: safeTo, now })
+            writeCache(key, fallback)
+            return fallback
+        }
+    }
 
     const googleKey = process.env.GOOGLE_MAPS_API_KEY
     const mapboxToken = process.env.MAPBOX_ACCESS_TOKEN

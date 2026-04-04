@@ -40,37 +40,42 @@ function OrderProgress({
     onEtaComplete,
     canAutoComplete = true
 }) {
-    const initialEta = Number.isFinite(Number(etaSecondsRemaining))
-        ? Math.max(0, Math.floor(Number(etaSecondsRemaining)))
-        : 0
+    const hasEta = Number.isFinite(Number(etaSecondsRemaining))
+    const normalizeDisplayEta = (seconds) => {
+        const safeEta = Math.max(0, Math.floor(Number(seconds) || 0))
+        if (currentStatus === 'delivered' || safeEta === 0) return safeEta
+        return Math.max(60, safeEta)
+    }
+    const normalizedIncomingEta = hasEta ? normalizeDisplayEta(etaSecondsRemaining) : 0
+    const initialEta = normalizedIncomingEta
     const [displayEtaSeconds, setDisplayEtaSeconds] = useState(initialEta)
     const completionTriggeredRef = useRef(false)
     const currentIndex = getStatusIndex(currentStatus)
 
     useEffect(() => {
         if (!Number.isFinite(Number(etaSecondsRemaining))) return
-        setDisplayEtaSeconds(Math.max(0, Math.floor(Number(etaSecondsRemaining))))
-    }, [etaSecondsRemaining])
+        setDisplayEtaSeconds(normalizeDisplayEta(etaSecondsRemaining))
+    }, [etaSecondsRemaining, currentIndex])
 
     useEffect(() => {
-        if (currentIndex >= 3) return
+        if (currentIndex >= 3 || !hasEta) return
         const timer = setInterval(() => {
             setDisplayEtaSeconds((prev) => Math.max(0, prev - 1))
         }, 1000)
         return () => clearInterval(timer)
-    }, [currentIndex])
+    }, [currentIndex, hasEta])
 
     useEffect(() => {
         completionTriggeredRef.current = false
     }, [currentStatus, etaSecondsRemaining])
 
     useEffect(() => {
-        if (!canAutoComplete || currentIndex >= 3 || displayEtaSeconds > 0 || completionTriggeredRef.current) return
+        if (!hasEta || !canAutoComplete || currentIndex >= 3 || displayEtaSeconds > 0 || completionTriggeredRef.current) return
         if (typeof onEtaComplete !== 'function') return
 
         completionTriggeredRef.current = true
         onEtaComplete()
-    }, [canAutoComplete, currentIndex, displayEtaSeconds, onEtaComplete])
+    }, [canAutoComplete, currentIndex, displayEtaSeconds, hasEta, onEtaComplete])
 
     return (
         <div className='w-full bg-white rounded-xl shadow-lg p-4 sm:p-6'>
@@ -78,7 +83,7 @@ function OrderProgress({
                 <div className='text-center mb-6'>
                     <p className='text-gray-500 text-sm'>Estimated Delivery Time</p>
                     <p className='text-3xl font-bold text-[#ff4d2d]'>
-                        {formatAsMinuteSecond(displayEtaSeconds)}
+                        {hasEta ? formatAsMinuteSecond(displayEtaSeconds) : 'Calculating...'}
                     </p>
                 </div>
             )}

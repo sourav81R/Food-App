@@ -3,6 +3,8 @@ import Order from "../models/order.model.js"
 import Shop from "../models/shop.model.js"
 import User from "../models/user.model.js"
 import { sendDeliveryOtpMail } from "../utils/mail.js"
+import { SOCKET_EVENTS } from "../utils/socketEvents.js"
+import { resolveOrderEta } from "../utils/trafficEta.js"
 import RazorPay from "razorpay"
 import { ROLE, expandRoleValues, normalizeRole } from "../utils/roles.js"
 
@@ -16,7 +18,6 @@ const SAMPLE_SECRETS = new Set([
     "your_razorpay_secret"
 ])
 const ACTIVE_DELIVERY_STATUSES = new Set(["assigned", "picked_up", "on_the_way"])
-const FIXED_DELIVERY_DURATION_SECONDS = 30 * 60
 const DELIVERY_CHARGE_PER_ORDER = 15
 
 const normalizeEnvValue = (value = "") =>
@@ -105,14 +106,62 @@ const getOrderProgressStatus = (order = {}) => {
     return "placed"
 }
 
-const getRemainingEtaSeconds = (order = {}, now = new Date()) => {
-    if (getOrderProgressStatus(order) === "delivered") return 0
+const getProgressStatusIndex = (status = "") => {
+    const normalizedStatus = String(status || "").trim().toLowerCase()
+    if (normalizedStatus === "delivered") return 3
+    if (["out of delivery", "picked_up", "picked-up", "on_the_way", "on-the-way", "assigned"].includes(normalizedStatus)) return 2
+    if (normalizedStatus === "preparing") return 1
+    return 0
+}
 
-    const createdAtMs = new Date(order?.createdAt).getTime()
-    if (!Number.isFinite(createdAtMs)) return FIXED_DELIVERY_DURATION_SECONDS
+const getLiveEtaSourceCoords = (order = {}) => {
+    const deliveryPartnerCoordinates = order?.deliveryPartner?.location?.coordinates
+    if (Array.isArray(deliveryPartnerCoordinates) && deliveryPartnerCoordinates.length === 2) {
+        return {
+            lat: deliveryPartnerCoordinates[1],
+            lon: deliveryPartnerCoordinates[0]
+        }
+    }
 
-    const elapsedSeconds = Math.max(0, Math.floor((now.getTime() - createdAtMs) / 1000))
-    return Math.max(0, FIXED_DELIVERY_DURATION_SECONDS - elapsedSeconds)
+    const assignedShopOrder = (order?.shopOrders || []).find((shopOrder) => {
+        const coordinates = shopOrder?.assignedDeliveryBoy?.location?.coordinates
+        return Array.isArray(coordinates) && coordinates.length === 2 && shopOrder?.status !== "delivered"
+    })
+
+    if (assignedShopOrder?.assignedDeliveryBoy?.location?.coordinates?.length === 2) {
+        const coordinates = assignedShopOrder.assignedDeliveryBoy.location.coordinates
+        return {
+            lat: coordinates[1],
+            lon: coordinates[0]
+        }
+    }
+
+    return null
+}
+
+const getOrderDestinationCoords = (order = {}) => {
+    const latitude = Number(order?.deliveryAddress?.latitude)
+    const longitude = Number(order?.deliveryAddress?.longitude)
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return null
+    }
+
+    return {
+        lat: latitude,
+        lon: longitude
+    }
+}
+
+const getLiveEtaForOrder = async (order = {}, now = new Date()) => {
+    return resolveOrderEta({
+        order,
+        statusIndex: getProgressStatusIndex(getOrderProgressStatus(order)),
+        now,
+        fromCoords: getLiveEtaSourceCoords(order),
+        destinationCoords: getOrderDestinationCoords(order),
+        providerOverride: "osrm"
+    })
 }
 
 const emitOrderStatusUpdated = (io, order) => {
@@ -125,7 +174,7 @@ const emitOrderStatusUpdated = (io, order) => {
     }
 
     if (order.user?.socketId) {
-        io.to(order.user.socketId).emit("orderStatusUpdated", payload)
+        io.to(order.user.socketId).emit(SOCKET_EVENTS.ORDER_STATUS_UPDATED, payload)
     }
 
     const ownerSocketIds = new Set(
@@ -135,7 +184,7 @@ const emitOrderStatusUpdated = (io, order) => {
     )
 
     ownerSocketIds.forEach((socketId) => {
-        io.to(socketId).emit("orderStatusUpdated", payload)
+        io.to(socketId).emit(SOCKET_EVENTS.ORDER_STATUS_UPDATED, payload)
     })
 }
 
@@ -279,7 +328,7 @@ export const placeOrder = async (req, res) => {
             newOrder.shopOrders.forEach(shopOrder => {
                 const ownerSocketId = shopOrder.owner.socketId
                 if (ownerSocketId) {
-                    io.to(ownerSocketId).emit('newOrder', {
+                    io.to(ownerSocketId).emit(SOCKET_EVENTS.NEW_ORDER, {
                         _id: newOrder._id,
                         paymentMethod: newOrder.paymentMethod,
                         user: newOrder.user,
@@ -354,7 +403,7 @@ export const verifyPayment = async (req, res) => {
             order.shopOrders.forEach(shopOrder => {
                 const ownerSocketId = shopOrder.owner.socketId
                 if (ownerSocketId) {
-                    io.to(ownerSocketId).emit('newOrder', {
+                    io.to(ownerSocketId).emit(SOCKET_EVENTS.NEW_ORDER, {
                         _id: order._id,
                         paymentMethod: order.paymentMethod,
                         user: order.user,
@@ -495,7 +544,7 @@ export const updateOrderStatus = async (req, res) => {
                 availableBoys.forEach(boy => {
                     const boySocketId = boy.socketId
                     if (boySocketId) {
-                        io.to(boySocketId).emit('newAssignment', {
+                        io.to(boySocketId).emit(SOCKET_EVENTS.NEW_ASSIGNMENT, {
                             sentTo:boy._id,
                             assignmentId: deliveryAssignment._id,
                             orderId: deliveryAssignment.order._id,
@@ -525,7 +574,7 @@ export const updateOrderStatus = async (req, res) => {
         if (io) {
             const userSocketId = order.user.socketId
             if (userSocketId) {
-                io.to(userSocketId).emit('update-status', {
+                io.to(userSocketId).emit(SOCKET_EVENTS.UPDATE_STATUS, {
                     orderId: order._id,
                     shopId: updatedShopOrder.shop._id,
                     status: updatedShopOrder.status,
@@ -739,12 +788,9 @@ export const getOrderById = async (req, res) => {
         }
 
         const progressStatus = getOrderProgressStatus(order)
+        const liveEta = await getLiveEtaForOrder(order)
         order.liveEta = {
-            provider: "fixed_30m",
-            source: "fixed",
-            remainingSeconds: getRemainingEtaSeconds(order),
-            trafficLevel: "n/a",
-            fetchedAt: new Date().toISOString(),
+            ...liveEta,
             progressStatus
         }
 
@@ -760,6 +806,7 @@ export const autoCompleteOrderByEta = async (req, res) => {
         const order = await Order.findById(orderId)
             .populate("user", "socketId")
             .populate("deliveryPartner", "location")
+            .populate("shopOrders.assignedDeliveryBoy", "location")
             .populate("shopOrders.owner", "socketId")
 
         if (!order) {
@@ -769,16 +816,13 @@ export const autoCompleteOrderByEta = async (req, res) => {
             return res.status(403).json({ message: "Forbidden: this order does not belong to you" })
         }
 
-        const remainingEtaSeconds = getRemainingEtaSeconds(order)
+        const eta = await getLiveEtaForOrder(order)
+        const remainingEtaSeconds = Number(eta?.remainingSeconds || 0)
         if (remainingEtaSeconds > 0) {
             return res.status(400).json({
                 message: "ETA has not completed yet",
                 remainingEtaSeconds,
-                eta: {
-                    provider: "fixed_30m",
-                    source: "fixed",
-                    remainingSeconds: remainingEtaSeconds
-                }
+                eta
             })
         }
 

@@ -3,7 +3,7 @@ import { IoIosArrowRoundBack } from "react-icons/io";
 import { IoSearchOutline } from "react-icons/io5";
 import { TbCurrentLocation } from "react-icons/tb";
 import { IoLocationSharp } from "react-icons/io5";
-import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, Marker, useMap } from 'react-leaflet';
 import { useDispatch, useSelector } from 'react-redux';
 import "leaflet/dist/leaflet.css"
 import { setAddress, setLocation } from '../redux/mapSlice';
@@ -16,6 +16,7 @@ import { serverUrl } from '../App';
 import { addMyOrder, setTotalAmount, clearCart } from '../redux/userSlice';
 import { useToast } from '../context/ToastContext';
 import { ClipLoader } from 'react-spinners';
+import EnhancedMapLayers from '../components/EnhancedMapLayers';
 function RecenterMap({ location }) {
   if (location.lat && location.lon) {
     const map = useMap()
@@ -279,11 +280,10 @@ function CheckOut() {
                 className={"w-full h-full"}
                 center={mapCenter}
                 zoom={16}
+                maxZoom={20}
+                scrollWheelZoom
               >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+                <EnhancedMapLayers />
                 <RecenterMap location={location} />
                 {Number.isFinite(location?.lat) && Number.isFinite(location?.lon) && (
                   <Marker position={[location.lat, location.lon]} draggable eventHandlers={{ dragend: onDragEnd }} />
