@@ -240,7 +240,7 @@ function UserDashboard() {
       {/* Welcome Celebration Animation */}
       {showCelebration && <WelcomeCelebration onClose={() => setShowCelebration(false)} />}
 
-      {searchItems && searchItems.length > 0 && (
+      {Array.isArray(searchItems) && searchItems.length > 0 && (
         <div className={`w-full max-w-6xl flex flex-col gap-5 items-start p-4 sm:p-5 shadow-md rounded-2xl mt-4 transition-colors ${isDark ? 'bg-[#16213e]' : 'bg-white'}`}>
           <h1 className={`text-2xl sm:text-3xl font-semibold border-b pb-2 ${isDark ? 'text-white border-gray-700' : 'text-gray-900 border-gray-200'}`}>
             Search Results
@@ -250,6 +250,15 @@ function UserDashboard() {
               <FoodCard data={item} key={item._id} />
             ))}
           </div>
+        </div>
+      )}
+
+      {Array.isArray(searchItems) && searchItems.length === 0 && (
+        <div className={`w-full max-w-6xl p-5 sm:p-6 shadow-md rounded-2xl mt-4 transition-colors ${isDark ? 'bg-[#16213e] text-white' : 'bg-white text-gray-800'}`}>
+          <h1 className='text-2xl sm:text-3xl font-semibold'>Search Results</h1>
+          <p className={`mt-3 text-sm sm:text-base ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
+            No matching dishes or restaurants were found in your delivery area.
+          </p>
         </div>
       )}
 

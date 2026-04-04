@@ -182,25 +182,53 @@ export const getItemsByShop=async (req,res) => {
 
 export const searchItems=async (req,res) => {
     try {
-        const {query,city}=req.query
-        if(!query || !city){
-            return res.status(400).json({ message: "query and city are required" })
-        }
-        const shops=await Shop.find({
-            city:{$regex:new RegExp(`^${city}$`, "i")}
-        }).populate('items')
-        if(!shops){
-            return res.status(400).json({message:"shops not found"})
-        }
-        const shopIds=shops.map(s=>s._id)
-        const items=await Item.find({
-            shop:{$in:shopIds},
-            $or:[
-              {name:{$regex:query,$options:"i"}},
-              {category:{$regex:query,$options:"i"}}  
-            ]
+        const { query, city } = req.query
+        const trimmedQuery = query?.trim()
 
-        }).populate("shop","name image")
+        if (!trimmedQuery) {
+            return res.status(400).json({ message: "query is required" })
+        }
+
+        const searchRegex = new RegExp(escapeRegExp(trimmedQuery), "i")
+        let shopFilter = {}
+
+        if (city?.trim()) {
+            const cityVariants = resolveCityVariants(city)
+            const cityRegexes = cityVariants.map((variant) => new RegExp(`^${escapeRegExp(variant)}$`, "i"))
+            shopFilter = cityRegexes.length > 0 ? { city: { $in: cityRegexes } } : {}
+        }
+
+        let shops = await Shop.find(shopFilter).select("_id name image city")
+
+        if (shops.length === 0 && city?.trim()) {
+            const fallbackCity = await pickFallbackCity(city)
+            if (fallbackCity) {
+                shops = await Shop.find({ city: fallbackCity }).select("_id name image city")
+            }
+        }
+
+        if (shops.length === 0) {
+            return res.status(200).json([])
+        }
+
+        const shopIds = shops.map((shop) => shop._id)
+        const matchingShopIds = shops
+            .filter((shop) => searchRegex.test(shop.name))
+            .map((shop) => shop._id)
+
+        const itemSearchConditions = [
+            { name: searchRegex },
+            { category: searchRegex }
+        ]
+
+        if (matchingShopIds.length > 0) {
+            itemSearchConditions.push({ shop: { $in: matchingShopIds } })
+        }
+
+        const items = await Item.find({
+            shop: { $in: shopIds },
+            $or: itemSearchConditions
+        }).populate("shop", "name image city")
 
         return res.status(200).json(items)
 

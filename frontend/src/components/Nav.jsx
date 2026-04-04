@@ -51,7 +51,19 @@ function Nav() {
 
     const handleSearchItems = async () => {
         try {
-            const result = await axios.get(`${serverUrl}/api/item/search-items?query=${query}&city=${currentCity}`, { withCredentials: true })
+            const trimmedQuery = query.trim()
+            if (!trimmedQuery) {
+                dispatch(setSearchItems(null))
+                return
+            }
+
+            const result = await axios.get(`${serverUrl}/api/item/search-items`, {
+                params: {
+                    query: trimmedQuery,
+                    city: currentCity || ""
+                },
+                withCredentials: true
+            })
             dispatch(setSearchItems(result.data))
         } catch (error) {
             console.log(error)
@@ -59,13 +71,13 @@ function Nav() {
     }
 
     useEffect(() => {
-        if (query) {
+        if (query.trim()) {
             handleSearchItems()
         } else {
             dispatch(setSearchItems(null))
         }
 
-    }, [query])
+    }, [query, currentCity])
 
     useEffect(() => {
         setShowInfo(false)
