@@ -19,6 +19,17 @@ import SearchAutocomplete from './SearchAutocomplete';
 
 const RECENT_SEARCHES_KEY = "foodooza-recent-searches";
 
+const searchCatalog = async ({ term, city }) => {
+    const result = await axios.get(`${serverUrl}/api/search`, {
+        params: {
+            q: term,
+            city: city || ""
+        },
+        withCredentials: true
+    })
+    return result.data || { items: [], shops: [] }
+}
+
 function Nav() {
     const { userData, currentCity, cartItems } = useSelector(state => state.user)
     const { myShopData } = useSelector(state => state.owner)
@@ -77,7 +88,7 @@ function Nav() {
         }
     }
 
-    const handleSubmitSearch = (term = query, itemsOverride = null) => {
+    const handleSubmitSearch = async (term = query, itemsOverride = null) => {
         const trimmedQuery = String(term || "").trim()
         if (!trimmedQuery) {
             dispatch(setSearchItems(null))
@@ -85,8 +96,22 @@ function Nav() {
             return
         }
 
+        let itemsToShow = itemsOverride
+        if (!itemsToShow) {
+            try {
+                setSearchLoading(true)
+                const result = await searchCatalog({ term: trimmedQuery, city: currentCity })
+                setSearchResults(result)
+                itemsToShow = result.items || []
+            } catch (error) {
+                itemsToShow = []
+            } finally {
+                setSearchLoading(false)
+            }
+        }
+
         persistRecentSearch(trimmedQuery)
-        dispatch(setSearchItems(itemsOverride || searchResults.items || []))
+        dispatch(setSearchItems(itemsToShow || []))
         setShowSearchDropdown(false)
         navigate("/")
     }
@@ -114,14 +139,8 @@ function Nav() {
 
             try {
                 setSearchLoading(true)
-                const result = await axios.get(`${serverUrl}/api/search`, {
-                    params: {
-                        q: trimmedQuery,
-                        city: currentCity || ""
-                    },
-                    withCredentials: true
-                })
-                setSearchResults(result.data)
+                const result = await searchCatalog({ term: trimmedQuery, city: currentCity })
+                setSearchResults(result)
             } catch (error) {
                 setSearchResults({ items: [], shops: [] })
             } finally {

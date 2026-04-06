@@ -177,6 +177,18 @@ const refundOrderIfNeeded = async (order) => {
         return
     }
 
+    if (order.paymentMethod === "cod") {
+        order.refund = {
+            status: "processed",
+            amount: 0,
+            method: "none",
+            reason: "Cash on delivery order cancelled",
+            processedAt: new Date(),
+            note: "No refund issued because payment was due on delivery"
+        }
+        return
+    }
+
     if (order.paymentMethod === "online" && order.payment && order.razorpayPaymentId) {
         const { client, error } = getRazorpayClient()
         if (!error) {
@@ -216,26 +228,38 @@ const refundOrderIfNeeded = async (order) => {
         return
     }
 
-    await creditWallet({
-        userId: order.user,
-        amount: refundAmount,
-        type: "refund",
-        description: `Refund for cancelled order #${String(order._id).slice(-6)}`,
-        orderId: order._id,
-        metadata: {
-            paymentMethod: order.paymentMethod
+    if (order.paymentMethod === "wallet" || order.paymentMethod === "online") {
+        await creditWallet({
+            userId: order.user,
+            amount: refundAmount,
+            type: "refund",
+            description: `Refund for cancelled order #${String(order._id).slice(-6)}`,
+            orderId: order._id,
+            metadata: {
+                paymentMethod: order.paymentMethod
+            }
+        })
+
+        order.refund = {
+            status: "processed",
+            amount: refundAmount,
+            method: "wallet",
+            reason: "Order cancelled",
+            processedAt: new Date(),
+            note: order.paymentMethod === "online"
+                ? "Wallet credited after online refund fallback"
+                : "Wallet credited for cancelled wallet order"
         }
-    })
+        return
+    }
 
     order.refund = {
-        status: "processed",
-        amount: refundAmount,
-        method: "wallet",
-        reason: "Order cancelled",
+        status: "failed",
+        amount: 0,
+        method: "none",
+        reason: "Refund method unsupported",
         processedAt: new Date(),
-        note: order.paymentMethod === "online"
-            ? "Wallet credited after online refund fallback"
-            : "Wallet credited for cancelled order"
+        note: `No refund rule configured for payment method ${order.paymentMethod || "unknown"}`
     }
 }
 

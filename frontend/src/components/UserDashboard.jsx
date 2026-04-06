@@ -14,6 +14,9 @@ import MealTimeSection from './MealTimeSection';
 import WelcomeCelebration from './WelcomeCelebration';
 import { useTheme } from '../context/ThemeContext';
 import { setRecommendedItems, setWalletBalance, setWalletTransactions } from '../redux/userSlice';
+import { useToast } from '../context/ToastContext';
+import { ClipLoader } from 'react-spinners';
+import { loadRazorpaySdk } from '../utils/razorpay';
 
 const TEA_BREAK_CATEGORIES = ['Snacks', 'Fast Food', 'Desserts', 'Sandwiches', 'Others']
 const TEA_BREAK_KEYWORDS = ['tea', 'chai', 'coffee', 'cappuccino', 'espresso', 'latte', 'mocha', 'cold brew', 'samosa', 'toast', 'biscuit', 'sandwich']
@@ -38,8 +41,11 @@ function UserDashboard() {
     minRating: 0,
     sortBy: 'default'
   })
+  const [walletTopupAmount, setWalletTopupAmount] = useState('')
+  const [walletTopupLoading, setWalletTopupLoading] = useState(false)
   const isLatestItemsView = filters.sortBy === 'latest'
   const { isDark } = useTheme()
+  const toast = useToast()
 
   // Auto-slide state
   const [isCatePaused, setIsCatePaused] = useState(false)
@@ -165,23 +171,94 @@ function UserDashboard() {
     fetchRecommendations()
   }, [userData?._id, currentCity, recommendedItems, dispatch])
 
-  useEffect(() => {
-    const fetchWallet = async () => {
-      if (!userData?._id || walletTransactions.length > 0) {
-        return
-      }
+  const fetchWallet = async () => {
+    if (!userData?._id) {
+      return
+    }
 
-      try {
-        const result = await axios.get(`${serverUrl}/api/wallet/transactions`, { withCredentials: true })
-        dispatch(setWalletBalance(result.data?.walletBalance || 0))
-        dispatch(setWalletTransactions(result.data?.transactions || []))
-      } catch (error) {
-        console.log(error)
-      }
+    try {
+      const result = await axios.get(`${serverUrl}/api/wallet/transactions`, { withCredentials: true })
+      dispatch(setWalletBalance(result.data?.walletBalance || 0))
+      dispatch(setWalletTransactions(result.data?.transactions || []))
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  useEffect(() => {
+    if (walletTransactions.length > 0) {
+      return
     }
 
     fetchWallet()
   }, [userData?._id, walletTransactions.length, dispatch])
+
+  const handleWalletTopup = async () => {
+    const amount = Number(walletTopupAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.warning('Enter a valid amount to add')
+      return
+    }
+
+    setWalletTopupLoading(true)
+    try {
+      const { data } = await axios.post(`${serverUrl}/api/wallet/topup-order`, {
+        amount
+      }, { withCredentials: true })
+
+      await loadRazorpaySdk()
+
+      const options = {
+        key: data.razorpayKeyId,
+        amount: data.razorOrder.amount,
+        currency: 'INR',
+        name: 'Foodooza Wallet',
+        description: 'Add balance to wallet',
+        order_id: data.razorOrder.id,
+        prefill: {
+          name: data.customer?.name || userData?.fullName || '',
+          email: data.customer?.email || userData?.email || '',
+          contact: data.customer?.contact || userData?.mobile || ''
+        },
+        handler: async function (response) {
+          try {
+            const verifyResult = await axios.post(`${serverUrl}/api/wallet/verify-topup`, {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id
+            }, { withCredentials: true })
+
+            dispatch(setWalletBalance(verifyResult.data?.walletBalance || 0))
+            dispatch(setWalletTransactions(verifyResult.data?.transactions || []))
+            setWalletTopupAmount('')
+            toast.success(verifyResult.data?.message || 'Wallet balance added successfully')
+          } catch (error) {
+            toast.error(error?.response?.data?.message || 'Wallet top-up verification failed')
+          } finally {
+            setWalletTopupLoading(false)
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            toast.info('Wallet top-up cancelled')
+            setWalletTopupLoading(false)
+          }
+        },
+        theme: {
+          color: '#ff4d2d'
+        }
+      }
+
+      const rzp = new window.Razorpay(options)
+      rzp.on('payment.failed', function (response) {
+        toast.error(`Payment failed: ${response?.error?.description || 'Unable to add balance'}`)
+        setWalletTopupLoading(false)
+      })
+      rzp.open()
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Unable to start wallet top-up')
+      setWalletTopupLoading(false)
+    }
+  }
 
 
   const updateButton = (ref, setLeftButton, setRightButton) => {
@@ -338,6 +415,41 @@ function UserDashboard() {
             <div className='text-right'>
               <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Current Balance</p>
               <p className='text-2xl font-bold text-[#ff4d2d]'>Rs {Number(walletBalance || 0).toFixed(2)}</p>
+            </div>
+          </div>
+
+          <div className={`mt-4 rounded-xl border p-4 ${isDark ? 'border-[#374151] bg-[#0f3460]' : 'border-orange-100 bg-orange-50/60'}`}>
+            <div className='flex flex-col md:flex-row md:items-end gap-3'>
+              <div className='flex-1'>
+                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Add Balance</label>
+                <input
+                  type='number'
+                  min='1'
+                  step='1'
+                  value={walletTopupAmount}
+                  onChange={(e) => setWalletTopupAmount(e.target.value)}
+                  placeholder='Enter amount'
+                  className={`w-full rounded-lg border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2d] ${isDark ? 'bg-[#16213e] border-[#374151] text-white' : 'bg-white border-orange-200 text-gray-900'}`}
+                />
+              </div>
+              <div className='flex flex-wrap gap-2'>
+                {[100, 250, 500].map((amount) => (
+                  <button
+                    key={amount}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium border ${isDark ? 'border-[#374151] bg-[#16213e] text-white' : 'border-orange-200 bg-white text-[#ff4d2d]'}`}
+                    onClick={() => setWalletTopupAmount(String(amount))}
+                  >
+                    Rs {amount}
+                  </button>
+                ))}
+              </div>
+              <button
+                className='px-5 py-3 rounded-lg bg-[#ff4d2d] text-white font-semibold disabled:opacity-70 min-w-[140px]'
+                onClick={handleWalletTopup}
+                disabled={walletTopupLoading}
+              >
+                {walletTopupLoading ? <ClipLoader size={18} color='white' /> : 'Add Balance'}
+              </button>
             </div>
           </div>
 
