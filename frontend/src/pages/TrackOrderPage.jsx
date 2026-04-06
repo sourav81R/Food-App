@@ -169,7 +169,7 @@ function TrackOrderPage() {
   }, [currentOrder?._id, dispatch, handleGetOrder])
 
   const activeShopOrdersCount = useMemo(() => {
-    return currentOrder?.shopOrders?.filter(order => order.status !== "delivered")?.length || 0
+    return currentOrder?.shopOrders?.filter(order => !["delivered", "cancelled"].includes(order.status))?.length || 0
   }, [currentOrder?.shopOrders])
 
   const canCancelOrder = useMemo(() => {
@@ -249,6 +249,13 @@ function TrackOrderPage() {
               const deliveredAtLabel = shopOrder?.status === "delivered"
                 ? formatOrderDateTime(shopOrder?.deliveredAt || currentOrder?.updatedAt)
                 : null
+              const cancelledAtLabel = shopOrder?.status === "cancelled"
+                ? formatOrderDateTime(currentOrder?.cancellation?.cancelledAt || currentOrder?.updatedAt)
+                : null
+              const refundAmount = Number(currentOrder?.refund?.amount || 0)
+              const refundNote = String(currentOrder?.refund?.note || "").trim()
+              const cancellationReason = String(currentOrder?.cancellation?.reason || "").trim()
+              const isCancelled = shopOrder?.status === "cancelled" || currentOrder?.status === "cancelled"
 
               return (
                 <>
@@ -257,28 +264,61 @@ function TrackOrderPage() {
                     <p className='font-semibold break-words'><span>Items:</span> {shopOrder.shopOrderItems?.map(i => i.name).join(",")}</p>
                     <p><span className='font-semibold'>Subtotal:</span> Rs {shopOrder.subtotal}</p>
                     <p className='mt-6 break-words'><span className='font-semibold'>Delivery address:</span> {currentOrder.deliveryAddress?.text}</p>
-                    <div className='mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                      <div className='rounded-xl border border-orange-100 bg-orange-50 px-4 py-3'>
-                        <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Ordered On</p>
-                        <p className='mt-1 text-sm font-semibold text-gray-800'>{orderedAtLabel}</p>
+                    {!isCancelled && (
+                      <div className='mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                        <div className='rounded-xl border border-orange-100 bg-orange-50 px-4 py-3'>
+                          <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Ordered On</p>
+                          <p className='mt-1 text-sm font-semibold text-gray-800'>{orderedAtLabel}</p>
+                        </div>
+                        <div className='rounded-xl border border-green-100 bg-green-50 px-4 py-3'>
+                          <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Delivered On</p>
+                          <p className='mt-1 text-sm font-semibold text-gray-800'>
+                            {deliveredAtLabel || 'Not delivered yet'}
+                          </p>
+                        </div>
                       </div>
-                      <div className='rounded-xl border border-green-100 bg-green-50 px-4 py-3'>
-                        <p className='text-xs font-semibold uppercase tracking-wide text-gray-500'>Delivered On</p>
-                        <p className='mt-1 text-sm font-semibold text-gray-800'>
-                          {deliveredAtLabel || 'Not delivered yet'}
-                        </p>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
-                  <OrderProgress
-                    currentStatus={progressStatus}
-                    etaSecondsRemaining={resolvedEtaSeconds}
-                    canAutoComplete={canAutoComplete}
-                    onEtaComplete={handleAutoCompleteByEta}
-                  />
+                  {isCancelled ? (
+                    <div className='rounded-2xl border border-red-200 bg-red-50 px-4 py-5 text-center'>
+                      <p className='text-xl font-bold text-red-600'>Order Cancelled</p>
+                      <p className='mt-2 text-sm font-medium text-gray-700'>
+                        This order has been cancelled and will not be delivered.
+                      </p>
+                      {cancelledAtLabel && (
+                        <p className='mt-3 text-sm text-gray-600'>
+                          Cancelled on: <span className='font-semibold text-gray-800'>{cancelledAtLabel}</span>
+                        </p>
+                      )}
+                      {cancellationReason && (
+                        <p className='mt-2 text-sm text-gray-600'>
+                          Reason: <span className='font-semibold text-gray-800'>{cancellationReason}</span>
+                        </p>
+                      )}
+                      {currentOrder?.refund?.status === "processed" && (
+                        <p className='mt-2 text-sm text-gray-600'>
+                          Refund: <span className='font-semibold text-gray-800'>
+                            {refundAmount > 0 ? `Rs ${refundAmount}` : 'No refund required'}
+                          </span>
+                        </p>
+                      )}
+                      {refundNote && (
+                        <p className='mt-2 text-sm text-gray-600'>{refundNote}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <OrderProgress
+                      currentStatus={progressStatus}
+                      etaSecondsRemaining={resolvedEtaSeconds}
+                      canAutoComplete={canAutoComplete}
+                      onEtaComplete={handleAutoCompleteByEta}
+                    />
+                  )}
 
-                  {shopOrder.status != "delivered" ? <>
+                  {isCancelled ? (
+                    <p className='text-red-600 font-semibold text-lg'>Cancelled</p>
+                  ) : shopOrder.status != "delivered" ? <>
                     {assignedPartner ?
                       <div className='text-sm text-gray-700 bg-orange-50 border border-orange-100 rounded-xl p-3'>
                         <p className='font-semibold'><span>Delivery Partner:</span> {assignedPartner.fullName || "Not available"}</p>
@@ -295,7 +335,7 @@ function TrackOrderPage() {
                       </div> : <p className='font-semibold'>Delivery Partner is not assigned yet.</p>}
                   </> : <p className='text-green-600 font-semibold text-lg'>Delivered</p>}
 
-                  {(assignedPartner && partnerLocation && hasCustomerLocation && shopOrder.status !== "delivered") && (
+                  {(assignedPartner && partnerLocation && hasCustomerLocation && shopOrder.status !== "delivered" && !isCancelled) && (
                     <div className="h-[280px] sm:h-[360px] w-full rounded-2xl overflow-hidden shadow-md">
                       <DeliveryBoyTracking data={{
                         deliveryBoyLocation: partnerLocation,

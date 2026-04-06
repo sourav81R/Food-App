@@ -281,7 +281,7 @@ function UserOrderCard({ data }) {
                         <FaRedo size={12} />
                         <span className='hidden sm:inline'>Reorder</span>
                     </button>
-                    <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-4 py-2 rounded-lg text-sm w-full sm:w-auto disabled:opacity-50' onClick={() => navigate(`/track-order/${data?._id}`)} disabled={data?.status === "cancelled"}>Track Order</button>
+                    <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-4 py-2 rounded-lg text-sm w-full sm:w-auto' onClick={() => navigate(`/track-order/${data?._id}`)}>Track Order</button>
                 </div>
             </div>
         </div>
