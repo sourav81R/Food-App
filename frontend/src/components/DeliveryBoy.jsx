@@ -19,11 +19,12 @@ function DeliveryBoy() {
   const [showOtpBox,setShowOtpBox]=useState(false)
   const [availableAssignments,setAvailableAssignments]=useState(null)
   const [otp,setOtp]=useState("")
-  const [todayDeliveries,setTodayDeliveries]=useState([])
+  const [earningsRange, setEarningsRange] = useState("today")
+  const [earningsChart,setEarningsChart]=useState([])
   const [earningSummary, setEarningSummary] = useState({
     totalDeliveries: 0,
-    ratePerDelivery: 15,
-    totalEarning: 0
+    totalEarnings: 0,
+    averagePerDelivery: 0
   })
 const [deliveryBoyLocation,setDeliveryBoyLocation]=useState(null)
 const [loading,setLoading]=useState(false)
@@ -131,34 +132,21 @@ return ()=>{
   }
 
 
-   const handleTodayDeliveries=async () => {
+   const handleDeliveryEarnings=async (range = earningsRange) => {
     
     try {
-      const result=await axios.get(`${serverUrl}/api/order/get-today-deliveries`,{withCredentials:true})
+      const result=await axios.get(`${serverUrl}/api/delivery/earnings`,{
+        params:{range},
+        withCredentials:true
+      })
       const payload = result.data
 
-      if (Array.isArray(payload)) {
-        const totalDeliveries = payload.reduce((sum, entry) => sum + Number(entry?.count || 0), 0)
-        const ratePerDelivery = 15
-        setTodayDeliveries(payload)
-        setEarningSummary({
-          totalDeliveries,
-          ratePerDelivery,
-          totalEarning: totalDeliveries * ratePerDelivery
-        })
-        return
-      }
-
-      const hourlyStats = Array.isArray(payload?.hourlyStats) ? payload.hourlyStats : []
-      const totalDeliveries = Number(payload?.totalDeliveries || 0)
-      const ratePerDelivery = Number(payload?.ratePerDelivery || 15)
-      const totalEarning = Number(payload?.totalEarning || (totalDeliveries * ratePerDelivery))
-
-      setTodayDeliveries(hourlyStats)
+      const dailyEarnings = Array.isArray(payload?.dailyEarnings) ? payload.dailyEarnings : []
+      setEarningsChart(dailyEarnings)
       setEarningSummary({
-        totalDeliveries,
-        ratePerDelivery,
-        totalEarning
+        totalDeliveries: Number(payload?.totalDeliveries || 0),
+        totalEarnings: Number(payload?.totalEarnings || 0),
+        averagePerDelivery: Number(payload?.averagePerDelivery || 0)
       })
     } catch (error) {
       console.log(error)
@@ -166,11 +154,17 @@ return ()=>{
   }
  
 
-  useEffect(()=>{
+useEffect(()=>{
 getAssignments()
 getCurrentOrder()
-handleTodayDeliveries()
+handleDeliveryEarnings(earningsRange)
   },[userData])
+
+  useEffect(() => {
+    if (userData?._id) {
+      handleDeliveryEarnings(earningsRange)
+    }
+  }, [earningsRange, userData?._id])
   return (
     <div className='w-full min-h-screen flex flex-col gap-5 items-center bg-[#fff9f6] overflow-y-auto pt-[90px] px-3 sm:px-4'>
       <Nav/>
@@ -181,24 +175,33 @@ handleTodayDeliveries()
     </div>
 
 <div className='bg-white rounded-2xl shadow-md p-4 sm:p-5 w-full mb-6 border border-orange-100'>
-  <h1 className='text-lg font-bold mb-3 text-[#ff4d2d] '>Today Deliveries</h1>
+  <div className='flex items-center justify-between gap-3 mb-3'>
+  <h1 className='text-lg font-bold text-[#ff4d2d] '>Earnings Overview</h1>
+  <div className='flex gap-2'>
+    {["today","week","month"].map((range)=>(
+      <button key={range} className={`px-3 py-1 rounded-lg text-sm ${earningsRange === range ? 'bg-[#ff4d2d] text-white' : 'bg-orange-50 text-[#ff4d2d]'}`} onClick={()=>setEarningsRange(range)}>
+        {range}
+      </button>
+    ))}
+  </div>
+  </div>
 
   <ResponsiveContainer width="100%" height={200}>
-   <BarChart data={todayDeliveries}>
+   <BarChart data={earningsChart}>
   <CartesianGrid strokeDasharray="3 3"/>
-  <XAxis dataKey="hour" tickFormatter={(h)=>`${h}:00`}/>
+  <XAxis dataKey="label"/>
     <YAxis  allowDecimals={false}/>
-    <Tooltip formatter={(value)=>[value,"orders"]} labelFormatter={label=>`${label}:00`}/>
-      <Bar dataKey="count" fill='#ff4d2d'/>
+    <Tooltip formatter={(value, name)=>[value, name === 'earnings' ? 'earnings' : 'deliveries']}/>
+      <Bar dataKey="earnings" fill='#ff4d2d'/>
    </BarChart>
   </ResponsiveContainer>
 
   <div className='w-full max-w-sm mx-auto mt-6 p-5 sm:p-6 bg-white rounded-2xl shadow-lg text-center'>
-<h1 className='text-xl font-semibold text-gray-800 mb-2'>Today's Earning</h1>
+<h1 className='text-xl font-semibold text-gray-800 mb-2'>Delivery Earnings</h1>
 <p className='text-sm text-gray-500 mb-1'>
-  {earningSummary.totalDeliveries} delivered x Rs {earningSummary.ratePerDelivery}
+  {earningSummary.totalDeliveries} deliveries • Avg Rs {earningSummary.averagePerDelivery}
 </p>
-<span className='text-3xl font-bold text-green-600'>Rs {earningSummary.totalEarning}</span>
+<span className='text-3xl font-bold text-green-600'>Rs {earningSummary.totalEarnings}</span>
   </div>
 </div>
 

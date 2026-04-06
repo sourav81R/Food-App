@@ -14,12 +14,17 @@ The project is split into a React + Vite frontend and an Express + MongoDB backe
 - Cookie-based JWT authentication
 - Email OTP password reset flow
 - Google sign-in and sign-up through Firebase Auth
-- Real-time order updates with Socket.IO
+- Smart search with debounced autocomplete and recent history
+- Real-time order updates with Socket.IO and live ETA rebroadcasts
 - Live delivery partner location tracking on maps
 - Cash on delivery and Razorpay online payments
-- Shop, item, favorite, coupon, review, and admin modules
+- Wallet payments, refunds, saved addresses, and scheduled orders
+- FCM push notifications for order lifecycle updates
+- AI-powered dish recommendations and smart coupon auto-apply
+- Shop, item, favorite, coupon, review, analytics, and admin modules
 - Role-aware dashboards for customer, restaurant owner, delivery partner, and admin
-- Geo-based address lookup and map-driven checkout flow
+- Geo-based address lookup, shop availability checks, and map-driven checkout flow
+- Dark mode with persistent theme preference
 
 ## Tech Stack
 
@@ -46,6 +51,10 @@ The project is split into a React + Vite frontend and an Express + MongoDB backe
 - Multer + Cloudinary
 - Nodemailer
 - Razorpay
+- Helmet
+- express-rate-limit
+- express-mongo-sanitize
+- node-cron
 
 ## Repository Structure
 
@@ -99,20 +108,30 @@ Food-Delivery/
 - Sign up and sign in with email-password or Google
 - Browse city-based shops and menu items
 - Search items and filter by category, price, food type, and rating
+- Use autocomplete search with recent search history
 - Add and remove favorites
 - Add to cart and place an order
-- Choose COD or Razorpay online payment
+- Choose COD, Razorpay online payment, or wallet payment
+- Save delivery addresses and pick a default address at checkout
+- Schedule orders up to 24 hours ahead
+- Get best coupon auto-applied with optional manual override
 - Track order progress and delivery partner location
+- Cancel eligible orders and receive refunds through Razorpay or wallet credit fallback
+- Receive push notifications for preparation, dispatch, and delivery
 - Rate ordered items
 - Leave one restaurant review per delivered order
+- See AI-powered dish recommendations and wallet activity
 
 ### Restaurant flow
 
 - Create or edit a shop with image upload
+- Configure opening and closing times
 - Add, edit, and delete menu items
 - View incoming orders
+- Toggle busy mode to temporarily stop taking new orders
 - Update per-shop order status from `pending` to `preparing` to `out of delivery`
 - Trigger nearby delivery assignment broadcast when an order is ready
+- Review revenue, top items, and hourly order heatmaps on the analytics dashboard
 
 ### Delivery flow
 
@@ -121,7 +140,7 @@ Food-Delivery/
 - Accept one active assignment at a time
 - Share live geolocation to connected clients
 - Mark orders delivered using OTP verification
-- View daily delivery counts and earnings summary
+- View delivery counts, total earnings, average earnings, and range-based charts
 
 ### Admin flow
 
@@ -187,6 +206,13 @@ EMAIL_PASS=your_smtp_app_password
 RAZORPAY_KEY_ID=your_razorpay_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 
+GEMINI_API_KEY=your_gemini_api_key
+FIREBASE_SERVER_KEY=your_firebase_cloud_messaging_server_key
+
+TRAFFIC_PROVIDER=osrm
+TRAFFIC_CACHE_TTL_MS=15000
+TRAFFIC_REQUEST_TIMEOUT_MS=5000
+
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASS=change_me_securely
 ```
@@ -205,6 +231,7 @@ VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+VITE_FIREBASE_VAPID_KEY=your_web_push_vapid_key
 ```
 
 ### Notes on env setup
@@ -214,6 +241,10 @@ VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
 - Cloudinary credentials are effectively required for shop and item image uploads.
 - `EMAIL` and `EMAIL_PASS` are required for forgot-password OTP and delivery OTP email flows.
 - Razorpay keys are optional only if you are happy to disable online payments. The checkout page automatically falls back to COD when the server reports payments are unavailable.
+- `GEMINI_API_KEY` powers the personalized recommendations endpoint. This project currently uses Gemini because that API key was supplied for the feature work.
+- `FIREBASE_SERVER_KEY` is required on the backend to send FCM push notifications.
+- `VITE_FIREBASE_VAPID_KEY` is required on the frontend to register browser push tokens.
+- `TRAFFIC_PROVIDER`, `TRAFFIC_CACHE_TTL_MS`, and `TRAFFIC_REQUEST_TIMEOUT_MS` control ETA lookup behavior.
 - Firebase values are recommended even though the frontend currently contains fallback config values.
 - `ADMIN_EMAIL` and `ADMIN_PASS` are optional. If provided, the backend attempts to bootstrap an admin account on startup.
 
@@ -255,15 +286,28 @@ Open `http://localhost:5173`.
 The backend mounts these route groups:
 
 - `/api/auth` - signup, signin, signout, Google auth, forgot-password OTP flow
-- `/api/user` - current user and location update
-- `/api/shop` - create or edit shop, fetch own shop, fetch shops by city
+- `/api/user` - current user, location update, saved addresses CRUD, and AI recommendations
+- `/api/shop` - create or edit shop, fetch own shop, fetch shops by city, busy mode, and analytics
 - `/api/item` - add, edit, delete, search, fetch by city or shop, and rate items
-- `/api/order` - payment config, place order, verify payment, order history, delivery assignment, tracking, and delivery OTP
+- `/api/order` - payment config, place order, verify payment, scheduled activation, order history, cancellation, delivery assignment, tracking, and delivery OTP
 - `/api/favorite` - favorite management
-- `/api/coupon` - create, validate, and fetch active coupons
+- `/api/coupon` - create, validate, fetch active coupons, and fetch the best eligible coupon
 - `/api/admin` - admin overview and moderation endpoints
-- `/api/delivery` - delivery partner registration, login, availability, and assigned orders
+- `/api/delivery` - delivery partner registration, login, availability, assigned orders, and earnings analytics
+- `/api/search` - smart search across restaurants and items
+- `/api/wallet` - wallet balance and wallet transaction history
+- `/api/notifications` - FCM token registration
 - `/api/reviews` - create, update, delete, and fetch restaurant reviews
+
+### Notable New Endpoints
+
+- `GET /api/search?q=<term>&city=<city>` - fuzzy search for items and restaurants
+- `POST /api/notifications/token` - register an FCM token for the current user
+- `GET /api/wallet/balance` - fetch the current wallet balance
+- `GET /api/wallet/transactions` - fetch wallet transaction history
+- `POST /api/order/:id/cancel` - cancel an eligible order and trigger refund handling
+- `GET /api/delivery/earnings?range=today|week|month` - delivery partner earnings summary and chart data
+- `GET /api/shop/analytics?range=week|month` - restaurant analytics
 
 ## Data Models
 
@@ -284,6 +328,7 @@ Socket.IO is used for:
 
 - user identity registration after login
 - live delivery location broadcast
+- live ETA updates to customers
 - new order notifications to restaurant owners
 - shop order status changes
 - order delivery status updates
@@ -292,7 +337,9 @@ Socket.IO is used for:
 ## Important Project Notes
 
 - The backend accepts both legacy role names (`owner`, `deliveryBoy`) and canonical role names (`restaurant`, `delivery`), then normalizes them internally.
-- Current live ETA in tracking is a fixed countdown model. There is a helper for traffic-provider ETA work in `backend/utils/trafficEta.js`, but it is not yet wired into the active order flow.
+- Live ETA now uses `backend/utils/trafficEta.js`, driver coordinates, and a one-minute rebroadcast loop.
+- Scheduled orders are activated every minute by a cron job once their `scheduledFor` time arrives.
+- Shop and item schemas now include the requested production indexes for search, geo queries, and order lookups.
 - There is no automated test suite configured in the root project right now.
 - If MongoDB connection issues appear during setup, see `MONGODB_CONNECTION_FIX.md`.
 

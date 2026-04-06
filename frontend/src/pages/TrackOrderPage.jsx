@@ -8,6 +8,7 @@ import DeliveryBoyTracking from '../components/DeliveryBoyTracking'
 import OrderProgress from '../components/OrderProgress'
 import { useSocket } from '../context/SocketContext'
 import { clearOrderEta, setOrderEta } from '../redux/userSlice'
+import { useToast } from '../context/ToastContext'
 
 const ETA_UPDATE_EVENT = "eta_update"
 const UPDATE_DELIVERY_LOCATION_EVENT = "updateDeliveryLocation"
@@ -54,11 +55,15 @@ function TrackOrderPage() {
   const [lastUpdated, setLastUpdated] = useState(null)
   const [fetchError, setFetchError] = useState("")
   const [liveLocations, setLiveLocations] = useState({})
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState("")
   const autoCompletionInFlightRef = useRef(false)
   const navigate = useNavigate()
   const socket = useSocket()
   const dispatch = useDispatch()
   const liveEtaSeconds = useSelector((state) => state.user.liveEtaByOrderId?.[orderId])
+  const toast = useToast()
 
   const handleGetOrder = useCallback(async () => {
     try {
@@ -167,6 +172,28 @@ function TrackOrderPage() {
     return currentOrder?.shopOrders?.filter(order => order.status !== "delivered")?.length || 0
   }, [currentOrder?.shopOrders])
 
+  const canCancelOrder = useMemo(() => {
+    const statuses = (currentOrder?.shopOrders || []).map((shopOrder) => shopOrder.status)
+    return statuses.length > 0 && statuses.every((status) => ["pending", "preparing"].includes(status))
+  }, [currentOrder?.shopOrders])
+
+  const handleCancelOrder = async () => {
+    try {
+      setCancelLoading(true)
+      await axios.post(`${serverUrl}/api/order/${orderId}/cancel`, {
+        reason: cancelReason
+      }, { withCredentials: true })
+      toast.success("Order cancelled successfully")
+      setShowCancelModal(false)
+      setCancelReason("")
+      await handleGetOrder()
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Unable to cancel order")
+    } finally {
+      setCancelLoading(false)
+    }
+  }
+
   return (
     <div className='min-h-screen bg-[#fff9f6] px-3 sm:px-4 py-4 sm:py-6'>
       <div className='max-w-4xl mx-auto flex flex-col gap-6'>
@@ -178,6 +205,11 @@ function TrackOrderPage() {
           <span>Active deliveries: <span className='font-semibold text-[#ff4d2d]'>{activeShopOrdersCount}</span></span>
           <span>{lastUpdated ? `Last updated: ${lastUpdated.toLocaleTimeString()}` : "Waiting for first update..."}</span>
         </div>
+        {canCancelOrder && (
+          <button className='self-end px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600' onClick={() => setShowCancelModal(true)}>
+            Cancel Order
+          </button>
+        )}
         {fetchError && <p className='text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg'>{fetchError}</p>}
         {currentOrder?.shopOrders?.map((shopOrder, index) => (
           <div className='bg-white p-4 rounded-2xl shadow-md border border-orange-100 space-y-4' key={index}>
@@ -280,6 +312,28 @@ function TrackOrderPage() {
           </div>
         ))}
       </div>
+
+      {showCancelModal && (
+        <div className='fixed inset-0 bg-black/50 flex items-center justify-center px-4 z-[10000]'>
+          <div className='w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl space-y-4'>
+            <h2 className='text-xl font-bold'>Cancel this order?</h2>
+            <p className='text-sm text-gray-600'>You can cancel only while the order is still pending or preparing.</p>
+            <textarea
+              className='w-full rounded-xl border border-gray-200 px-3 py-2 text-sm'
+              rows={3}
+              placeholder='Optional cancellation reason'
+              value={cancelReason}
+              onChange={(event) => setCancelReason(event.target.value)}
+            />
+            <div className='flex justify-end gap-2'>
+              <button className='px-4 py-2 rounded-lg bg-gray-100 text-gray-700' onClick={() => setShowCancelModal(false)}>Keep Order</button>
+              <button className='px-4 py-2 rounded-lg bg-red-500 text-white disabled:opacity-60' onClick={handleCancelOrder} disabled={cancelLoading}>
+                {cancelLoading ? "Cancelling..." : "Confirm Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

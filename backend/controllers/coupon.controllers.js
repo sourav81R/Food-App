@@ -58,6 +58,46 @@ export const getActiveCoupons = async (req, res) => {
     }
 };
 
+export const getBestCoupon = async (req, res) => {
+    try {
+        const orderAmount = Number(req.query.orderAmount || 0);
+        const now = new Date();
+
+        const coupons = await Coupon.find({
+            isActive: true,
+            expiresAt: { $gt: now },
+            $or: [
+                { usageLimit: null },
+                { $expr: { $lt: ["$usedCount", "$usageLimit"] } }
+            ]
+        });
+
+        let bestCoupon = null;
+
+        coupons.forEach((coupon) => {
+            const validation = coupon.isValid(orderAmount);
+            if (!validation.valid) return;
+
+            const discount = coupon.calculateDiscount(orderAmount);
+            if (!bestCoupon || discount > bestCoupon.discount) {
+                bestCoupon = {
+                    code: coupon.code,
+                    discountType: coupon.discountType,
+                    discountValue: coupon.discountValue,
+                    discount,
+                    description: coupon.description,
+                    minOrderAmount: coupon.minOrderAmount,
+                    message: `Best coupon auto-applied: ${coupon.code}`
+                };
+            }
+        });
+
+        return res.status(200).json(bestCoupon);
+    } catch (error) {
+        return res.status(500).json({ message: `Best coupon error: ${error.message}` });
+    }
+};
+
 // Create a new coupon (admin)
 export const createCoupon = async (req, res) => {
     try {

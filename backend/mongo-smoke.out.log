@@ -1,0 +1,7 @@
+[dotenv@17.2.1] injecting env (22) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+🔄 Connecting to MongoDB...
+📌 Using URI: mongodb://***:***@ac-sor5oww-shard-00-00.ncfrrnk.mongodb.net:27017,ac-sor5oww-shard-00-01.ncfrrnk.mongodb.net:27017,ac-sor5oww-shard-00-02.ncfrrnk.mongodb.net:27017/foodapp?ssl=true&authSource=admin&replicaSet=atlas-shdvex-shard-0&retryWrites=true&w=majority
+✅ MongoDB connected
+Admin account already up to date for souravchowdhury0203@gmail.com
+🚀 Server running at http://localhost:5000

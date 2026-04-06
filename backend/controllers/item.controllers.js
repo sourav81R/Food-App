@@ -1,6 +1,7 @@
 import Item from "../models/item.model.js";
 import Shop from "../models/shop.model.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
+import getShopAvailability from "../utils/shopAvailability.js";
 
 const FALLBACK_CITIES = ["Baruipur", "Kolkata", "Bidhan Nagar", "Salt Lake Sector-V", "Medinipur"];
 const CITY_ALIASES = {
@@ -45,7 +46,7 @@ const pickFallbackCity = async (requestedCity = "") => {
 
 export const addItem = async (req, res) => {
     try {
-        const { name, category, foodType, price } = req.body
+        const { name, category, foodType, price, description } = req.body
         let image;
         if (req.file) {
             image = await uploadOnCloudinary(req.file.path)
@@ -55,7 +56,7 @@ export const addItem = async (req, res) => {
             return res.status(400).json({ message: "shop not found" })
         }
         const item = await Item.create({
-            name, category, foodType, price, image, shop: shop._id
+            name, category, foodType, price, image, shop: shop._id, description, city: shop.city
         })
 
         shop.items.push(item._id)
@@ -75,22 +76,32 @@ export const addItem = async (req, res) => {
 export const editItem = async (req, res) => {
     try {
         const itemId = req.params.itemId
-        const { name, category, foodType, price } = req.body
+        const { name, category, foodType, price, description } = req.body
         let image;
         if (req.file) {
             image = await uploadOnCloudinary(req.file.path)
         }
-        const item = await Item.findByIdAndUpdate(itemId, {
-            name, category, foodType, price, image
-        }, { new: true })
+        const shop = await Shop.findOne({ owner: req.userId })
+        const updatePayload = {
+            name,
+            category,
+            foodType,
+            price,
+            description,
+            city: shop?.city || ""
+        }
+        if (image) {
+            updatePayload.image = image
+        }
+        const item = await Item.findByIdAndUpdate(itemId, updatePayload, { new: true })
         if (!item) {
             return res.status(400).json({ message: "item not found" })
         }
-        const shop = await Shop.findOne({ owner: req.userId }).populate({
+        const populatedShop = await Shop.findOne({ owner: req.userId }).populate({
             path: "items",
             options: { sort: { updatedAt: -1 } }
         })
-        return res.status(200).json(shop)
+        return res.status(200).json(populatedShop)
 
     } catch (error) {
         return res.status(500).json({ message: `edit item error ${error}` })
@@ -157,8 +168,15 @@ export const getItemByCity = async (req, res) => {
         }
 
         const shopIds = shops.map((shop) => shop._id);
-        const items = await Item.find({ shop: { $in: shopIds } });
-        return res.status(200).json(items)
+        const items = await Item.find({ shop: { $in: shopIds } }).populate("shop", "name city image openingTime closingTime isOpen isBusy")
+        const enrichedItems = items.map((item) => ({
+            ...item.toObject(),
+            shop: item.shop ? {
+                ...item.shop.toObject(),
+                availability: getShopAvailability(item.shop)
+            } : item.shop
+        }))
+        return res.status(200).json(enrichedItems)
 
     } catch (error) {
  return res.status(500).json({ message: `get item by city error ${error}` })
@@ -173,7 +191,11 @@ export const getItemsByShop=async (req,res) => {
             return res.status(400).json("shop not found")
         }
         return res.status(200).json({
-            shop,items:shop.items
+            shop: {
+                ...shop.toObject(),
+                availability: getShopAvailability(shop)
+            },
+            items:shop.items
         })
     } catch (error) {
          return res.status(500).json({ message: `get item by shop error ${error}` })
@@ -228,9 +250,17 @@ export const searchItems=async (req,res) => {
         const items = await Item.find({
             shop: { $in: shopIds },
             $or: itemSearchConditions
-        }).populate("shop", "name image city")
+        }).populate("shop", "name image city openingTime closingTime isOpen isBusy")
 
-        return res.status(200).json(items)
+        const enrichedItems = items.map((item) => ({
+            ...item.toObject(),
+            shop: item.shop ? {
+                ...item.shop.toObject(),
+                availability: getShopAvailability(item.shop)
+            } : item.shop
+        }))
+
+        return res.status(200).json(enrichedItems)
 
     } catch (error) {
          return res.status(500).json({ message: `search item  error ${error}` })

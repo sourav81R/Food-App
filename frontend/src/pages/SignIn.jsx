@@ -8,7 +8,7 @@ import { ClipLoader } from "react-spinners";
 import { useDispatch } from "react-redux";
 import { setUserData } from "../redux/userSlice";
 import { useToast } from "../context/ToastContext";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
 import { auth, googleProvider } from "../config/firebase";
 
 function SignIn() {
@@ -53,7 +53,8 @@ function SignIn() {
     setGoogleLoading(true);
     try {
       const firebaseResult = await signInWithPopup(auth, googleProvider);
-      const googleEmail = firebaseResult?.user?.email;
+      const googleUser = firebaseResult?.user;
+      const googleEmail = googleUser?.email;
 
       if (!googleEmail) {
         toast.error("Google account email not available");
@@ -62,13 +63,18 @@ function SignIn() {
 
       const { data } = await axios.post(
         `${serverUrl}/api/auth/google-auth`,
-        { email: googleEmail },
+        {
+          email: googleEmail,
+          fullName: googleUser?.displayName || "",
+          mobile: googleUser?.phoneNumber || "",
+        },
         { withCredentials: true }
       );
 
       dispatch(setUserData(data));
       toast.success("Signed in with Google");
     } catch (error) {
+      await firebaseSignOut(auth).catch(() => {});
       const firebaseMessage =
         error?.code === "auth/popup-closed-by-user"
           ? "Google popup was closed before completion"

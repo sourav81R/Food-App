@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs"
 import Order from "../models/order.model.js"
 import User from "../models/user.model.js"
 import genToken from "../utils/token.js"
+import { emitOrderStatusUpdated, setDeliveryPartnerAvailabilityIfIdle, syncOrderLifecycleStatus } from "../utils/orderRealtime.js"
+import { sendPushToUser } from "../utils/pushNotifications.js"
 import { ROLE, normalizeRole } from "../utils/roles.js"
 
 const DELIVERY_ALLOWED_STATUS = new Set(["picked_up", "on_the_way", "delivered"])
@@ -32,48 +34,6 @@ const sanitizeUser = (user) => ({
     vehicleNumber: user.vehicleNumber,
     isAvailable: user.isAvailable
 })
-
-const emitOrderStatusUpdated = (io, order) => {
-    if (!io || !order) return
-
-    const payload = {
-        orderId: order._id,
-        deliveryStatus: order.deliveryStatus,
-        deliveryPartner: order.deliveryPartner
-            ? {
-                _id: order.deliveryPartner._id,
-                fullName: order.deliveryPartner.fullName,
-                mobile: order.deliveryPartner.mobile
-            }
-            : null,
-        updatedAt: new Date().toISOString()
-    }
-
-    if (order.user?.socketId) {
-        io.to(order.user.socketId).emit("orderStatusUpdated", payload)
-    }
-
-    const ownerSocketIds = new Set(
-        (order.shopOrders || [])
-            .map((shopOrder) => shopOrder?.owner?.socketId)
-            .filter(Boolean)
-    )
-
-    ownerSocketIds.forEach((socketId) => {
-        io.to(socketId).emit("orderStatusUpdated", payload)
-    })
-}
-
-const setDeliveryPartnerAvailabilityIfIdle = async (deliveryPartnerId) => {
-    const activeOrderCount = await Order.countDocuments({
-        deliveryPartner: deliveryPartnerId,
-        deliveryStatus: { $in: ACTIVE_DELIVERY_STATUSES }
-    })
-
-    if (activeOrderCount === 0) {
-        await User.findByIdAndUpdate(deliveryPartnerId, { isAvailable: true })
-    }
-}
 
 export const registerDeliveryPartner = async (req, res) => {
     try {
@@ -253,6 +213,7 @@ export const updateAssignedOrderStatus = async (req, res) => {
             })
         }
 
+        syncOrderLifecycleStatus(order)
         await order.save()
 
         if (status === "delivered") {
@@ -262,11 +223,125 @@ export const updateAssignedOrderStatus = async (req, res) => {
         const io = req.app.get("io")
         emitOrderStatusUpdated(io, order)
 
+        if (status === "on_the_way") {
+            await sendPushToUser({
+                userId: order.user?._id || order.user,
+                title: "Out for delivery",
+                body: "Your delivery partner is on the way.",
+                data: {
+                    orderId: String(order._id),
+                    status: "on_the_way"
+                }
+            })
+        }
+
+        if (status === "delivered") {
+            await sendPushToUser({
+                userId: order.user?._id || order.user,
+                title: "Order delivered",
+                body: "Your order has been delivered successfully.",
+                data: {
+                    orderId: String(order._id),
+                    status: "delivered"
+                }
+            })
+        }
+
         return res.status(200).json({
             message: "Delivery status updated successfully",
             order
         })
     } catch (error) {
         return res.status(500).json({ message: `update delivery status error ${error}` })
+    }
+}
+
+const getRangeConfig = (range = "today") => {
+    const now = new Date()
+    const start = new Date(now)
+    const end = new Date(now)
+
+    if (range === "month") {
+        start.setDate(now.getDate() - 29)
+        start.setHours(0, 0, 0, 0)
+        end.setHours(23, 59, 59, 999)
+        return { start, end, labelFormat: { month: "short", day: "numeric" } }
+    }
+
+    if (range === "week") {
+        start.setDate(now.getDate() - 6)
+        start.setHours(0, 0, 0, 0)
+        end.setHours(23, 59, 59, 999)
+        return { start, end, labelFormat: { weekday: "short" } }
+    }
+
+    start.setHours(0, 0, 0, 0)
+    end.setHours(23, 59, 59, 999)
+    return { start, end, labelFormat: { hour: "2-digit" } }
+}
+
+const formatRangeLabel = (date, range, labelFormat) => {
+    if (range === "today") {
+        return date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+    }
+    return date.toLocaleDateString("en-IN", labelFormat)
+}
+
+export const getDeliveryEarnings = async (req, res) => {
+    try {
+        const range = String(req.query.range || "today").trim().toLowerCase()
+        if (!["today", "week", "month"].includes(range)) {
+            return res.status(400).json({ message: "range must be today, week or month" })
+        }
+
+        const { start, end, labelFormat } = getRangeConfig(range)
+        const orders = await Order.find({
+            shopOrders: {
+                $elemMatch: {
+                    assignedDeliveryBoy: req.userId,
+                    status: "delivered",
+                    deliveredAt: { $gte: start, $lte: end }
+                }
+            }
+        }).select("shopOrders").lean()
+
+        const deliveries = []
+        orders.forEach((order) => {
+            order.shopOrders.forEach((shopOrder) => {
+                if (
+                    String(shopOrder.assignedDeliveryBoy) === String(req.userId) &&
+                    shopOrder.status === "delivered" &&
+                    shopOrder.deliveredAt &&
+                    new Date(shopOrder.deliveredAt) >= start &&
+                    new Date(shopOrder.deliveredAt) <= end
+                ) {
+                    deliveries.push(shopOrder)
+                }
+            })
+        })
+
+        const chartMap = new Map()
+        deliveries.forEach((delivery) => {
+            const date = new Date(delivery.deliveredAt)
+            const label = formatRangeLabel(date, range, labelFormat)
+            const current = chartMap.get(label) || { label, earnings: 0, deliveries: 0 }
+            current.earnings += 15
+            current.deliveries += 1
+            chartMap.set(label, current)
+        })
+
+        const totalDeliveries = deliveries.length
+        const totalEarnings = totalDeliveries * 15
+        const averagePerDelivery = totalDeliveries > 0 ? Number((totalEarnings / totalDeliveries).toFixed(2)) : 0
+
+        return res.status(200).json({
+            range,
+            totalDeliveries,
+            totalEarnings,
+            averagePerDelivery,
+            dailyEarnings: [...chartMap.values()]
+        })
+    } catch (error) {
+        return res.status(500).json({ message: `delivery earnings error ${error.message}` })
     }
 }

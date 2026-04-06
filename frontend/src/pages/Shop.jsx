@@ -28,6 +28,7 @@ function Shop() {
     const navigate=useNavigate()
     const fallbackHeroIndex = ([...(shop?.name || "shop")].reduce((acc, char) => acc + char.charCodeAt(0), 0) % fallbackHeroImages.length)
     const resolvedShopImage = !shop?.image || isNonFoodImageUrl(shop.image) ? fallbackHeroImages[fallbackHeroIndex] : shop.image
+    const orderingDisabled = Boolean(shop?.availability && !shop.availability.isAvailable)
     const handleShop=async () => {
         try {
            const result=await axios.get(`${serverUrl}/api/item/get-by-shop/${shopId}`,{withCredentials:true}) 
@@ -116,6 +117,11 @@ handleShopReviews()
                 {Number(reviewSummary.averageRating || 0).toFixed(1)} / 5 | {reviewSummary.totalReviews} review{reviewSummary.totalReviews === 1 ? "" : "s"}
               </p>
             </div>
+            {orderingDisabled && (
+              <div className={`mt-3 rounded-full px-4 py-2 text-sm font-semibold ${shop?.availability?.label === "Busy" ? 'bg-amber-100 text-amber-700' : 'bg-white text-[#ff4d2d]'}`}>
+                {shop?.availability?.label}: {shop?.availability?.reason}
+              </div>
+            )}
           </div>
        
         </div>}
@@ -126,7 +132,7 @@ handleShopReviews()
 {items.length>0?(
     <div className='flex flex-wrap justify-center gap-4 sm:gap-8'>
         {items.map((item)=>(
-            <FoodCard key={item._id} data={item}/>
+            <FoodCard key={item._id} data={item} disabled={orderingDisabled} disabledLabel={shop?.availability?.reason || "Restaurant unavailable"} />
         ))}
     </div>
 ):<p className='text-center text-gray-500 text-lg'>No Items Available</p>}

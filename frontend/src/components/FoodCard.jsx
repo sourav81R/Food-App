@@ -25,12 +25,14 @@ const fallbackFoodImages = [
 const isNonFoodImageUrl = (url = "") =>
     /cat|dog|kitten|puppy|animal|pet|loremflickr|placekitten|placebear/i.test(url);
 
-function FoodCard({ data }) {
+function FoodCard({ data, disabled = false, disabledLabel = "Unavailable" }) {
     const [quantity, setQuantity] = useState(0)
     const [favoriteLoading, setFavoriteLoading] = useState(false)
     const dispatch = useDispatch()
     const { cartItems, favorites, userData } = useSelector(state => state.user)
     const toast = useToast()
+    const resolvedDisabled = disabled || Boolean(data?.shop?.availability && !data.shop.availability.isAvailable)
+    const resolvedDisabledLabel = data?.shop?.availability?.reason || disabledLabel
     const isInCart = cartItems.some(i => i.id == data._id)
     const isFavorite = favorites.includes(data._id)
     const fallbackItemImage = fallbackFoodImages[
@@ -67,6 +69,10 @@ function FoodCard({ data }) {
     const handleAddToCart = () => {
         if (quantity === 0) {
             toast.warning("Please select quantity first")
+            return
+        }
+        if (resolvedDisabled) {
+            toast.warning(resolvedDisabledLabel)
             return
         }
 
@@ -143,6 +149,11 @@ function FoodCard({ data }) {
                         <FaRegHeart className='text-gray-400 hover:text-red-400 text-base sm:text-lg transition-colors' />
                     )}
                 </button>
+                {resolvedDisabled && (
+                    <div className='absolute inset-x-0 bottom-0 bg-black/70 text-white text-center text-xs font-semibold py-2 z-10'>
+                        {resolvedDisabledLabel}
+                    </div>
+                )}
             </div>
 
             <div className="flex-1 flex flex-col p-3 sm:p-4 transition-colors duration-300 group-hover:bg-orange-50/40">
@@ -169,8 +180,9 @@ function FoodCard({ data }) {
                         <FaPlus size={12} />
                     </button>
                     <button
-                        className={`${isInCart ? "bg-gray-800" : "bg-[#ff4d2d]"} text-white px-3 py-2 transition-colors active:opacity-80`}
+                        className={`${resolvedDisabled ? "bg-gray-400" : (isInCart ? "bg-gray-800" : "bg-[#ff4d2d]")} text-white px-3 py-2 transition-colors active:opacity-80`}
                         onClick={handleAddToCart}
+                        disabled={resolvedDisabled}
                     >
                         <FaShoppingCart size={16} />
                     </button>

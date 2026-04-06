@@ -1,5 +1,6 @@
 import express from "express"
 import {
+    getDeliveryEarnings,
     getAssignedDeliveryOrders,
     loginDeliveryPartner,
     registerDeliveryPartner,
@@ -26,6 +27,12 @@ deliveryRouter.get(
     protectRoute,
     authorizeRoles("delivery"),
     getAssignedDeliveryOrders
+)
+deliveryRouter.get(
+    "/earnings",
+    protectRoute,
+    authorizeRoles("delivery"),
+    getDeliveryEarnings
 )
 deliveryRouter.patch(
     "/update-status/:orderId",

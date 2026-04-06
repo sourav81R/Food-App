@@ -27,8 +27,9 @@ export const ThemeProvider = ({ children }) => {
         // Update localStorage
         localStorage.setItem('foodooza-theme', theme);
 
-        // Update document attribute
+        // Update document attribute and class for Tailwind dark variant
         document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.classList.toggle('dark', theme === 'dark');
 
         // Update body background for smoother transitions
         if (theme === 'dark') {

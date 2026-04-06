@@ -25,6 +25,7 @@ import useGetCity from './hooks/useGetCity';
 import useGetMyshop from './hooks/useGetMyShop';
 import useGetShopByCity from './hooks/useGetShopByCity';
 import useGetItemsByCity from './hooks/useGetItemsByCity';
+import useRegisterPushNotifications from './hooks/useRegisterPushNotifications';
 import useUpdateLocation from './hooks/useUpdateLocation';
 
 export const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
@@ -41,6 +42,7 @@ function App() {
   useGetMyshop();
   useGetShopByCity();
   useGetItemsByCity();
+  useRegisterPushNotifications();
 
   return (
     <div className="min-h-screen flex flex-col">

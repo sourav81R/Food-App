@@ -4,7 +4,7 @@ import { categories } from '../category'
 import CategoryCard from './CategoryCard'
 import { FaCircleChevronLeft } from "react-icons/fa6";
 import { FaCircleChevronRight } from "react-icons/fa6";
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import FoodCard from './FoodCard';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -13,16 +13,18 @@ import FilterBar from './FilterBar';
 import MealTimeSection from './MealTimeSection';
 import WelcomeCelebration from './WelcomeCelebration';
 import { useTheme } from '../context/ThemeContext';
+import { setRecommendedItems, setWalletBalance, setWalletTransactions } from '../redux/userSlice';
 
 const TEA_BREAK_CATEGORIES = ['Snacks', 'Fast Food', 'Desserts', 'Sandwiches', 'Others']
 const TEA_BREAK_KEYWORDS = ['tea', 'chai', 'coffee', 'cappuccino', 'espresso', 'latte', 'mocha', 'cold brew', 'samosa', 'toast', 'biscuit', 'sandwich']
 const TEA_BREAK_SHOP_KEYWORDS = ['tea', 'chai', 'coffee', 'cafe', 'brew']
 
 function UserDashboard() {
-  const { userData, currentCity, shopInMyCity, itemsInMyCity, searchItems } = useSelector(state => state.user)
+  const { userData, currentCity, shopInMyCity, itemsInMyCity, searchItems, recommendedItems, walletBalance, walletTransactions } = useSelector(state => state.user)
   const cateScrollRef = useRef()
   const shopScrollRef = useRef()
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const [showLeftCateButton, setShowLeftCateButton] = useState(false)
   const [showRightCateButton, setShowRightCateButton] = useState(false)
   const [showLeftShopButton, setShowLeftShopButton] = useState(false)
@@ -142,6 +144,44 @@ function UserDashboard() {
   useEffect(() => {
     applyFilters(itemsInMyCity || [], activeCategory, filters)
   }, [itemsInMyCity, activeCategory, filters])
+
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      if (!userData?._id || !currentCity || (recommendedItems || []).length > 0) {
+        return
+      }
+
+      try {
+        const result = await axios.get(`${serverUrl}/api/user/recommendations`, {
+          params: { city: currentCity },
+          withCredentials: true
+        })
+        dispatch(setRecommendedItems(result.data))
+      } catch (error) {
+        console.log(error)
+      }
+    }
+
+    fetchRecommendations()
+  }, [userData?._id, currentCity, recommendedItems, dispatch])
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      if (!userData?._id || walletTransactions.length > 0) {
+        return
+      }
+
+      try {
+        const result = await axios.get(`${serverUrl}/api/wallet/transactions`, { withCredentials: true })
+        dispatch(setWalletBalance(result.data?.walletBalance || 0))
+        dispatch(setWalletTransactions(result.data?.transactions || []))
+      } catch (error) {
+        console.log(error)
+      }
+    }
+
+    fetchWallet()
+  }, [userData?._id, walletTransactions.length, dispatch])
 
 
   const updateButton = (ref, setLeftButton, setRightButton) => {
@@ -267,6 +307,57 @@ function UserDashboard() {
         <MealTimeSection items={itemsInMyCity} />
       )}
 
+      {recommendedItems?.length > 0 && (
+        <div className="w-full max-w-6xl flex flex-col gap-4 items-start px-1 sm:px-[10px]">
+          <div>
+            <h1 className={`text-2xl sm:text-3xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Recommended for you</h1>
+            <p className={`${isDark ? 'text-gray-300' : 'text-gray-500'} text-sm mt-1`}>AI-picked dishes based on your recent orders and nearby menu options.</p>
+          </div>
+          <div className="w-full flex gap-4 overflow-x-auto pb-2">
+            {recommendedItems.map((item) => (
+              <div key={item._id} className="shrink-0">
+                <FoodCard data={item} />
+                {item.recommendationReason && (
+                  <p className={`mt-2 max-w-[250px] text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    {item.recommendationReason}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="w-full max-w-6xl flex flex-col gap-4 items-start px-1 sm:px-[10px]">
+        <div className={`w-full rounded-2xl border p-5 ${isDark ? 'bg-[#16213e] border-[#374151] text-white' : 'bg-white border-orange-100'}`}>
+          <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+            <div>
+              <h2 className='text-xl font-semibold'>Wallet</h2>
+              <p className={`text-sm mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Use wallet balance at checkout and track instant refunds.</p>
+            </div>
+            <div className='text-right'>
+              <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Current Balance</p>
+              <p className='text-2xl font-bold text-[#ff4d2d]'>Rs {Number(walletBalance || 0).toFixed(2)}</p>
+            </div>
+          </div>
+
+          <div className='mt-4 grid grid-cols-1 md:grid-cols-3 gap-3'>
+            {(walletTransactions || []).slice(0, 3).map((transaction) => (
+              <div key={transaction._id} className={`rounded-xl border p-3 ${isDark ? 'border-[#374151] bg-[#0f3460]' : 'border-gray-100 bg-orange-50'}`}>
+                <p className='font-semibold capitalize'>{transaction.type}</p>
+                <p className='text-sm mt-1'>Rs {transaction.amount}</p>
+                <p className={`text-xs mt-2 ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>{transaction.description || 'Wallet activity'}</p>
+              </div>
+            ))}
+            {walletTransactions.length === 0 && (
+              <div className={`rounded-xl border p-4 text-sm ${isDark ? 'border-[#374151] bg-[#0f3460] text-gray-300' : 'border-gray-100 bg-orange-50 text-gray-600'}`}>
+                No wallet transactions yet.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="w-full max-w-6xl flex flex-col gap-5 items-start px-1 sm:px-[10px]">
 
         <h1 className={`text-2xl sm:text-3xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Inspiration for your first order</h1>
@@ -306,7 +397,15 @@ function UserDashboard() {
             onMouseLeave={() => setIsShopPaused(false)}
           >
             {displayedShops?.map((shop, index) => (
-              <CategoryCard name={shop.name} image={shop.image} key={index} onClick={() => navigate(`/shop/${shop._id}`)} />
+              <CategoryCard
+                name={shop.name}
+                image={shop.image}
+                key={index}
+                onClick={() => navigate(`/shop/${shop._id}`)}
+                badgeLabel={shop?.availability?.isAvailable ? "" : shop?.availability?.label}
+                subtitle={shop.city}
+                disabled={!shop?.availability?.isAvailable}
+              />
             ))}
           </div>
           {showRightShopButton && <button className='hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 bg-[#ff4d2d] text-white p-2 rounded-full shadow-lg hover:bg-[#e64528] z-10' onClick={() => scrollHandler(shopScrollRef, "right")}>
@@ -318,7 +417,7 @@ function UserDashboard() {
 
       <div className='w-full max-w-6xl flex flex-col gap-5 items-start px-1 sm:px-[10px]'>
         <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-3'>
-          <h1 className='text-gray-800 text-2xl sm:text-3xl'>
+          <h1 className={`text-2xl sm:text-3xl ${isDark ? 'text-white' : 'text-gray-800'}`}>
             Suggested Food Items
           </h1>
           <FilterBar onFilterChange={handleFilterChange} currentFilters={filters} />

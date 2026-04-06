@@ -40,9 +40,38 @@ const shopSchema=new mongoose.Schema({
         type: Number,
         default: 0,
         min: 0
+    },
+    openingTime: {
+        type: String,
+        default: "09:00"
+    },
+    closingTime: {
+        type: String,
+        default: "23:00"
+    },
+    isOpen: {
+        type: Boolean,
+        default: true
+    },
+    isBusy: {
+        type: Boolean,
+        default: false
+    },
+    location: {
+        type: {
+            type: String,
+            enum: ["Point"],
+            default: "Point"
+        },
+        coordinates: {
+            type: [Number],
+            default: [0, 0]
+        }
     }
 
 },{timestamps:true})
+
+shopSchema.index({ location: "2dsphere" })
 
 const Shop=mongoose.model("Shop",shopSchema)
 export default Shop

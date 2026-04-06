@@ -16,6 +16,9 @@ function CreateEditShop() {
      const [address,setAddress]=useState(myShopData?.address || currentAddress)
      const [city,setCity]=useState(myShopData?.city || currentCity)
        const [state,setState]=useState(myShopData?.state || currentState)
+       const [openingTime,setOpeningTime]=useState(myShopData?.openingTime || "09:00")
+       const [closingTime,setClosingTime]=useState(myShopData?.closingTime || "23:00")
+       const [isOpen,setIsOpen]=useState(myShopData?.isOpen ?? true)
        const [frontendImage,setFrontendImage]=useState(myShopData?.image || null)
        const [backendImage,setBackendImage]=useState(null)
        const [loading,setLoading]=useState(false)
@@ -35,6 +38,9 @@ function CreateEditShop() {
            formData.append("city",city) 
            formData.append("state",state) 
            formData.append("address",address) 
+           formData.append("openingTime",openingTime)
+           formData.append("closingTime",closingTime)
+           formData.append("isOpen",String(isOpen))
            if(backendImage){
             formData.append("image",backendImage)
            }
@@ -95,6 +101,20 @@ function CreateEditShop() {
                         <input id="shop-address" name="address" type="text" placeholder='Enter Shop Address' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500' onChange={(e)=>setAddress(e.target.value)}
                         value={address}/> 
                     </div>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                        <div>
+                           <label className='block text-sm font-medium text-gray-700 mb-1'>Opening Time</label>
+                           <input type="time" className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500' value={openingTime} onChange={(e)=>setOpeningTime(e.target.value)} />
+                        </div>
+                        <div>
+                           <label className='block text-sm font-medium text-gray-700 mb-1'>Closing Time</label>
+                           <input type="time" className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500' value={closingTime} onChange={(e)=>setClosingTime(e.target.value)} />
+                        </div>
+                    </div>
+                    <label className='flex items-center gap-2 text-sm font-medium text-gray-700'>
+                        <input type="checkbox" checked={isOpen} onChange={(e)=>setIsOpen(e.target.checked)} />
+                        Shop is open for orders
+                    </label>
                     <button className='w-full bg-[#ff4d2d] text-white px-6 py-3 rounded-lg font-semibold shadow-md hover:bg-orange-600 hover:shadow-lg transition-all duration-200 cursor-pointer' disabled={loading}>
                         {loading?<ClipLoader size={20} color='white'/>:"Save"}
                     

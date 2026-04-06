@@ -24,7 +24,7 @@ const shopOrderSchema = new mongoose.Schema({
     shopOrderItems: [shopOrderItemSchema],
     status:{
         type:String,
-        enum:["pending","preparing","out of delivery","delivered"],
+        enum:["pending","preparing","out of delivery","delivered","cancelled"],
         default:"pending"
     },
   assignment:{
@@ -51,6 +51,39 @@ deliveredAt:{
 
 }, { timestamps: true })
 
+const refundSchema = new mongoose.Schema({
+    status: {
+        type: String,
+        enum: ["none", "pending", "processed", "failed"],
+        default: "none"
+    },
+    amount: {
+        type: Number,
+        default: 0
+    },
+    method: {
+        type: String,
+        enum: ["none", "razorpay", "wallet"],
+        default: "none"
+    },
+    reason: {
+        type: String,
+        default: ""
+    },
+    razorpayRefundId: {
+        type: String,
+        default: ""
+    },
+    processedAt: {
+        type: Date,
+        default: null
+    },
+    note: {
+        type: String,
+        default: ""
+    }
+}, { _id: false })
+
 const orderSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -68,8 +101,13 @@ const orderSchema = new mongoose.Schema({
     },
     paymentMethod: {
         type: String,
-        enum: ['cod', "online"],
+        enum: ['cod', "online", "wallet"],
         required: true
+    },
+    status: {
+        type: String,
+        enum: ["scheduled", "pending", "preparing", "out of delivery", "delivered", "cancelled"],
+        default: "pending"
     },
     deliveryAddress: {
         text: String,
@@ -85,6 +123,59 @@ const orderSchema = new mongoose.Schema({
         type:Boolean,
         default:false
     },
+    walletAmountUsed: {
+        type: Number,
+        default: 0
+    },
+    coupon: {
+        code: {
+            type: String,
+            default: ""
+        },
+        discount: {
+            type: Number,
+            default: 0
+        },
+        discountType: {
+            type: String,
+            default: ""
+        },
+        discountValue: {
+            type: Number,
+            default: 0
+        },
+        description: {
+            type: String,
+            default: ""
+        }
+    },
+    scheduledFor: {
+        type: Date,
+        default: null
+    },
+    activatedAt: {
+        type: Date,
+        default: null
+    },
+    cancellation: {
+        cancelledAt: {
+            type: Date,
+            default: null
+        },
+        cancelledBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null
+        },
+        reason: {
+            type: String,
+            default: ""
+        }
+    },
+    refund: {
+        type: refundSchema,
+        default: () => ({})
+    },
     razorpayOrderId:{
         type:String,
         default:""
@@ -96,6 +187,8 @@ const orderSchema = new mongoose.Schema({
 }, { timestamps: true })
 
 orderSchema.index({ deliveryPartner: 1, deliveryStatus: 1 })
+orderSchema.index({ user: 1, createdAt: -1 })
+orderSchema.index({ status: 1, scheduledFor: 1 })
 
 const Order=mongoose.model("Order",orderSchema)
 export default Order

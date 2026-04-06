@@ -13,8 +13,17 @@ const userSlice = createSlice({
     totalAmount: 0,
     myOrders: [],
     searchItems: null,
+    searchSuggestions: {
+      items: [],
+      shops: []
+    },
     favorites: [],
-    liveEtaByOrderId: {}
+    liveEtaByOrderId: {},
+    addresses: [],
+    walletBalance: 0,
+    walletTransactions: [],
+    recommendedItems: [],
+    bestCoupon: null
   },
   reducers: {
     setUserData: (state, action) => {
@@ -119,6 +128,10 @@ const userSlice = createSlice({
       state.searchItems = action.payload
     },
 
+    setSearchSuggestions: (state, action) => {
+      state.searchSuggestions = action.payload || { items: [], shops: [] }
+    },
+
     setFavorites: (state, action) => {
       state.favorites = action.payload
     },
@@ -145,9 +158,29 @@ const userSlice = createSlice({
 
     clearOrderEta: (state, action) => {
       delete state.liveEtaByOrderId[action.payload]
+    },
+
+    setAddresses: (state, action) => {
+      state.addresses = action.payload || []
+    },
+
+    setWalletBalance: (state, action) => {
+      state.walletBalance = Number(action.payload || 0)
+    },
+
+    setWalletTransactions: (state, action) => {
+      state.walletTransactions = action.payload || []
+    },
+
+    setRecommendedItems: (state, action) => {
+      state.recommendedItems = action.payload || []
+    },
+
+    setBestCoupon: (state, action) => {
+      state.bestCoupon = action.payload || null
     }
   }
 })
 
-export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, setMyOrders, addMyOrder, updateOrderStatus, setSearchItems, setTotalAmount, updateRealtimeOrderStatus, clearCart, setFavorites, toggleFavoriteItem, setOrderEta, clearOrderEta } = userSlice.actions
+export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, setMyOrders, addMyOrder, updateOrderStatus, setSearchItems, setSearchSuggestions, setTotalAmount, updateRealtimeOrderStatus, clearCart, setFavorites, toggleFavoriteItem, setOrderEta, clearOrderEta, setAddresses, setWalletBalance, setWalletTransactions, setRecommendedItems, setBestCoupon } = userSlice.actions
 export default userSlice.reducer

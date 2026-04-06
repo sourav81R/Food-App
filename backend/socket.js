@@ -1,30 +1,14 @@
 import Order from "./models/order.model.js";
 import User from "./models/user.model.js";
+import { broadcastEtaForActiveOrders, emitEtaForOrder } from "./utils/orderRealtime.js";
 import { SOCKET_EVENTS } from "./utils/socketEvents.js";
-import { resolveOrderEta } from "./utils/trafficEta.js";
 
 const ACTIVE_DELIVERY_STATUSES = new Set(["assigned", "picked_up", "on_the_way"]);
+let etaBroadcastLoopStarted = false;
 
-const getOrderProgressStatus = (order = {}) => {
-  if (order?.deliveryStatus === "delivered") return "delivered";
-  if ((order?.shopOrders || []).every((shopOrder) => shopOrder?.status === "delivered")) return "delivered";
-  if (order?.deliveryStatus) return order.deliveryStatus;
-  if ((order?.shopOrders || []).some((shopOrder) => String(shopOrder?.status || "").toLowerCase() === "out of delivery")) return "out of delivery";
-  if ((order?.shopOrders || []).some((shopOrder) => String(shopOrder?.status || "").toLowerCase() === "preparing")) return "preparing";
-  if (order?.deliveryPartner) return "out of delivery";
-  return "placed";
-};
-
-const getStatusIndex = (status = "") => {
-  const normalizedStatus = String(status || "").trim().toLowerCase();
-  if (normalizedStatus === "delivered") return 3;
-  if (["out of delivery", "picked_up", "picked-up", "on_the_way", "on-the-way", "assigned"].includes(normalizedStatus)) return 2;
-  if (normalizedStatus === "preparing") return 1;
-  return 0;
-};
-
-const emitEtaUpdatesForDriver = async ({ io, userId, latitude, longitude }) => {
+const emitEtaUpdatesForDriver = async ({ io, userId }) => {
   const activeOrders = await Order.find({
+    status: { $nin: ["cancelled", "scheduled", "delivered"] },
     $or: [
       {
         deliveryPartner: userId,
@@ -40,29 +24,14 @@ const emitEtaUpdatesForDriver = async ({ io, userId, latitude, longitude }) => {
       }
     ]
   })
-    .select("_id user createdAt deliveryAddress deliveryStatus shopOrders.status")
-    .populate("user", "socketId");
+    .select("_id user createdAt deliveryAddress deliveryStatus status shopOrders.status shopOrders.assignedDeliveryBoy")
+    .populate("user", "socketId")
+    .populate("deliveryPartner", "location")
+    .populate("shopOrders.assignedDeliveryBoy", "location");
 
   for (const order of activeOrders) {
-    const userSocketId = order?.user?.socketId;
-    if (!userSocketId) continue;
-
     try {
-      const eta = await resolveOrderEta({
-        order,
-        statusIndex: getStatusIndex(getOrderProgressStatus(order)),
-        fromCoords: { lat: latitude, lon: longitude },
-        destinationCoords: {
-          lat: order?.deliveryAddress?.latitude,
-          lon: order?.deliveryAddress?.longitude
-        },
-        providerOverride: "osrm"
-      });
-
-      io.to(userSocketId).emit(SOCKET_EVENTS.ETA_UPDATE, {
-        orderId: order._id,
-        etaSeconds: Number(eta?.remainingSeconds || 0)
-      });
+      await emitEtaForOrder(io, order);
     } catch (error) {
       console.error("ETA update error:", error.message);
     }
@@ -70,6 +39,15 @@ const emitEtaUpdatesForDriver = async ({ io, userId, latitude, longitude }) => {
 };
 
 export const socketHandler = (io) => {
+  if (!etaBroadcastLoopStarted) {
+    etaBroadcastLoopStarted = true;
+    setInterval(() => {
+      broadcastEtaForActiveOrders(io).catch((error) => {
+        console.error("ETA broadcast loop error:", error.message);
+      });
+    }, 60 * 1000);
+  }
+
   io.on("connection", (socket) => {
     console.log("Socket connected:", socket.id);
 
@@ -81,7 +59,6 @@ export const socketHandler = (io) => {
           { socketId: socket.id, isOnline: true },
           { new: true }
         );
-        console.log(`User ${userId} marked online`);
       } catch (error) {
         console.error("identity event error:", error.message);
       }
@@ -109,9 +86,7 @@ export const socketHandler = (io) => {
 
           await emitEtaUpdatesForDriver({
             io,
-            userId,
-            latitude,
-            longitude
+            userId
           });
         }
       } catch (error) {
@@ -121,11 +96,11 @@ export const socketHandler = (io) => {
 
     socket.on("disconnect", async (reason) => {
       try {
-        console.log(`Socket ${socket.id} disconnected (${reason})`);
         await User.findOneAndUpdate(
           { socketId: socket.id },
           { socketId: null, isOnline: false }
         );
+        console.log(`Socket ${socket.id} disconnected (${reason})`);
       } catch (error) {
         console.error("disconnect event error:", error.message);
       }

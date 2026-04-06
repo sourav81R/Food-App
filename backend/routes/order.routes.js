@@ -2,7 +2,7 @@ import express from "express"
 import isAuth from "../middlewares/isAuth.js"
 import { authorizeRoles } from "../middlewares/auth.middleware.js"
 import { ROLE } from "../utils/roles.js"
-import { acceptOrder, autoCompleteOrderByEta, getCurrentOrder, getDeliveryBoyAssignment, getMyOrders, getOrderById, getPaymentConfig, getTodayDeliveries, placeOrder, sendDeliveryOtp, updateOrderStatus, verifyDeliveryOtp, verifyPayment } from "../controllers/order.controllers.js"
+import { acceptOrder, autoCompleteOrderByEta, cancelOrder, getCurrentOrder, getDeliveryBoyAssignment, getMyOrders, getOrderById, getPaymentConfig, getTodayDeliveries, placeOrder, sendDeliveryOtp, updateOrderStatus, verifyDeliveryOtp, verifyPayment } from "../controllers/order.controllers.js"
 
 
 
@@ -22,5 +22,6 @@ orderRouter.get('/accept-order/:assignmentId',isAuth,authorizeRoles(ROLE.DELIVER
 orderRouter.get('/get-order-by-id/:orderId',isAuth,getOrderById)
 orderRouter.patch('/auto-complete-by-eta/:orderId',isAuth,authorizeRoles(ROLE.USER),autoCompleteOrderByEta)
 orderRouter.get('/get-today-deliveries',isAuth,authorizeRoles(ROLE.DELIVERY),getTodayDeliveries)
+orderRouter.post('/:id/cancel', isAuth, authorizeRoles(ROLE.USER), cancelOrder)
 
 export default orderRouter

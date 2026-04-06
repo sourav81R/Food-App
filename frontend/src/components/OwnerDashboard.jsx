@@ -5,9 +5,24 @@ import { FaUtensils } from "react-icons/fa";
 import { useNavigate } from 'react-router-dom';
 import { FaPen } from "react-icons/fa";
 import OwnerItemCard from './OwnerItemCard';
+import axios from 'axios';
+import { serverUrl } from '../App';
+import { setMyShopData } from '../redux/ownerSlice';
+import { useDispatch } from 'react-redux';
+import OwnerAnalyticsPanel from './OwnerAnalyticsPanel';
 function OwnerDashboard() {
   const { myShopData } = useSelector(state => state.owner)
   const navigate = useNavigate()
+  const dispatch = useDispatch()
+
+  const toggleBusyMode = async () => {
+    try {
+      const result = await axios.patch(`${serverUrl}/api/shop/busy-mode`, {}, { withCredentials: true })
+      dispatch(setMyShopData(result.data.shop))
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   
   return (
@@ -42,8 +57,16 @@ function OwnerDashboard() {
               <h1 className='text-xl sm:text-2xl font-bold text-gray-800 mb-2'>{myShopData.name}</h1>
               <p className='text-gray-500 '>{myShopData.city},{myShopData.state}</p>
               <p className='text-gray-500 mb-4'>{myShopData.address}</p>
+              <div className='flex flex-wrap gap-2'>
+                <span className='px-3 py-1 rounded-full text-sm bg-orange-50 text-[#ff4d2d]'>Hours: {myShopData.openingTime || "09:00"} - {myShopData.closingTime || "23:00"}</span>
+                <button className={`px-3 py-1 rounded-full text-sm ${myShopData.isBusy ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`} onClick={toggleBusyMode}>
+                  {myShopData.isBusy ? 'Disable Busy Mode' : 'Enable Busy Mode'}
+                </button>
+              </div>
             </div>
           </div>
+
+          <OwnerAnalyticsPanel />
 
           {myShopData.items.length==0 && 
             <div className='flex justify-center items-center p-4 sm:p-6'>

@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import axios from "axios";
 import Nav from "../components/Nav";
 import { useTheme } from "../context/ThemeContext";
 import { isAdminRole, isDeliveryRole, isOwnerRole, isUserRole, normalizeClientRole } from "../utils/roles";
+import { serverUrl } from "../App";
+import { setAddresses, setWalletBalance, setWalletTransactions } from "../redux/userSlice";
 
 const getRoleLabel = (role) => {
   const normalizedRole = normalizeClientRole(role);
@@ -14,8 +17,9 @@ const getRoleLabel = (role) => {
 
 function Profile() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { isDark } = useTheme();
-  const { userData, currentCity, currentState, currentAddress } = useSelector((state) => state.user);
+  const { userData, currentCity, currentState, currentAddress, addresses, walletBalance, walletTransactions } = useSelector((state) => state.user);
   const { myShopData } = useSelector((state) => state.owner);
 
   if (!userData) return null;
@@ -24,6 +28,26 @@ function Profile() {
   const joinedDate = userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : "N/A";
   const deliveryLat = userData?.location?.coordinates?.[1];
   const deliveryLon = userData?.location?.coordinates?.[0];
+
+  useEffect(() => {
+    const fetchExtras = async () => {
+      try {
+        const [walletRes, addressRes] = await Promise.all([
+          axios.get(`${serverUrl}/api/wallet/transactions`, { withCredentials: true }),
+          axios.get(`${serverUrl}/api/user/addresses`, { withCredentials: true })
+        ]);
+        dispatch(setWalletBalance(walletRes.data?.walletBalance || 0));
+        dispatch(setWalletTransactions(walletRes.data?.transactions || []));
+        dispatch(setAddresses(addressRes.data || []));
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    if (userData?._id) {
+      fetchExtras();
+    }
+  }, [userData?._id, dispatch]);
 
   return (
     <div className={`w-full min-h-screen pt-[95px] px-4 pb-10 ${isDark ? "bg-[#1a1a2e]" : "bg-[#fff9f6]"}`}>
@@ -74,6 +98,55 @@ function Profile() {
               <button className="px-4 py-2 rounded-lg bg-[#ff4d2d] text-white font-medium" onClick={() => navigate("/my-orders")}>My Orders</button>
               <button className="px-4 py-2 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] font-medium" onClick={() => navigate("/favorites")}>Favorites</button>
               <button className="px-4 py-2 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] font-medium" onClick={() => navigate("/cart")}>Cart</button>
+            </div>
+          </div>
+        )}
+
+        {isUserRole(normalizedRole) && (
+          <div className={`rounded-2xl border p-6 mt-5 ${isDark ? "bg-[#16213e] border-[#374151] text-white" : "bg-white border-gray-100 text-gray-900"}`}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold">Wallet</h2>
+                <p className={`mt-2 ${isDark ? "text-gray-300" : "text-gray-600"}`}>Balance and refund history</p>
+              </div>
+              <p className="text-2xl font-bold text-[#ff4d2d]">Rs {Number(walletBalance || 0).toFixed(2)}</p>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {walletTransactions.length === 0 && (
+                <p className={isDark ? "text-gray-300" : "text-gray-600"}>No wallet transactions yet.</p>
+              )}
+              {walletTransactions.map((transaction) => (
+                <div key={transaction._id} className={`rounded-xl border p-4 ${isDark ? "border-[#374151] bg-[#0f3460]" : "border-gray-100 bg-orange-50"}`}>
+                  <div className="flex justify-between gap-3">
+                    <p className="font-semibold capitalize">{transaction.type}</p>
+                    <p className={transaction.direction === "credit" ? "text-green-500 font-semibold" : "text-red-500 font-semibold"}>
+                      {transaction.direction === "credit" ? "+" : "-"} Rs {transaction.amount}
+                    </p>
+                  </div>
+                  <p className={`text-sm mt-2 ${isDark ? "text-gray-300" : "text-gray-600"}`}>{transaction.description || "Wallet activity"}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isUserRole(normalizedRole) && (
+          <div className={`rounded-2xl border p-6 mt-5 ${isDark ? "bg-[#16213e] border-[#374151] text-white" : "bg-white border-gray-100 text-gray-900"}`}>
+            <h2 className="text-xl font-bold">Saved Addresses</h2>
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              {addresses.length === 0 && (
+                <p className={isDark ? "text-gray-300" : "text-gray-600"}>No saved addresses yet.</p>
+              )}
+              {addresses.map((savedAddress) => (
+                <div key={savedAddress._id} className={`rounded-xl border p-4 ${isDark ? "border-[#374151] bg-[#0f3460]" : "border-gray-100 bg-orange-50"}`}>
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold">{savedAddress.label}</p>
+                    {savedAddress.isDefault && <span className="text-xs text-[#ff4d2d] font-semibold">Default</span>}
+                  </div>
+                  <p className={`text-sm mt-2 ${isDark ? "text-gray-300" : "text-gray-600"}`}>{savedAddress.fullAddress}</p>
+                </div>
+              ))}
             </div>
           </div>
         )}

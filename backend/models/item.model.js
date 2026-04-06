@@ -29,6 +29,16 @@ const itemSchema = new mongoose.Schema({
         ],
         required:true
     },
+    description: {
+        type: String,
+        trim: true,
+        default: ""
+    },
+    city: {
+        type: String,
+        trim: true,
+        default: ""
+    },
     price:{
         type:Number,
         min:0,
@@ -44,6 +54,9 @@ const itemSchema = new mongoose.Schema({
     count:{type:Number,default:0}
    }
 }, { timestamps: true })
+
+itemSchema.index({ city: 1, category: 1, "rating.average": -1 })
+itemSchema.index({ name: "text", description: "text" })
 
 const Item=mongoose.model("Item",itemSchema)
 export default Item
