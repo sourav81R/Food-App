@@ -165,7 +165,15 @@ const canCancelOrder = (order) => {
 }
 
 const refundOrderIfNeeded = async (order) => {
-    const refundAmount = Number(order?.totalAmount || 0)
+    if (order?.refund?.status === "processed") {
+        return
+    }
+
+    const orderUserId = order?.user?._id || order?.user
+    const refundAmount = order?.paymentMethod === "wallet"
+        ? Number(order?.walletAmountUsed || order?.totalAmount || 0)
+        : Number(order?.totalAmount || 0)
+
     if (refundAmount <= 0) {
         order.refund = {
             status: "processed",
@@ -173,6 +181,18 @@ const refundOrderIfNeeded = async (order) => {
             method: "none",
             reason: "Nothing to refund",
             processedAt: new Date()
+        }
+        return
+    }
+
+    if (order.paymentMethod === "wallet" && !order.payment) {
+        order.refund = {
+            status: "processed",
+            amount: 0,
+            method: "none",
+            reason: "Wallet payment was not completed",
+            processedAt: new Date(),
+            note: "No refund required because wallet was not charged"
         }
         return
     }
@@ -230,7 +250,7 @@ const refundOrderIfNeeded = async (order) => {
 
     if (order.paymentMethod === "wallet" || order.paymentMethod === "online") {
         await creditWallet({
-            userId: order.user,
+            userId: orderUserId,
             amount: refundAmount,
             type: "refund",
             description: `Refund for cancelled order #${String(order._id).slice(-6)}`,
