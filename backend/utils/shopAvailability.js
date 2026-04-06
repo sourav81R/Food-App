@@ -1,3 +1,5 @@
+import resolveOperatingHours from "./shopHours.js";
+
 const parseTimeToMinutes = (value = "") => {
     const [hour, minute] = String(value || "").split(":").map(Number)
     if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null
@@ -28,8 +30,9 @@ export const isWithinOperatingHours = (openingTime, closingTime, date = new Date
 }
 
 export const getShopAvailability = (shop, date = new Date()) => {
+    const { openingTime, closingTime } = resolveOperatingHours(shop)
     const isManuallyOpen = shop?.isOpen !== false
-    const isWithinHours = isWithinOperatingHours(shop?.openingTime, shop?.closingTime, date)
+    const isWithinHours = isWithinOperatingHours(openingTime, closingTime, date)
     const isBusy = Boolean(shop?.isBusy)
 
     if (!isManuallyOpen) {
@@ -48,7 +51,9 @@ export const getShopAvailability = (shop, date = new Date()) => {
             label: "Closed",
             reason: "Restaurant is outside opening hours",
             isWithinHours,
-            isBusy
+            isBusy,
+            openingTime,
+            closingTime
         }
     }
 
@@ -58,7 +63,9 @@ export const getShopAvailability = (shop, date = new Date()) => {
             label: "Busy",
             reason: "Restaurant is currently busy and not accepting new orders",
             isWithinHours,
-            isBusy
+            isBusy,
+            openingTime,
+            closingTime
         }
     }
 
@@ -67,7 +74,9 @@ export const getShopAvailability = (shop, date = new Date()) => {
         label: "Open",
         reason: "",
         isWithinHours,
-        isBusy
+        isBusy,
+        openingTime,
+        closingTime
     }
 }
 

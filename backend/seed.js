@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import Shop from "./models/shop.model.js";
 import Item from "./models/item.model.js";
 import User from "./models/user.model.js";
+import resolveOperatingHours from "./utils/shopHours.js";
 
 dotenv.config();
 
@@ -273,24 +274,43 @@ function buildSeedShops() {
   for (const city of TARGET_CITIES) {
     const entries = RESTAURANTS_BY_CITY[city] || [];
     for (const entry of entries) {
+      const { openingTime, closingTime } = resolveOperatingHours({
+        name: entry.name,
+        city,
+        address: entry.address,
+      });
       all.push({
         name: entry.name,
         city,
         state: "West Bengal",
         address: entry.address,
         image: seededShopImage(`shop-${toSlug(entry.name)}`),
+        openingTime,
+        closingTime,
       });
     }
 
     if (TEA_COFFEE_SHOP_CITIES.includes(city)) {
       const teaShopName = `${city} ${TEA_BREAK_SHOP_SUFFIX}`;
       const coffeeShopName = `${city} ${COFFEE_SHOP_SUFFIX}`;
+      const teaHours = resolveOperatingHours({
+        name: teaShopName,
+        city,
+        address: `Tea Square, ${city}`,
+      });
+      const coffeeHours = resolveOperatingHours({
+        name: coffeeShopName,
+        city,
+        address: `Coffee Street, ${city}`,
+      });
       all.push({
         name: teaShopName,
         city,
         state: "West Bengal",
         address: `Tea Square, ${city}`,
         image: seededShopImage(`shop-${toSlug(teaShopName)}`),
+        openingTime: teaHours.openingTime,
+        closingTime: teaHours.closingTime,
       });
       all.push({
         name: coffeeShopName,
@@ -298,6 +318,8 @@ function buildSeedShops() {
         state: "West Bengal",
         address: `Coffee Street, ${city}`,
         image: seededShopImage(`shop-${toSlug(coffeeShopName)}`),
+        openingTime: coffeeHours.openingTime,
+        closingTime: coffeeHours.closingTime,
       });
     }
   }

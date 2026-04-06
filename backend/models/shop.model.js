@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { DEFAULT_SHOP_CLOSING_TIME, DEFAULT_SHOP_OPENING_TIME } from "../utils/shopHours.js";
 
 const shopSchema=new mongoose.Schema({
     name:{
@@ -43,11 +44,11 @@ const shopSchema=new mongoose.Schema({
     },
     openingTime: {
         type: String,
-        default: "09:00"
+        default: DEFAULT_SHOP_OPENING_TIME
     },
     closingTime: {
         type: String,
-        default: "23:00"
+        default: DEFAULT_SHOP_CLOSING_TIME
     },
     isOpen: {
         type: Boolean,

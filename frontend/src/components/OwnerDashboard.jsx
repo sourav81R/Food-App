@@ -58,7 +58,7 @@ function OwnerDashboard() {
               <p className='text-gray-500 '>{myShopData.city},{myShopData.state}</p>
               <p className='text-gray-500 mb-4'>{myShopData.address}</p>
               <div className='flex flex-wrap gap-2'>
-                <span className='px-3 py-1 rounded-full text-sm bg-orange-50 text-[#ff4d2d]'>Hours: {myShopData.openingTime || "09:00"} - {myShopData.closingTime || "23:00"}</span>
+                <span className='px-3 py-1 rounded-full text-sm bg-orange-50 text-[#ff4d2d]'>Hours: {myShopData.openingTime || "08:00"} - {myShopData.closingTime || "00:45"}</span>
                 <button className={`px-3 py-1 rounded-full text-sm ${myShopData.isBusy ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`} onClick={toggleBusyMode}>
                   {myShopData.isBusy ? 'Disable Busy Mode' : 'Enable Busy Mode'}
                 </button>
