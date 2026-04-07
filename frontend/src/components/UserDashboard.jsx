@@ -406,66 +406,137 @@ function UserDashboard() {
       )}
 
       <div className="w-full max-w-6xl flex flex-col gap-4 items-start px-1 sm:px-[10px]">
-        <div className={`w-full rounded-2xl border p-5 ${isDark ? 'bg-[#16213e] border-[#374151] text-white' : 'bg-white border-orange-100'}`}>
-          <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
-            <div>
-              <h2 className='text-xl font-semibold'>Wallet</h2>
-              <p className={`text-sm mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Use wallet balance at checkout and track instant refunds.</p>
+        <div className={`w-full overflow-hidden rounded-[24px] border ${isDark ? 'border-[#374151] bg-[#16213e] text-white shadow-[0_16px_45px_rgba(2,6,23,0.22)]' : 'border-orange-100 bg-white shadow-[0_16px_45px_rgba(15,23,42,0.07)]'}`}>
+          <div className={`${isDark ? 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.16),_transparent_40%),linear-gradient(135deg,#16213e,#101827_70%)]' : 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.20),_transparent_42%),linear-gradient(135deg,#fff6f0,#ffffff_68%)]'} p-4 sm:p-5`}>
+            <div className='flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'>
+              <div className='max-w-2xl'>
+                <p className='text-[11px] font-semibold uppercase tracking-[0.24em] text-[#ff6b43]'>Wallet Center</p>
+                <h2 className={`mt-1 text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Wallet</h2>
+                <p className={`mt-2 text-sm leading-6 ${isDark ? 'text-gray-300' : 'text-slate-500'}`}>Add balance instantly, pay faster at checkout, and keep track of refunds and wallet activity in one polished place.</p>
+              </div>
+
+              <div className={`rounded-[20px] border px-4 py-3 min-w-[200px] ${isDark ? 'border-white/10 bg-white/5' : 'border-orange-100 bg-white/90'} shadow-sm`}>
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDark ? 'text-gray-300' : 'text-slate-400'}`}>Current Balance</p>
+                <p className='mt-1.5 text-3xl font-bold text-[#ff4d2d]'>Rs {Number(walletBalance || 0).toFixed(2)}</p>
+                <p className={`mt-1.5 text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Ready for checkout, refunds, and quick re-use.</p>
+              </div>
             </div>
-            <div className='text-right'>
-              <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Current Balance</p>
-              <p className='text-2xl font-bold text-[#ff4d2d]'>Rs {Number(walletBalance || 0).toFixed(2)}</p>
+
+            <div className='mt-4 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.15fr)_300px]'>
+              <div className={`rounded-[20px] border p-4 ${isDark ? 'border-white/10 bg-white/5' : 'border-orange-100 bg-white/80'} backdrop-blur`}>
+                <div className='flex flex-col gap-3'>
+                  <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
+                    <div>
+                      <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDark ? 'text-gray-300' : 'text-slate-400'}`}>Top Up Wallet</p>
+                      <h3 className={`mt-1 text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Add balance in seconds</h3>
+                    </div>
+                    <div className={`rounded-full px-3 py-1 text-xs font-semibold ${isDark ? 'bg-white/10 text-gray-200' : 'bg-orange-50 text-[#ff4d2d]'}`}>
+                      Instant credit after payment
+                    </div>
+                  </div>
+
+                  <div className='flex flex-col gap-3'>
+                    <input
+                      type='number'
+                      min='1'
+                      step='1'
+                      value={walletTopupAmount}
+                      onChange={(e) => setWalletTopupAmount(e.target.value)}
+                      placeholder='Enter amount'
+                      className={`w-full rounded-[16px] border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2d] ${isDark ? 'bg-[#0f3460] border-[#374151] text-white' : 'bg-white border-orange-200 text-gray-900'}`}
+                    />
+
+                    <div className='flex flex-wrap gap-2'>
+                      {[100, 250, 500].map((amount) => (
+                        <button
+                          key={amount}
+                          className={`rounded-full px-3.5 py-1.5 text-sm font-semibold border transition ${String(walletTopupAmount) === String(amount)
+                            ? 'border-[#ff4d2d] bg-[#ff4d2d] text-white'
+                            : isDark
+                              ? 'border-[#374151] bg-[#16213e] text-white hover:border-[#ff6b43]'
+                              : 'border-orange-200 bg-white text-[#ff4d2d] hover:border-[#ff4d2d]/40'
+                            }`}
+                          onClick={() => setWalletTopupAmount(String(amount))}
+                        >
+                          Rs {amount}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className='flex flex-col sm:flex-row sm:items-center gap-3'>
+                      <button
+                        className='inline-flex items-center justify-center rounded-[16px] bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-5 py-2.5 text-white font-semibold disabled:opacity-70 min-w-[150px] shadow-lg shadow-orange-200 transition hover:brightness-105'
+                        onClick={handleWalletTopup}
+                        disabled={walletTopupLoading}
+                      >
+                        {walletTopupLoading ? <ClipLoader size={18} color='white' /> : 'Add Balance'}
+                      </button>
+                      <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-slate-500'}`}>Use preset amounts for faster checkout balance top-up.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`rounded-[20px] border p-4 ${isDark ? 'border-white/10 bg-[#0f3460]/70' : 'border-orange-100 bg-orange-50/70'}`}>
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDark ? 'text-gray-300' : 'text-slate-400'}`}>Quick Overview</p>
+                <div className='mt-3 grid grid-cols-1 gap-3'>
+                  <div className={`rounded-[16px] px-4 py-3.5 ${isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-orange-100'} shadow-sm`}>
+                    <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDark ? 'text-gray-400' : 'text-slate-400'}`}>Wallet Power</p>
+                    <p className={`mt-2 text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Fast checkout support</p>
+                    <p className={`mt-1 text-sm ${isDark ? 'text-gray-300' : 'text-slate-500'}`}>Use your balance directly during checkout without re-entering payment details.</p>
+                  </div>
+                  <div className={`rounded-[16px] px-4 py-3.5 ${isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-orange-100'} shadow-sm`}>
+                    <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDark ? 'text-gray-400' : 'text-slate-400'}`}>Refund Ready</p>
+                    <p className={`mt-2 text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Instant wallet returns</p>
+                    <p className={`mt-1 text-sm ${isDark ? 'text-gray-300' : 'text-slate-500'}`}>Eligible cancellations can return value here so you can reuse it quickly on the next order.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className={`mt-4 rounded-xl border p-4 ${isDark ? 'border-[#374151] bg-[#0f3460]' : 'border-orange-100 bg-orange-50/60'}`}>
-            <div className='flex flex-col md:flex-row md:items-end gap-3'>
-              <div className='flex-1'>
-                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Add Balance</label>
-                <input
-                  type='number'
-                  min='1'
-                  step='1'
-                  value={walletTopupAmount}
-                  onChange={(e) => setWalletTopupAmount(e.target.value)}
-                  placeholder='Enter amount'
-                  className={`w-full rounded-lg border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2d] ${isDark ? 'bg-[#16213e] border-[#374151] text-white' : 'bg-white border-orange-200 text-gray-900'}`}
-                />
+          <div className='p-4 sm:p-5'>
+            <div className='flex items-center justify-between gap-3'>
+              <div>
+                <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Recent Activity</p>
+                <h3 className={`mt-1 text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Latest wallet transactions</h3>
               </div>
-              <div className='flex flex-wrap gap-2'>
-                {[100, 250, 500].map((amount) => (
-                  <button
-                    key={amount}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium border ${isDark ? 'border-[#374151] bg-[#16213e] text-white' : 'border-orange-200 bg-white text-[#ff4d2d]'}`}
-                    onClick={() => setWalletTopupAmount(String(amount))}
-                  >
-                    Rs {amount}
-                  </button>
-                ))}
+              <div className={`rounded-full px-3 py-1 text-xs font-semibold ${isDark ? 'bg-white/5 text-gray-300' : 'bg-orange-50 text-slate-500'}`}>
+                Showing last 3 entries
               </div>
-              <button
-                className='px-5 py-3 rounded-lg bg-[#ff4d2d] text-white font-semibold disabled:opacity-70 min-w-[140px]'
-                onClick={handleWalletTopup}
-                disabled={walletTopupLoading}
-              >
-                {walletTopupLoading ? <ClipLoader size={18} color='white' /> : 'Add Balance'}
-              </button>
             </div>
-          </div>
 
-          <div className='mt-4 grid grid-cols-1 md:grid-cols-3 gap-3'>
-            {(walletTransactions || []).slice(0, 3).map((transaction) => (
-              <div key={transaction._id} className={`rounded-xl border p-3 ${isDark ? 'border-[#374151] bg-[#0f3460]' : 'border-gray-100 bg-orange-50'}`}>
-                <p className='font-semibold capitalize'>{transaction.type}</p>
-                <p className='text-sm mt-1'>Rs {transaction.amount}</p>
-                <p className={`text-xs mt-2 ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>{transaction.description || 'Wallet activity'}</p>
-              </div>
-            ))}
-            {walletTransactions.length === 0 && (
-              <div className={`rounded-xl border p-4 text-sm ${isDark ? 'border-[#374151] bg-[#0f3460] text-gray-300' : 'border-gray-100 bg-orange-50 text-gray-600'}`}>
-                No wallet transactions yet.
-              </div>
-            )}
+            <div className='mt-3 grid grid-cols-1 md:grid-cols-3 gap-3'>
+              {(walletTransactions || []).slice(0, 3).map((transaction) => {
+                const type = String(transaction.type || '').toLowerCase()
+                const tone = type === 'refund'
+                  ? isDark ? 'border-emerald-500/20 bg-emerald-500/10' : 'border-emerald-100 bg-emerald-50/70'
+                  : type === 'payment'
+                    ? isDark ? 'border-sky-500/20 bg-sky-500/10' : 'border-sky-100 bg-sky-50/70'
+                    : isDark ? 'border-orange-500/20 bg-orange-500/10' : 'border-orange-100 bg-orange-50/70'
+
+                return (
+                  <div key={transaction._id} className={`rounded-[18px] border p-3.5 shadow-sm ${tone}`}>
+                    <div className='flex items-start justify-between gap-3'>
+                      <div>
+                        <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${isDark ? 'text-gray-300' : 'text-slate-400'}`}>{transaction.type || 'Activity'}</p>
+                        <p className={`mt-1.5 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Rs {transaction.amount}</p>
+                      </div>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${isDark ? 'bg-white/10 text-white' : 'bg-white text-slate-600 shadow-sm'}`}>
+                        {type || 'wallet'}
+                      </span>
+                    </div>
+                    <p className={`mt-3 text-sm leading-6 ${isDark ? 'text-gray-300' : 'text-slate-500'}`}>{transaction.description || 'Wallet activity'}</p>
+                  </div>
+                )
+              })}
+
+              {walletTransactions.length === 0 && (
+                <div className={`md:col-span-3 rounded-[22px] border p-5 text-sm ${isDark ? 'border-[#374151] bg-[#0f3460] text-gray-300' : 'border-orange-100 bg-orange-50/70 text-gray-600'}`}>
+                  No wallet transactions yet. Once you add balance, pay through wallet, or receive refunds, your recent activity will appear here.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
