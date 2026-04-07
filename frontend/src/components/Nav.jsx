@@ -32,7 +32,7 @@ const searchCatalog = async ({ term, city }) => {
 
 function Nav() {
     const { userData, currentCity, cartItems } = useSelector(state => state.user)
-    const { myShopData } = useSelector(state => state.owner)
+    const { myShopData, myShops } = useSelector(state => state.owner)
     const [showInfo, setShowInfo] = useState(false)
     const [showSearch, setShowSearch] = useState(false)
     const [query, setQuery] = useState("")
@@ -42,7 +42,7 @@ function Nav() {
     const [recentSearches, setRecentSearches] = useState(() => {
         try {
             return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || "[]")
-        } catch (error) {
+        } catch {
             return []
         }
     })
@@ -52,14 +52,13 @@ function Nav() {
     const menuRef = useRef(null)
     const searchRef = useRef(null)
     const { isDark, toggleTheme } = useTheme()
-
-    if (!userData) return null
-
-    const normalizedRole = normalizeClientRole(userData.role)
+    const normalizedRole = normalizeClientRole(userData?.role)
     const roleLabel =
-        isDeliveryRole(normalizedRole)
-            ? "Delivery Partner"
-            : normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1)
+        !normalizedRole
+            ? ""
+            : isDeliveryRole(normalizedRole)
+                ? "Delivery Partner"
+                : normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1)
 
     const persistRecentSearch = (term) => {
         const trimmed = String(term || "").trim()
@@ -103,7 +102,7 @@ function Nav() {
                 const result = await searchCatalog({ term: trimmedQuery, city: currentCity })
                 setSearchResults(result)
                 itemsToShow = result.items || []
-            } catch (error) {
+            } catch {
                 itemsToShow = []
             } finally {
                 setSearchLoading(false)
@@ -141,7 +140,7 @@ function Nav() {
                 setSearchLoading(true)
                 const result = await searchCatalog({ term: trimmedQuery, city: currentCity })
                 setSearchResults(result)
-            } catch (error) {
+            } catch {
                 setSearchResults({ items: [], shops: [] })
             } finally {
                 setSearchLoading(false)
@@ -180,6 +179,8 @@ function Nav() {
             document.removeEventListener("keydown", handleEsc)
         }
     }, [])
+
+    if (!userData) return null
 
     return (
         <div className={`w-full min-h-[72px] sm:h-[80px] flex items-center justify-between md:justify-center gap-3 sm:gap-6 md:gap-[30px] px-3 sm:px-5 fixed top-0 left-0 z-[9999] border-none outline-none transition-colors duration-300 ${isDark ? 'bg-[#1a1a2e]' : 'bg-[#fff9f6]'} overflow-visible`}>
@@ -307,11 +308,11 @@ function Nav() {
                 {isUserRole(normalizedRole) && (showSearch ? <RxCross2 size={25} className='text-[#ff4d2d] md:hidden' onClick={() => setShowSearch(false)} /> : <IoIosSearch size={25} className='text-[#ff4d2d] md:hidden' onClick={() => setShowSearch(true)} />)
                 }
                 {isOwnerRole(normalizedRole) ? <>
-                    {myShopData && <> <button className='hidden md:flex items-center gap-1 p-2 cursor-pointer rounded-full bg-[#ff4d2d]/10 text-[#ff4d2d]' onClick={() => navigate("/add-item")}>
+                    {myShopData && <> <button className='hidden md:flex items-center gap-1 p-2 cursor-pointer rounded-full bg-[#ff4d2d]/10 text-[#ff4d2d]' onClick={() => navigate(`/add-item?shopId=${myShopData._id}`)}>
                         <FaPlus size={20} />
                         <span>Add Food Item</span>
                     </button>
-                        <button className='md:hidden flex items-center  p-2 cursor-pointer rounded-full bg-[#ff4d2d]/10 text-[#ff4d2d]' onClick={() => navigate("/add-item")}>
+                        <button className='md:hidden flex items-center  p-2 cursor-pointer rounded-full bg-[#ff4d2d]/10 text-[#ff4d2d]' onClick={() => navigate(`/add-item${myShopData?._id ? `?shopId=${myShopData._id}` : ""}`)}>
                             <FaPlus size={20} />
                         </button></>}
 
@@ -395,9 +396,9 @@ function Nav() {
                             {isOwnerRole(normalizedRole) && (
                                 <button
                                     className={`text-left text-sm font-medium py-1.5 px-2 rounded-md transition ${isDark ? 'hover:bg-[#0f3460]' : 'hover:bg-gray-100'}`}
-                                    onClick={() => navigate("/create-edit-shop")}
+                                    onClick={() => navigate(myShopData?._id ? `/create-edit-shop?shopId=${myShopData._id}` : "/create-edit-shop?mode=create")}
                                 >
-                                    {myShopData ? "Manage Shop" : "Create Shop"}
+                                    {myShopData ? `Manage Shop${myShops.length > 1 ? ` (${myShops.length})` : ""}` : "Create Shop"}
                                 </button>
                             )}
 

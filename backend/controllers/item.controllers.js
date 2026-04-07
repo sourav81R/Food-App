@@ -4,6 +4,11 @@ import uploadOnCloudinary from "../utils/cloudinary.js";
 import getShopAvailability from "../utils/shopAvailability.js";
 
 const FALLBACK_CITIES = ["Baruipur", "Kolkata", "Bidhan Nagar", "Salt Lake Sector-V", "Medinipur"];
+const OWNER_SHOP_SORT = { updatedAt: -1, createdAt: -1 };
+const OWNER_SHOP_ITEMS_POPULATE = {
+    path: "items",
+    options: { sort: { updatedAt: -1 } }
+};
 const CITY_ALIASES = {
     "baruipur": ["Baruipur"],
     "kolkata": ["Kolkata", "Calcutta"],
@@ -14,6 +19,12 @@ const CITY_ALIASES = {
 
 const normalizeCity = (value = "") => value.toLowerCase().replace(/[,\-]+/g, " ").replace(/\s+/g, " ").trim();
 const escapeRegExp = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const populateOwnerShopQuery = (query) => query.populate("owner").populate(OWNER_SHOP_ITEMS_POPULATE);
+
+const getOwnerShop = async (ownerId, shopId) => Shop.findOne(
+    shopId ? { owner: ownerId, _id: shopId } : { owner: ownerId }
+).sort(OWNER_SHOP_SORT);
 
 const resolveCityVariants = (city = "") => {
     const variants = new Set();
@@ -46,12 +57,12 @@ const pickFallbackCity = async (requestedCity = "") => {
 
 export const addItem = async (req, res) => {
     try {
-        const { name, category, foodType, price, description } = req.body
+        const { name, category, foodType, price, description, shopId } = req.body
         let image;
         if (req.file) {
             image = await uploadOnCloudinary(req.file.path)
         }
-        const shop = await Shop.findOne({ owner: req.userId })
+        const shop = await getOwnerShop(req.userId, shopId)
         if (!shop) {
             return res.status(400).json({ message: "shop not found" })
         }
@@ -61,12 +72,8 @@ export const addItem = async (req, res) => {
 
         shop.items.push(item._id)
         await shop.save()
-        await shop.populate("owner")
-        await shop.populate({
-            path: "items",
-            options: { sort: { updatedAt: -1 } }
-        })
-        return res.status(201).json(shop)
+        const populatedShop = await populateOwnerShopQuery(Shop.findById(shop._id))
+        return res.status(201).json(populatedShop)
 
     } catch (error) {
         return res.status(500).json({ message: `add item error ${error}` })
@@ -81,7 +88,16 @@ export const editItem = async (req, res) => {
         if (req.file) {
             image = await uploadOnCloudinary(req.file.path)
         }
-        const shop = await Shop.findOne({ owner: req.userId })
+        const existingItem = await Item.findById(itemId)
+        if (!existingItem) {
+            return res.status(400).json({ message: "item not found" })
+        }
+
+        const shop = await Shop.findOne({ _id: existingItem.shop, owner: req.userId })
+        if (!shop) {
+            return res.status(403).json({ message: "you are not allowed to edit this item" })
+        }
+
         const updatePayload = {
             name,
             category,
@@ -93,14 +109,8 @@ export const editItem = async (req, res) => {
         if (image) {
             updatePayload.image = image
         }
-        const item = await Item.findByIdAndUpdate(itemId, updatePayload, { new: true })
-        if (!item) {
-            return res.status(400).json({ message: "item not found" })
-        }
-        const populatedShop = await Shop.findOne({ owner: req.userId }).populate({
-            path: "items",
-            options: { sort: { updatedAt: -1 } }
-        })
+        await Item.findByIdAndUpdate(itemId, updatePayload, { new: true })
+        const populatedShop = await populateOwnerShopQuery(Shop.findById(shop._id))
         return res.status(200).json(populatedShop)
 
     } catch (error) {
@@ -124,17 +134,20 @@ export const getItemById = async (req, res) => {
 export const deleteItem = async (req, res) => {
     try {
         const itemId = req.params.itemId
-        const item = await Item.findByIdAndDelete(itemId)
+        const item = await Item.findById(itemId)
         if (!item) {
             return res.status(400).json({ message: "item not found" })
         }
-        const shop = await Shop.findOne({ owner: req.userId })
-        shop.items = shop.items.filter(i => i !== item._id)
+        const shop = await Shop.findOne({ _id: item.shop, owner: req.userId })
+        if (!shop) {
+            return res.status(403).json({ message: "you are not allowed to delete this item" })
+        }
+
+        await Item.findByIdAndDelete(itemId)
+        shop.items = shop.items.filter((shopItemId) => String(shopItemId) !== String(item._id))
         await shop.save()
-        await shop.populate({
-            path: "items",
-            options: { sort: { updatedAt: -1 } }
-        })
+        await shop.populate("owner")
+        await shop.populate(OWNER_SHOP_ITEMS_POPULATE)
         return res.status(200).json(shop)
 
     } catch (error) {

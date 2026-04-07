@@ -2,19 +2,22 @@ import axios from 'axios'
 import { useEffect } from 'react'
 import { serverUrl } from '../App'
 import { useDispatch, useSelector } from 'react-redux'
-import { setMyShopData } from '../redux/ownerSlice'
+import { clearOwnerState, setOwnerShops } from '../redux/ownerSlice'
 
 function useGetMyshop() {
     const dispatch = useDispatch()
     const { userData } = useSelector(state => state.user)
 
     useEffect(() => {
-        if (!userData?._id || userData?.role !== 'owner') return
+        if (!userData?._id || (userData?.role !== 'owner' && userData?.role !== 'restaurant')) {
+            dispatch(clearOwnerState())
+            return
+        }
 
         const fetchShop = async () => {
             try {
                 const result = await axios.get(`${serverUrl}/api/shop/get-my`, { withCredentials: true })
-                dispatch(setMyShopData(result.data))
+                dispatch(setOwnerShops(result.data))
             } catch (error) {
                 console.log(error)
             }

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { serverUrl } from "../App";
 import { useTheme } from "../context/ThemeContext";
+import { useSelector } from "react-redux";
 import { FaBolt, FaChartLine, FaFireAlt, FaMoneyBillWave, FaReceipt } from "react-icons/fa";
 
 const PIE_COLORS = ["#ff4d2d", "#ff9a62", "#ffd166", "#06d6a0", "#118ab2"];
@@ -12,13 +13,19 @@ function OwnerAnalyticsPanel() {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(false);
   const { isDark } = useTheme();
+  const { myShopData } = useSelector((state) => state.owner);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
+      if (!myShopData?._id) {
+        setAnalytics(null);
+        return;
+      }
+
       try {
         setLoading(true);
         const result = await axios.get(`${serverUrl}/api/shop/analytics`, {
-          params: { range },
+          params: { range, shopId: myShopData._id },
           withCredentials: true
         });
         setAnalytics(result.data);
@@ -30,7 +37,11 @@ function OwnerAnalyticsPanel() {
     };
 
     fetchAnalytics();
-  }, [range]);
+  }, [range, myShopData?._id]);
+
+  if (!myShopData?._id) {
+    return null;
+  }
 
   return (
     <div className={`w-full max-w-6xl overflow-hidden rounded-[32px] border ${isDark ? "border-white/10 bg-[linear-gradient(180deg,rgba(18,28,46,0.98),rgba(12,20,34,0.98))] text-white shadow-[0_26px_80px_rgba(2,6,23,0.4)]" : "border-orange-100 bg-white text-slate-900 shadow-[0_26px_80px_rgba(15,23,42,0.08)]"}`}>
@@ -66,7 +77,7 @@ function OwnerAnalyticsPanel() {
       <div className="p-5 sm:p-7">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
         <div>
-          <p className={`text-sm mt-1 ${isDark ? "text-gray-300" : "text-gray-600"}`}>Revenue, best-selling items, and peak order hours.</p>
+          <p className={`text-sm mt-1 ${isDark ? "text-gray-300" : "text-gray-600"}`}>Revenue, best-selling items, and peak order hours for {analytics?.shopName || myShopData.name}.</p>
         </div>
         <div className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${isDark ? "bg-white/5 text-slate-300" : "bg-orange-50 text-[#ff6b43]"}`}>Live owner insights</div>
       </div>

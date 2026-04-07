@@ -20,10 +20,8 @@ function Profile() {
   const dispatch = useDispatch();
   const { isDark } = useTheme();
   const { userData, currentCity, currentState, currentAddress, addresses, walletBalance, walletTransactions } = useSelector((state) => state.user);
-  const { myShopData } = useSelector((state) => state.owner);
-
-  if (!userData) return null;
-  const normalizedRole = normalizeClientRole(userData.role);
+  const { myShopData, myShops } = useSelector((state) => state.owner);
+  const normalizedRole = normalizeClientRole(userData?.role);
 
   const joinedDate = userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : "N/A";
   const deliveryLat = userData?.location?.coordinates?.[1];
@@ -48,6 +46,8 @@ function Profile() {
       fetchExtras();
     }
   }, [userData?._id, dispatch]);
+
+  if (!userData) return null;
 
   return (
     <div className={`w-full min-h-screen pt-[95px] px-4 pb-10 ${isDark ? "bg-[#1a1a2e]" : "bg-[#fff9f6]"}`}>
@@ -155,13 +155,16 @@ function Profile() {
           <div className={`rounded-2xl border p-6 mt-5 ${isDark ? "bg-[#16213e] border-[#374151] text-white" : "bg-white border-gray-100 text-gray-900"}`}>
             <h2 className="text-xl font-bold">Owner Panel</h2>
             <p className={`mt-2 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
-              {myShopData ? `Shop: ${myShopData.name}` : "No shop created yet"}
+              {myShopData ? `Managing ${myShopData.name} • ${myShops.length} shop${myShops.length === 1 ? "" : "s"} total` : "No shop created yet"}
             </p>
             <div className="flex flex-wrap gap-3 mt-4">
-              <button className="px-4 py-2 rounded-lg bg-[#ff4d2d] text-white font-medium" onClick={() => navigate("/create-edit-shop")}>
+              <button className="px-4 py-2 rounded-lg bg-[#ff4d2d] text-white font-medium" onClick={() => navigate(myShopData?._id ? `/create-edit-shop?shopId=${myShopData._id}` : "/create-edit-shop?mode=create")}>
                 {myShopData ? "Manage Shop" : "Create Shop"}
               </button>
-              {myShopData && <button className="px-4 py-2 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] font-medium" onClick={() => navigate("/add-item")}>Add Item</button>}
+              <button className="px-4 py-2 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] font-medium" onClick={() => navigate("/create-edit-shop?mode=create")}>
+                Add Another Shop
+              </button>
+              {myShopData && <button className="px-4 py-2 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] font-medium" onClick={() => navigate(`/add-item?shopId=${myShopData._id}`)}>Add Item</button>}
               <button className="px-4 py-2 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] font-medium" onClick={() => navigate("/my-orders")}>Shop Orders</button>
             </div>
           </div>

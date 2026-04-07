@@ -2,15 +2,15 @@ import React, { useEffect } from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FaUtensils } from "react-icons/fa";
+import { FaStore, FaUtensils } from "react-icons/fa";
 import { useState } from 'react';
 import axios from 'axios';
 import { serverUrl } from '../App';
-import { setMyShopData } from '../redux/ownerSlice';
+import { setMyShopData, setSelectedShopId } from '../redux/ownerSlice';
 import { ClipLoader } from 'react-spinners';
 function EditItem() {
     const navigate = useNavigate()
-    const { myShopData } = useSelector(state => state.owner)
+    const { myShops } = useSelector(state => state.owner)
   const {itemId}=useParams()
    const [currentItem,setCurrentItem]=useState(null)
     const [name, setName] = useState("")
@@ -67,13 +67,16 @@ function EditItem() {
     try {
        const result=await axios.get(`${serverUrl}/api/item/get-by-id/${itemId}`,{withCredentials:true}) 
        setCurrentItem(result.data)
+       if(result.data?.shop){
+        dispatch(setSelectedShopId(result.data.shop))
+       }
 
     } catch (error) {
         console.log(error)
     }
   }
   handleGetItemById()
-    },[itemId])
+    },[itemId, dispatch])
 
     useEffect(()=>{
      setName(currentItem?.name || "")
@@ -83,6 +86,8 @@ function EditItem() {
      setFrontendImage(currentItem?.image || "")
      setDescription(currentItem?.description || "")
     },[currentItem])
+
+    const activeShopName = myShops.find((shop) => String(shop?._id) === String(currentItem?.shop))?.name
     return (
         <div className='flex justify-center flex-col items-center p-3 sm:p-6 bg-gradient-to-br from-orange-50 relative to-white min-h-screen'>
             <div className='absolute top-3 left-3 sm:top-[20px] sm:left-[20px] z-[10] mb-[10px]' onClick={() => navigate("/")}>
@@ -96,6 +101,10 @@ function EditItem() {
                     </div>
                     <div className="text-3xl font-extrabold text-gray-900">
                         Edit Food
+                    </div>
+                    <div className='mt-3 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm font-medium text-[#ff4d2d]'>
+                        <FaStore size={14} />
+                        {activeShopName || "Selected Shop"}
                     </div>
                 </div>
                 <form className='space-y-5' onSubmit={handleSubmit}>

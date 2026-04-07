@@ -4,6 +4,11 @@ import uploadOnCloudinary from "../utils/cloudinary.js";
 import getShopAvailability from "../utils/shopAvailability.js";
 
 const FALLBACK_CITIES = ["Baruipur", "Kolkata", "Bidhan Nagar", "Salt Lake Sector-V", "Medinipur"];
+const OWNER_SHOP_SORT = { updatedAt: -1, createdAt: -1 };
+const OWNER_SHOP_ITEMS_POPULATE = {
+    path: "items",
+    options: { sort: { updatedAt: -1 } }
+};
 const CITY_ALIASES = {
     "baruipur": ["Baruipur"],
     "kolkata": ["Kolkata", "Calcutta"],
@@ -14,6 +19,17 @@ const CITY_ALIASES = {
 
 const normalizeCity = (value = "") => value.toLowerCase().replace(/[,\-]+/g, " ").replace(/\s+/g, " ").trim();
 const escapeRegExp = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const matchesShopId = (shop, shopId) => String(shop?._id || "") === String(shopId || "");
+
+const populateOwnerShopQuery = (query) => query.populate("owner").populate(OWNER_SHOP_ITEMS_POPULATE);
+
+const getOwnerShops = async (ownerId) => populateOwnerShopQuery(
+    Shop.find({ owner: ownerId }).sort(OWNER_SHOP_SORT)
+);
+
+const getOwnerShop = async (ownerId, shopId) => populateOwnerShopQuery(
+    Shop.findOne(shopId ? { owner: ownerId, _id: shopId } : { owner: ownerId }).sort(OWNER_SHOP_SORT)
+);
 
 const resolveCityVariants = (city = "") => {
     const variants = new Set();
@@ -46,12 +62,18 @@ const pickFallbackCity = async (requestedCity = "") => {
 
 export const createEditShop=async (req,res) => {
     try {
-       const {name,city,state,address,openingTime,closingTime,isOpen,latitude,longitude}=req.body
+       const {shopId,name,city,state,address,openingTime,closingTime,isOpen,latitude,longitude}=req.body
        let image;
        if(req.file){
         image=await uploadOnCloudinary(req.file.path)
        } 
-       let shop=await Shop.findOne({owner:req.userId})
+       let shop = null
+       if(shopId){
+        shop = await Shop.findOne({ _id: shopId, owner: req.userId })
+        if(!shop){
+            return res.status(404).json({message:"shop not found"})
+        }
+       }
        const location = Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude))
         ? {
             type: "Point",
@@ -59,6 +81,9 @@ export const createEditShop=async (req,res) => {
         }
         : undefined
        if(!shop){
+        if(!image){
+            return res.status(400).json({message:"shop image is required"})
+        }
         shop=await Shop.create({
         name,city,state,address,image,owner:req.userId,openingTime,closingTime,
         isOpen:isOpen !== undefined ? String(isOpen) === "true" || isOpen === true : true,
@@ -80,7 +105,8 @@ export const createEditShop=async (req,res) => {
          shop=await Shop.findByIdAndUpdate(shop._id, updatePayload, {new:true})
        }
       
-       await shop.populate("owner items")
+       await shop.populate("owner")
+       await shop.populate(OWNER_SHOP_ITEMS_POPULATE)
        return res.status(201).json(shop)
     } catch (error) {
         return res.status(500).json({message:`create shop error ${error}`})
@@ -89,14 +115,13 @@ export const createEditShop=async (req,res) => {
 
 export const getMyShop=async (req,res) => {
     try {
-        const shop=await Shop.findOne({owner:req.userId}).populate("owner").populate({
-            path:"items",
-            options:{sort:{updatedAt:-1}}
+        const shops = await getOwnerShops(req.userId)
+        const selectedShop = shops.find((shop) => matchesShopId(shop, req.query?.shopId)) || shops[0] || null
+
+        return res.status(200).json({
+            shops,
+            selectedShopId: selectedShop?._id || null
         })
-        if(!shop){
-            return res.status(200).json(null)
-        }
-        return res.status(200).json(shop)
     } catch (error) {
         return res.status(500).json({message:`get my shop error ${error}`})
     }
@@ -136,7 +161,7 @@ export const getShopByCity=async (req,res) => {
 
 export const toggleBusyMode = async (req, res) => {
     try {
-        const shop = await Shop.findOne({ owner: req.userId })
+        const shop = await getOwnerShop(req.userId, req.body?.shopId || req.query?.shopId)
         if (!shop) {
             return res.status(404).json({ message: "shop not found" })
         }
@@ -164,7 +189,10 @@ export const getShopAnalytics = async (req, res) => {
             return res.status(400).json({ message: "range must be week or month" })
         }
 
-        const shop = await Shop.findOne({ owner: req.userId }).select("_id name items")
+        const baseShop = await getOwnerShop(req.userId, req.query?.shopId)
+        const shop = baseShop?._id
+            ? await Shop.findById(baseShop._id).select("_id name items")
+            : null
         if (!shop) {
             return res.status(404).json({ message: "shop not found" })
         }
@@ -226,6 +254,8 @@ export const getShopAnalytics = async (req, res) => {
 
         return res.status(200).json({
             range,
+            shopId: shop._id,
+            shopName: shop.name,
             totalOrders,
             totalRevenue: Number(totalRevenue.toFixed(2)),
             topItems,
