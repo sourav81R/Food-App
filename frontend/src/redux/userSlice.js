@@ -87,6 +87,9 @@ const userSlice = createSlice({
         state.myOrders = [incomingOrder, ...state.myOrders]
       }
     },
+    removeMyOrder: (state, action) => {
+      state.myOrders = state.myOrders.filter((order) => String(order?._id) !== String(action.payload))
+    },
 
     clearCart: (state) => {
       state.cartItems = []
@@ -182,5 +185,5 @@ const userSlice = createSlice({
   }
 })
 
-export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, setMyOrders, addMyOrder, updateOrderStatus, setSearchItems, setSearchSuggestions, setTotalAmount, updateRealtimeOrderStatus, clearCart, setFavorites, toggleFavoriteItem, setOrderEta, clearOrderEta, setAddresses, setWalletBalance, setWalletTransactions, setRecommendedItems, setBestCoupon } = userSlice.actions
+export const { setUserData, setCurrentAddress, setCurrentCity, setCurrentState, setShopsInMyCity, setItemsInMyCity, addToCart, updateQuantity, removeCartItem, setMyOrders, addMyOrder, removeMyOrder, updateOrderStatus, setSearchItems, setSearchSuggestions, setTotalAmount, updateRealtimeOrderStatus, clearCart, setFavorites, toggleFavoriteItem, setOrderEta, clearOrderEta, setAddresses, setWalletBalance, setWalletTransactions, setRecommendedItems, setBestCoupon } = userSlice.actions
 export default userSlice.reducer

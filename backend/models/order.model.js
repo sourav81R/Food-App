@@ -172,6 +172,14 @@ const orderSchema = new mongoose.Schema({
             default: ""
         }
     },
+    hiddenFromUser: {
+        type: Boolean,
+        default: false
+    },
+    hiddenFromUserAt: {
+        type: Date,
+        default: null
+    },
     refund: {
         type: refundSchema,
         default: () => ({})

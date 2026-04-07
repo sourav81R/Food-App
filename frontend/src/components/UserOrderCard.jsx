@@ -3,9 +3,9 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { serverUrl } from '../App'
-import { addToCart } from '../redux/userSlice'
+import { addToCart, removeMyOrder } from '../redux/userSlice'
 import { useToast } from '../context/ToastContext'
-import { FaRedo } from 'react-icons/fa'
+import { FaRedo, FaTrash } from 'react-icons/fa'
 
 const FALLBACK_FOOD_IMAGE = "https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?auto=compress&cs=tinysrgb&w=900"
 
@@ -18,8 +18,11 @@ function UserOrderCard({ data }) {
     const [reviewSubmittingByOrder, setReviewSubmittingByOrder] = useState({})
     const [reviewStateByOrder, setReviewStateByOrder] = useState({})
     const [reordering, setReordering] = useState(false)
+    const [deletingHistory, setDeletingHistory] = useState(false)
 
     const shopOrders = Array.isArray(data?.shopOrders) ? data.shopOrders : []
+    const canDeleteHistory = ["delivered", "cancelled"].includes(String(data?.status || "").toLowerCase()) ||
+        (shopOrders.length > 0 && shopOrders.every((shopOrder) => ["delivered", "cancelled"].includes(String(shopOrder?.status || "").toLowerCase())))
 
     const formatDate = (dateString) => {
         if (!dateString) return "-"
@@ -164,6 +167,23 @@ function UserOrderCard({ data }) {
         }
     }
 
+    const handleDeleteHistory = async () => {
+        const confirmed = window.confirm("Remove this order from your history?")
+        if (!confirmed) return
+
+        setDeletingHistory(true)
+        try {
+            await axios.post(`${serverUrl}/api/order/${data?._id}/delete-history`, {}, { withCredentials: true })
+            dispatch(removeMyOrder(data?._id))
+            toast.success("Order removed from history")
+        } catch (error) {
+            toast.error(error?.response?.data?.message || "Failed to remove order history")
+            console.log(error)
+        } finally {
+            setDeletingHistory(false)
+        }
+    }
+
     return (
         <div className='bg-white rounded-lg shadow p-4 space-y-4'>
             {reviewStateByOrder?.[data?._id]?.message && (
@@ -273,6 +293,16 @@ function UserOrderCard({ data }) {
             <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center border-t pt-2 gap-3'>
                 <p className='font-semibold'>Total: Rs {data?.totalAmount || 0}</p>
                 <div className='flex flex-col sm:flex-row gap-2 w-full sm:w-auto'>
+                    {canDeleteHistory && (
+                        <button
+                            className='flex items-center justify-center gap-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm transition disabled:opacity-50 w-full sm:w-auto'
+                            onClick={handleDeleteHistory}
+                            disabled={deletingHistory}
+                        >
+                            <FaTrash size={12} />
+                            <span>{deletingHistory ? 'Removing...' : 'Delete History'}</span>
+                        </button>
+                    )}
                     <button
                         className='flex items-center justify-center gap-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm transition disabled:opacity-50 w-full sm:w-auto'
                         onClick={handleQuickReorder}

@@ -1,33 +1,6 @@
 import resolveOperatingHours from "./shopHours.js";
 
-const parseTimeToMinutes = (value = "") => {
-    const [hour, minute] = String(value || "").split(":").map(Number)
-    if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null
-    return (hour * 60) + minute
-}
-
-const getNowMinutes = (date = new Date()) => (date.getHours() * 60) + date.getMinutes()
-
-export const isWithinOperatingHours = (openingTime, closingTime, date = new Date()) => {
-    const openMinutes = parseTimeToMinutes(openingTime)
-    const closeMinutes = parseTimeToMinutes(closingTime)
-
-    if (openMinutes == null || closeMinutes == null) {
-        return true
-    }
-
-    const nowMinutes = getNowMinutes(date)
-    if (openMinutes === closeMinutes) {
-        return true
-    }
-
-    if (openMinutes < closeMinutes) {
-        return nowMinutes >= openMinutes && nowMinutes < closeMinutes
-    }
-
-    return nowMinutes >= openMinutes || nowMinutes < closeMinutes
-}
+export const isWithinOperatingHours = () => true
 
 export const getShopAvailability = (shop, date = new Date()) => {
     const { openingTime, closingTime } = resolveOperatingHours(shop)

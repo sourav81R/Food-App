@@ -164,6 +164,14 @@ const canCancelOrder = (order) => {
     return (order?.shopOrders || []).every((shopOrder) => validStatuses.has(shopOrder.status))
 }
 
+const canDeleteOrderHistory = (order) => {
+    const terminalStatuses = new Set(["delivered", "cancelled"])
+    if (terminalStatuses.has(order?.status)) return true
+
+    const shopOrders = Array.isArray(order?.shopOrders) ? order.shopOrders : []
+    return shopOrders.length > 0 && shopOrders.every((shopOrder) => terminalStatuses.has(shopOrder?.status))
+}
+
 const refundOrderIfNeeded = async (order) => {
     if (order?.refund?.status === "processed") {
         return
@@ -476,7 +484,10 @@ export const getMyOrders = async (req, res) => {
         const normalizedUserRole = normalizeRole(user?.role)
 
         if (normalizedUserRole === ROLE.USER) {
-            const orders = await Order.find({ user: req.userId })
+            const orders = await Order.find({
+                user: req.userId,
+                hiddenFromUser: { $ne: true }
+            })
                 .sort({ createdAt: -1 })
                 .populate("shopOrders.shop", "name openingTime closingTime isOpen isBusy")
                 .populate("shopOrders.owner", "name email mobile")
@@ -832,6 +843,10 @@ export const getOrderById = async (req, res) => {
             return res.status(403).json({ message: "Forbidden: you are not allowed to view this order" })
         }
 
+        if (!isAdmin && isOrderUser && order.hiddenFromUser) {
+            return res.status(404).json({ message: "order not found" })
+        }
+
         if (order.deliveryPartner) {
             order.shopOrders = (order.shopOrders || []).map((shopOrder) => ({
                 ...shopOrder,
@@ -1095,5 +1110,39 @@ export const cancelOrder = async (req, res) => {
         })
     } catch (error) {
         return res.status(500).json({ message: `cancel order error ${error.message}` })
+    }
+}
+
+export const deleteOrderHistory = async (req, res) => {
+    try {
+        const { id } = req.params
+        const order = await Order.findById(id)
+
+        if (!order) {
+            return res.status(404).json({ message: "order not found" })
+        }
+
+        if (String(order.user) !== String(req.userId)) {
+            return res.status(403).json({ message: "Forbidden" })
+        }
+
+        if (order.hiddenFromUser) {
+            return res.status(200).json({ message: "Order already removed from history" })
+        }
+
+        if (!canDeleteOrderHistory(order)) {
+            return res.status(400).json({ message: "Only delivered or cancelled orders can be removed from history" })
+        }
+
+        order.hiddenFromUser = true
+        order.hiddenFromUserAt = new Date()
+        await order.save()
+
+        return res.status(200).json({
+            message: "Order removed from history",
+            orderId: order._id
+        })
+    } catch (error) {
+        return res.status(500).json({ message: `delete order history error ${error.message}` })
     }
 }
