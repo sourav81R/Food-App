@@ -2,7 +2,7 @@ import express from "express"
 import isAuth from "../middlewares/isAuth.js"
 import { authorizeRoles } from "../middlewares/auth.middleware.js"
 import { ROLE } from "../utils/roles.js"
-import { acceptOrder, autoCompleteOrderByEta, cancelOrder, deleteOrderHistory, getCurrentOrder, getDeliveryBoyAssignment, getMyOrders, getOrderById, getPaymentConfig, getTodayDeliveries, placeOrder, sendDeliveryOtp, updateOrderStatus, verifyDeliveryOtp, verifyPayment } from "../controllers/order.controllers.js"
+import { acceptOrder, autoCompleteOrderByEta, cancelOrder, clearAllOrderHistory, deleteOrderHistory, getCurrentOrder, getDeliveryBoyAssignment, getMyOrders, getOrderById, getPaymentConfig, getTodayDeliveries, placeOrder, sendDeliveryOtp, updateOrderStatus, verifyDeliveryOtp, verifyPayment } from "../controllers/order.controllers.js"
 
 
 
@@ -25,5 +25,6 @@ orderRouter.get('/get-today-deliveries',isAuth,authorizeRoles(ROLE.DELIVERY),get
 orderRouter.post('/:id/cancel', isAuth, authorizeRoles(ROLE.USER), cancelOrder)
 orderRouter.delete('/:id/history', isAuth, authorizeRoles(ROLE.USER), deleteOrderHistory)
 orderRouter.post('/:id/delete-history', isAuth, authorizeRoles(ROLE.USER), deleteOrderHistory)
+orderRouter.post('/clear-history', isAuth, authorizeRoles(ROLE.USER), clearAllOrderHistory)
 
 export default orderRouter

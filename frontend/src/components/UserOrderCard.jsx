@@ -5,7 +5,7 @@ import { useDispatch } from 'react-redux'
 import { serverUrl } from '../App'
 import { addToCart, removeMyOrder } from '../redux/userSlice'
 import { useToast } from '../context/ToastContext'
-import { FaRedo, FaTrash } from 'react-icons/fa'
+import { FaRedo, FaTrash, FaRegClock, FaShieldAlt } from 'react-icons/fa'
 
 const FALLBACK_FOOD_IMAGE = "https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?auto=compress&cs=tinysrgb&w=900"
 
@@ -19,10 +19,10 @@ function UserOrderCard({ data }) {
     const [reviewStateByOrder, setReviewStateByOrder] = useState({})
     const [reordering, setReordering] = useState(false)
     const [deletingHistory, setDeletingHistory] = useState(false)
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
 
     const shopOrders = Array.isArray(data?.shopOrders) ? data.shopOrders : []
-    const canDeleteHistory = ["delivered", "cancelled"].includes(String(data?.status || "").toLowerCase()) ||
-        (shopOrders.length > 0 && shopOrders.every((shopOrder) => ["delivered", "cancelled"].includes(String(shopOrder?.status || "").toLowerCase())))
+    const canDeleteHistory = Boolean(data?._id)
 
     const formatDate = (dateString) => {
         if (!dateString) return "-"
@@ -168,13 +168,11 @@ function UserOrderCard({ data }) {
     }
 
     const handleDeleteHistory = async () => {
-        const confirmed = window.confirm("Remove this order from your history?")
-        if (!confirmed) return
-
         setDeletingHistory(true)
         try {
             await axios.post(`${serverUrl}/api/order/${data?._id}/delete-history`, {}, { withCredentials: true })
             dispatch(removeMyOrder(data?._id))
+            setShowDeleteModal(false)
             toast.success("Order removed from history")
         } catch (error) {
             toast.error(error?.response?.data?.message || "Failed to remove order history")
@@ -296,7 +294,7 @@ function UserOrderCard({ data }) {
                     {canDeleteHistory && (
                         <button
                             className='flex items-center justify-center gap-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm transition disabled:opacity-50 w-full sm:w-auto'
-                            onClick={handleDeleteHistory}
+                            onClick={() => setShowDeleteModal(true)}
                             disabled={deletingHistory}
                         >
                             <FaTrash size={12} />
@@ -314,6 +312,76 @@ function UserOrderCard({ data }) {
                     <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-4 py-2 rounded-lg text-sm w-full sm:w-auto' onClick={() => navigate(`/track-order/${data?._id}`)}>Track Order</button>
                 </div>
             </div>
+
+            {showDeleteModal && (
+                <div className='fixed inset-0 z-[10000] bg-slate-950/55 backdrop-blur-[3px] flex items-center justify-center px-4'>
+                    <div className='w-full max-w-md overflow-hidden rounded-[28px] border border-orange-100 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]'>
+                        <div className='bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.18),_transparent_52%),linear-gradient(135deg,_#fff7f2,_#ffffff)] px-6 pt-6 pb-5 border-b border-orange-100'>
+                            <div className='flex items-start gap-4'>
+                                <div className='flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 text-white shadow-lg shadow-red-200'>
+                                    <FaTrash size={20} />
+                                </div>
+                                <div className='min-w-0'>
+                                    <p className='text-[11px] font-semibold uppercase tracking-[0.24em] text-red-500'>Delete History</p>
+                                    <h3 className='mt-1 text-2xl font-bold text-slate-900'>Remove this order?</h3>
+                                    <p className='mt-2 text-sm leading-6 text-slate-600'>
+                                        This will hide the order from your order history screen, but it will not cancel the order or affect refunds.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className='px-6 py-5 space-y-4'>
+                            <div className='rounded-2xl border border-slate-200 bg-slate-50/80 p-4'>
+                                <div className='flex items-center justify-between gap-3'>
+                                    <div>
+                                        <p className='text-sm font-semibold text-slate-900'>Order #{String(data?._id || "").slice(-6)}</p>
+                                        <p className='mt-1 text-xs text-slate-500'>{shopOrders.length} restaurant section{shopOrders.length > 1 ? 's' : ''}</p>
+                                    </div>
+                                    <div className='rounded-full bg-white px-3 py-1 text-xs font-semibold capitalize text-[#ff4d2d] shadow-sm'>
+                                        {data?.status || "pending"}
+                                    </div>
+                                </div>
+                                <div className='mt-4 grid grid-cols-2 gap-3'>
+                                    <div className='rounded-xl bg-white px-3 py-3 shadow-sm'>
+                                        <div className='flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400'>
+                                            <FaRegClock className='text-[#ff4d2d]' />
+                                            Date
+                                        </div>
+                                        <p className='mt-2 text-sm font-semibold text-slate-800'>{formatDate(data?.createdAt)}</p>
+                                    </div>
+                                    <div className='rounded-xl bg-white px-3 py-3 shadow-sm'>
+                                        <div className='flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400'>
+                                            <FaShieldAlt className='text-[#ff4d2d]' />
+                                            Total
+                                        </div>
+                                        <p className='mt-2 text-sm font-semibold text-slate-800'>Rs {data?.totalAmount || 0}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className='flex flex-col-reverse sm:flex-row sm:justify-end gap-3'>
+                                <button
+                                    type='button'
+                                    className='w-full sm:w-auto rounded-2xl border border-slate-200 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200'
+                                    onClick={() => setShowDeleteModal(false)}
+                                    disabled={deletingHistory}
+                                >
+                                    Keep Order
+                                </button>
+                                <button
+                                    type='button'
+                                    className='w-full sm:w-auto rounded-2xl bg-gradient-to-r from-red-500 to-orange-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-red-200 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70'
+                                    onClick={handleDeleteHistory}
+                                    disabled={deletingHistory}
+                                >
+                                    {deletingHistory ? 'Removing...' : 'Delete From History'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

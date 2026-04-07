@@ -164,13 +164,7 @@ const canCancelOrder = (order) => {
     return (order?.shopOrders || []).every((shopOrder) => validStatuses.has(shopOrder.status))
 }
 
-const canDeleteOrderHistory = (order) => {
-    const terminalStatuses = new Set(["delivered", "cancelled"])
-    if (terminalStatuses.has(order?.status)) return true
-
-    const shopOrders = Array.isArray(order?.shopOrders) ? order.shopOrders : []
-    return shopOrders.length > 0 && shopOrders.every((shopOrder) => terminalStatuses.has(shopOrder?.status))
-}
+const canDeleteOrderHistory = (order) => Boolean(order?._id)
 
 const refundOrderIfNeeded = async (order) => {
     if (order?.refund?.status === "processed") {
@@ -1131,7 +1125,7 @@ export const deleteOrderHistory = async (req, res) => {
         }
 
         if (!canDeleteOrderHistory(order)) {
-            return res.status(400).json({ message: "Only delivered or cancelled orders can be removed from history" })
+            return res.status(400).json({ message: "Order cannot be removed from history" })
         }
 
         order.hiddenFromUser = true
@@ -1144,5 +1138,29 @@ export const deleteOrderHistory = async (req, res) => {
         })
     } catch (error) {
         return res.status(500).json({ message: `delete order history error ${error.message}` })
+    }
+}
+
+export const clearAllOrderHistory = async (req, res) => {
+    try {
+        const result = await Order.updateMany(
+            {
+                user: req.userId,
+                hiddenFromUser: { $ne: true }
+            },
+            {
+                $set: {
+                    hiddenFromUser: true,
+                    hiddenFromUserAt: new Date()
+                }
+            }
+        )
+
+        return res.status(200).json({
+            message: "All order history cleared",
+            clearedCount: Number(result?.modifiedCount || 0)
+        })
+    } catch (error) {
+        return res.status(500).json({ message: `clear all order history error ${error.message}` })
     }
 }
