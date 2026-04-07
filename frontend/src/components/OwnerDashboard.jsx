@@ -143,8 +143,6 @@ function OwnerDashboard() {
             </div>
           </div>
 
-          <OwnerAnalyticsPanel />
-
           {myShopData.items.length==0 && 
             <div className='flex justify-center items-center p-4 sm:p-6'>
           <div className={`w-full max-w-md rounded-[28px] p-6 border transition-shadow duration-300 ${isDark ? 'border-white/10 bg-[#10182b] shadow-[0_24px_60px_rgba(2,6,23,0.4)]' : 'border-orange-100 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)]'}`}>
@@ -166,6 +164,8 @@ function OwnerDashboard() {
                 <OwnerItemCard data={item} key={index}/>
               ))}
               </div>}
+
+          <OwnerAnalyticsPanel />
             
         </div>}
 
