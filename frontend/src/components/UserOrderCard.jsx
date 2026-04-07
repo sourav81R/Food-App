@@ -5,9 +5,18 @@ import { useDispatch } from 'react-redux'
 import { serverUrl } from '../App'
 import { addToCart, removeMyOrder } from '../redux/userSlice'
 import { useToast } from '../context/ToastContext'
-import { FaRedo, FaTrash, FaRegClock, FaShieldAlt } from 'react-icons/fa'
+import { FaRedo, FaTrash, FaRegClock, FaShieldAlt, FaReceipt, FaStore, FaStar } from 'react-icons/fa'
 
 const FALLBACK_FOOD_IMAGE = "https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?auto=compress&cs=tinysrgb&w=900"
+
+const getStatusTone = (status = '') => {
+    const normalized = String(status || '').toLowerCase()
+    if (normalized === 'cancelled') return 'bg-red-50 text-red-600 border-red-100'
+    if (normalized === 'delivered') return 'bg-emerald-50 text-emerald-700 border-emerald-100'
+    if (normalized === 'preparing') return 'bg-amber-50 text-amber-700 border-amber-100'
+    if (normalized === 'out of delivery') return 'bg-sky-50 text-sky-700 border-sky-100'
+    return 'bg-orange-50 text-[#ff4d2d] border-orange-100'
+}
 
 function UserOrderCard({ data }) {
     const navigate = useNavigate()
@@ -23,6 +32,7 @@ function UserOrderCard({ data }) {
 
     const shopOrders = Array.isArray(data?.shopOrders) ? data.shopOrders : []
     const canDeleteHistory = Boolean(data?._id)
+    const orderStatus = String(data?.status || shopOrders?.[0]?.status || "pending").toLowerCase()
 
     const formatDate = (dateString) => {
         if (!dateString) return "-"
@@ -183,133 +193,174 @@ function UserOrderCard({ data }) {
     }
 
     return (
-        <div className='bg-white rounded-lg shadow p-4 space-y-4'>
-            {reviewStateByOrder?.[data?._id]?.message && (
-                <div
-                    className={`rounded-lg px-3 py-2 text-sm ${
-                        reviewStateByOrder?.[data?._id]?.status === "submitted"
-                            ? "border border-green-200 bg-green-50 text-green-700"
-                            : "border border-amber-200 bg-amber-50 text-amber-700"
-                    }`}
-                >
-                    {reviewStateByOrder?.[data?._id]?.message}
-                </div>
-            )}
-            <div className='flex flex-col sm:flex-row sm:justify-between border-b pb-2 gap-2'>
-                <div>
-                    <p className='font-semibold'>
-                        Order #{String(data?._id || "").slice(-6)}
-                    </p>
-                    <p className='text-sm text-gray-500'>
-                        Date: {formatDate(data?.createdAt)}
-                    </p>
-                </div>
-                <div className='text-right'>
-                    {data?.paymentMethod == "cod"
-                        ? <p className='text-sm text-gray-500'>{data?.paymentMethod?.toUpperCase()}</p>
-                        : <p className='text-sm text-gray-500 font-semibold'>Payment: {data?.payment ? "true" : "false"}</p>}
+        <div className='overflow-hidden rounded-[30px] border border-orange-100 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)]'>
+            <div className='bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.16),_transparent_44%),linear-gradient(135deg,_#fff7f1,_#ffffff_62%)] p-5 sm:p-6'>
+                {reviewStateByOrder?.[data?._id]?.message && (
+                    <div
+                        className={`mb-4 rounded-2xl px-4 py-3 text-sm font-medium ${
+                            reviewStateByOrder?.[data?._id]?.status === "submitted"
+                                ? "border border-green-200 bg-green-50 text-green-700"
+                                : "border border-amber-200 bg-amber-50 text-amber-700"
+                        }`}
+                    >
+                        {reviewStateByOrder?.[data?._id]?.message}
+                    </div>
+                )}
 
-                    <p className='font-medium text-blue-600 capitalize'>{data?.status || shopOrders?.[0]?.status || "pending"}</p>
-                </div>
-            </div>
-
-            {shopOrders.map((shopOrder, index) => (
-                <div className='border rounded-lg p-3 bg-[#fffaf7] space-y-3' key={shopOrder?._id || index}>
-                    <p>{shopOrder?.shop?.name || "Restaurant unavailable"}</p>
-
-                    <div className='flex space-x-4 overflow-x-auto pb-2'>
-                        {(Array.isArray(shopOrder?.shopOrderItems) ? shopOrder.shopOrderItems : []).map((item, idx) => {
-                            const itemDoc = item?.item
-                            const itemId = itemDoc?._id
-                            return (
-                                <div key={item?._id || idx} className='flex-shrink-0 w-40 border rounded-lg p-2 bg-white'>
-                                    <img src={itemDoc?.image || FALLBACK_FOOD_IMAGE} alt={item?.name || "Food item"} className='w-full h-24 object-cover rounded' />
-                                    <p className='text-sm font-semibold mt-1'>{item?.name || itemDoc?.name || "Item unavailable"}</p>
-                                    <p className='text-xs text-gray-500'>Qty: {item?.quantity || 0} x Rs {item?.price || 0}</p>
-
-                                    {shopOrder?.status == "delivered" && itemId && (
-                                        <div className='flex space-x-1 mt-2'>
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                <button
-                                                    key={star}
-                                                    className={`text-lg ${selectedRating[itemId] >= star ? 'text-yellow-400' : 'text-gray-400'}`}
-                                                    onClick={() => handleRating(itemId, star)}
-                                                >
-                                                    &#9733;
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )
-                        })}
+                <div className='flex flex-col gap-4 border-b border-orange-100 pb-5 sm:flex-row sm:items-start sm:justify-between'>
+                    <div>
+                        <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Order Summary</p>
+                        <h3 className='mt-1 text-2xl font-bold text-slate-900'>Order #{String(data?._id || "").slice(-6)}</h3>
+                        <div className='mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-500'>
+                            <span className='inline-flex items-center gap-2'>
+                                <FaRegClock className='text-[#ff4d2d]' />
+                                {formatDate(data?.createdAt)}
+                            </span>
+                            <span className='inline-flex items-center gap-2'>
+                                <FaShieldAlt className='text-[#ff4d2d]' />
+                                {data?.paymentMethod === "cod" ? "COD" : `Payment ${data?.payment ? "Confirmed" : "Pending"}`}
+                            </span>
+                        </div>
                     </div>
 
-                    {shopOrder?.status == "delivered" && !reviewStateByOrder?.[data?._id] && (
-                        <div className='rounded-lg border border-orange-200 bg-orange-50 p-3 space-y-3'>
-                            <p className='text-sm font-semibold text-gray-800'>Rate your restaurant experience</p>
-                            <div className='flex items-center gap-1'>
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                        key={star}
-                                        type='button'
-                                        className={`text-2xl ${Number(reviewDrafts?.[shopOrder?._id]?.rating || 0) >= star ? 'text-yellow-400' : 'text-gray-300'} hover:text-yellow-400`}
-                                        onClick={() => updateReviewDraft(shopOrder?._id, { rating: star })}
-                                    >
-                                        &#9733;
-                                    </button>
-                                ))}
+                    <div className='flex flex-col items-start gap-3 sm:items-end'>
+                        <span className={`inline-flex rounded-full border px-4 py-2 text-sm font-semibold capitalize ${getStatusTone(orderStatus)}`}>
+                            {orderStatus}
+                        </span>
+                        <div className='rounded-2xl border border-orange-100 bg-white/90 px-4 py-3 text-left shadow-sm sm:text-right'>
+                            <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-400'>Total Amount</p>
+                            <p className='mt-1 text-xl font-bold text-slate-900'>Rs {data?.totalAmount || 0}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className='mt-5 space-y-4'>
+                    {shopOrders.map((shopOrder, index) => (
+                        <div key={shopOrder?._id || index} className='rounded-[26px] border border-orange-100 bg-white p-4 shadow-sm'>
+                            <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
+                                <div className='min-w-0'>
+                                    <div className='flex items-center gap-3'>
+                                        <div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1ea] text-[#ff4d2d]'>
+                                            <FaStore size={16} />
+                                        </div>
+                                        <div>
+                                            <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400'>Restaurant</p>
+                                            <h4 className='text-xl font-bold text-slate-900'>{shopOrder?.shop?.name || "Restaurant unavailable"}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span className={`inline-flex self-start rounded-full border px-4 py-2 text-sm font-semibold capitalize ${getStatusTone(shopOrder?.status || orderStatus)}`}>
+                                    {shopOrder?.status || "pending"}
+                                </span>
                             </div>
-                            <textarea
-                                className='w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none focus:border-[#ff4d2d]'
-                                rows={3}
-                                placeholder='Share your feedback about food quality, delivery, and service'
-                                value={reviewDrafts?.[shopOrder?._id]?.comment || ""}
-                                onChange={(event) => updateReviewDraft(shopOrder?._id, { comment: event.target.value })}
-                                maxLength={1000}
-                            />
-                            <div className='flex justify-end'>
-                                <button
-                                    type='button'
-                                    className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-4 py-2 rounded-lg text-sm disabled:opacity-60'
-                                    disabled={Boolean(reviewSubmittingByOrder?.[data?._id])}
-                                    onClick={() => handleSubmitRestaurantReview(shopOrder)}
-                                >
-                                    {reviewSubmittingByOrder?.[data?._id] ? "Submitting..." : "Submit Review"}
-                                </button>
+
+                            <div className='mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3'>
+                                {(Array.isArray(shopOrder?.shopOrderItems) ? shopOrder.shopOrderItems : []).map((item, idx) => {
+                                    const itemDoc = item?.item
+                                    const itemId = itemDoc?._id
+                                    return (
+                                        <div key={item?._id || idx} className='overflow-hidden rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fffdfb,#ffffff)] shadow-sm'>
+                                            <img src={itemDoc?.image || FALLBACK_FOOD_IMAGE} alt={item?.name || "Food item"} className='h-36 w-full object-cover' />
+                                            <div className='p-3'>
+                                                <p className='line-clamp-2 text-base font-semibold text-slate-900'>{item?.name || itemDoc?.name || "Item unavailable"}</p>
+                                                <p className='mt-2 text-sm text-slate-500'>Qty: {item?.quantity || 0} x Rs {item?.price || 0}</p>
+
+                                                {shopOrder?.status === "delivered" && itemId && (
+                                                    <div className='mt-3 flex gap-1'>
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <button
+                                                                key={star}
+                                                                className={`text-lg ${selectedRating[itemId] >= star ? 'text-yellow-400' : 'text-slate-300'} transition hover:text-yellow-400`}
+                                                                onClick={() => handleRating(itemId, star)}
+                                                            >
+                                                                <FaStar />
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            {shopOrder?.status === "delivered" && !reviewStateByOrder?.[data?._id] && (
+                                <div className='mt-4 rounded-[24px] border border-orange-200 bg-[linear-gradient(135deg,#fff6ef,#fffdfb)] p-4 shadow-sm'>
+                                    <p className='text-sm font-semibold text-slate-800'>Rate your restaurant experience</p>
+                                    <div className='mt-3 flex items-center gap-1'>
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                                key={star}
+                                                type='button'
+                                                className={`text-2xl ${Number(reviewDrafts?.[shopOrder?._id]?.rating || 0) >= star ? 'text-yellow-400' : 'text-slate-300'} transition hover:text-yellow-400`}
+                                                onClick={() => updateReviewDraft(shopOrder?._id, { rating: star })}
+                                            >
+                                                <FaStar />
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <textarea
+                                        className='mt-3 w-full rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#ff4d2d]'
+                                        rows={3}
+                                        placeholder='Share your feedback about food quality, delivery, and service'
+                                        value={reviewDrafts?.[shopOrder?._id]?.comment || ""}
+                                        onChange={(event) => updateReviewDraft(shopOrder?._id, { comment: event.target.value })}
+                                        maxLength={1000}
+                                    />
+                                    <div className='mt-3 flex justify-end'>
+                                        <button
+                                            type='button'
+                                            className='rounded-2xl bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105 disabled:opacity-60'
+                                            disabled={Boolean(reviewSubmittingByOrder?.[data?._id])}
+                                            onClick={() => handleSubmitRestaurantReview(shopOrder)}
+                                        >
+                                            {reviewSubmittingByOrder?.[data?._id] ? "Submitting..." : "Submit Review"}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className='mt-4 flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3'>
+                                <p className='text-sm font-semibold text-slate-900'>Subtotal: Rs {shopOrder?.subtotal || 0}</p>
+                                <span className='text-sm font-semibold capitalize text-slate-500'>{shopOrder?.status || "pending"}</span>
                             </div>
                         </div>
-                    )}
-
-                    <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center border-t pt-2 gap-2'>
-                        <p className='font-semibold'>Subtotal: Rs {shopOrder?.subtotal || 0}</p>
-                        <span className='text-sm font-medium text-blue-600'>{shopOrder?.status || "pending"}</span>
-                    </div>
+                    ))}
                 </div>
-            ))}
 
-            <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center border-t pt-2 gap-3'>
-                <p className='font-semibold'>Total: Rs {data?.totalAmount || 0}</p>
-                <div className='flex flex-col sm:flex-row gap-2 w-full sm:w-auto'>
-                    {canDeleteHistory && (
+                <div className='mt-5 flex flex-col gap-3 border-t border-orange-100 pt-5 sm:flex-row sm:items-center sm:justify-between'>
+                    <div className='rounded-2xl border border-orange-100 bg-white/90 px-4 py-3 shadow-sm'>
+                        <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-400'>Grand Total</p>
+                        <p className='mt-1 text-2xl font-bold text-slate-900'>Rs {data?.totalAmount || 0}</p>
+                    </div>
+
+                    <div className='flex flex-col gap-2 sm:flex-row'>
+                        {canDeleteHistory && (
+                            <button
+                                className='inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-500 to-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-red-200 transition hover:brightness-105 disabled:opacity-50'
+                                onClick={() => setShowDeleteModal(true)}
+                                disabled={deletingHistory}
+                            >
+                                <FaTrash size={12} />
+                                <span>{deletingHistory ? 'Removing...' : 'Delete History'}</span>
+                            </button>
+                        )}
                         <button
-                            className='flex items-center justify-center gap-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm transition disabled:opacity-50 w-full sm:w-auto'
-                            onClick={() => setShowDeleteModal(true)}
-                            disabled={deletingHistory}
+                            className='inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:brightness-105 disabled:opacity-50'
+                            onClick={handleQuickReorder}
+                            disabled={reordering}
                         >
-                            <FaTrash size={12} />
-                            <span>{deletingHistory ? 'Removing...' : 'Delete History'}</span>
+                            <FaRedo size={12} />
+                            <span>{reordering ? 'Adding...' : 'Reorder'}</span>
                         </button>
-                    )}
-                    <button
-                        className='flex items-center justify-center gap-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm transition disabled:opacity-50 w-full sm:w-auto'
-                        onClick={handleQuickReorder}
-                        disabled={reordering}
-                    >
-                        <FaRedo size={12} />
-                        <span className='hidden sm:inline'>Reorder</span>
-                    </button>
-                    <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-4 py-2 rounded-lg text-sm w-full sm:w-auto' onClick={() => navigate(`/track-order/${data?._id}`)}>Track Order</button>
+                        <button
+                            className='inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105'
+                            onClick={() => navigate(`/track-order/${data?._id}`)}
+                        >
+                            <FaReceipt size={12} />
+                            <span>Track Order</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
