@@ -2,11 +2,12 @@ import React, { useMemo, useState } from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FaStore, FaUtensils } from "react-icons/fa";
+import { FaCamera, FaLeaf, FaPlus, FaRupeeSign, FaStore, FaUtensils } from "react-icons/fa";
 import axios from 'axios';
 import { serverUrl } from '../App';
 import { setMyShopData } from '../redux/ownerSlice';
 import { ClipLoader } from 'react-spinners';
+import { useTheme } from '../context/ThemeContext';
 
 function AddItem() {
     const navigate = useNavigate()
@@ -40,8 +41,12 @@ function AddItem() {
         "Fast Food",
         "Others"]
     const dispatch = useDispatch()
+    const { isDark } = useTheme()
     const handleImage = (e) => {
         const file = e.target.files[0]
+        if (!file) {
+            return
+        }
         setBackendImage(file)
         setFrontendImage(URL.createObjectURL(file))
     }
@@ -74,113 +79,265 @@ function AddItem() {
             setLoading(false)
         }
     }
+    const previewTone = String(foodType || '').toLowerCase() === 'veg'
+    const inputClass = `w-full rounded-2xl border px-4 py-3.5 text-sm outline-none transition focus:ring-2 focus:ring-[#ff6b43] ${isDark ? 'border-white/10 bg-white/5 text-white placeholder:text-slate-400' : 'border-orange-100 bg-white/80 text-slate-900 placeholder:text-slate-400'}`
+    const sectionCardClass = `rounded-[30px] border backdrop-blur-xl ${isDark ? 'border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.78))] text-white shadow-[0_30px_90px_rgba(2,6,23,0.45)]' : 'border-white/70 bg-[rgba(255,255,255,0.82)] text-slate-900 shadow-[0_30px_90px_rgba(15,23,42,0.12)]'}`
+
     return (
-        <div className='flex justify-center flex-col items-center p-3 sm:p-6 bg-gradient-to-br from-orange-50 relative to-white min-h-screen'>
-            <div className='absolute top-3 left-3 sm:top-[20px] sm:left-[20px] z-[10] mb-[10px]' onClick={() => navigate("/")}>
-                <IoIosArrowRoundBack size={35} className='text-[#ff4d2d]' />
+        <div className={`relative min-h-screen overflow-hidden px-3 pb-10 pt-4 sm:px-6 sm:pt-6 ${isDark ? 'bg-[linear-gradient(180deg,#07111f_0%,#0b1629_48%,#08111d_100%)]' : 'bg-[radial-gradient(circle_at_top_left,_rgba(255,133,92,0.16),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(255,186,150,0.18),_transparent_28%),linear-gradient(180deg,#fff8f3_0%,#fffdfb_44%,#fff7ef_100%)]'}`}>
+            <div className='pointer-events-none absolute inset-0 overflow-hidden'>
+                <div className={`absolute -left-16 top-12 h-56 w-56 rounded-full blur-3xl ${isDark ? 'bg-[#ff6b43]/14' : 'bg-[#ff8f6b]/22'}`} />
+                <div className={`absolute -right-12 bottom-12 h-64 w-64 rounded-full blur-3xl ${isDark ? 'bg-[#f59e0b]/10' : 'bg-[#ffd3a5]/28'}`} />
             </div>
 
-            <div className='max-w-lg w-full bg-white shadow-xl rounded-2xl p-4 sm:p-8 border border-orange-100'>
-                <div className='flex flex-col items-center mb-6'>
-                    <div className='bg-orange-100 p-4 rounded-full mb-4'>
-                        <FaUtensils className='text-[#ff4d2d] w-16 h-16' />
-                    </div>
-                    <div className="text-3xl font-extrabold text-gray-900">
-                        Add Food
-                    </div>
-                    <div className='mt-3 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm font-medium text-[#ff4d2d]'>
-                        <FaStore size={14} />
-                        {activeShop?.name || "Select a shop first"}
-                    </div>
-                    {myShops.length > 1 && (
-                        <div className='mt-4 flex flex-wrap justify-center gap-2'>
-                            {myShops.map((shop) => {
-                                const isActive = String(shop?._id) === String(activeShop?._id)
+            <button
+                className={`relative z-10 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${isDark ? 'border-white/10 bg-white/5 text-white hover:bg-white/10' : 'border-orange-200 bg-white/85 text-[#ff4d2d] hover:bg-orange-50'}`}
+                onClick={() => navigate("/")}
+            >
+                <IoIosArrowRoundBack size={24} />
+                Back to Dashboard
+            </button>
 
-                                return (
-                                    <button
-                                        key={shop._id}
-                                        type="button"
-                                        className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${isActive ? 'bg-[#ff4d2d] text-white' : 'bg-orange-50 text-[#ff4d2d]'}`}
-                                        onClick={() => navigate(`/add-item?shopId=${shop._id}`)}
-                                    >
-                                        {shop.name}
-                                    </button>
-                                )
-                            })}
+            <div className='relative z-10 mx-auto mt-5 grid max-w-7xl gap-6 xl:grid-cols-[1.02fr_0.98fr]'>
+                <section className={`${sectionCardClass} overflow-hidden p-6 sm:p-8`}>
+                    <div className={`absolute inset-x-0 top-0 h-40 ${isDark ? 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.18),_transparent_55%)]' : 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.24),_transparent_55%)]'}`} />
+                    <div className='relative'>
+                        <div className='inline-flex items-center gap-2 rounded-full bg-[#ff6b43]/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#ff6b43]'>
+                            <FaUtensils />
+                            Menu Builder
+                        </div>
+
+                        <div className='mt-6 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between'>
+                            <div className='max-w-2xl'>
+                                <h1 className={`text-4xl font-black leading-tight sm:text-5xl ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                    Add a menu item with more appetite appeal
+                                </h1>
+                                <p className={`mt-4 max-w-xl text-base leading-7 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                                    Create dishes that look premium in the owner panel and feel irresistible on the customer side. Strong visuals, clean pricing, and a sharp category signal do the heavy lifting.
+                                </p>
+
+                                <div className='mt-6 flex flex-wrap gap-3'>
+                                    <div className={`rounded-2xl border px-4 py-3 ${isDark ? 'border-white/10 bg-white/5' : 'border-orange-100 bg-white/80'}`}>
+                                        <p className='text-[11px] font-semibold uppercase tracking-[0.2em] text-[#ff6b43]'>Selected Shop</p>
+                                        <p className={`mt-2 text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{activeShop?.name || 'Choose a shop'}</p>
+                                        <p className={`mt-1 text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{activeShop ? 'Item will be saved here' : 'Shop selection required'}</p>
+                                    </div>
+                                    <div className={`rounded-2xl border px-4 py-3 ${isDark ? 'border-white/10 bg-white/5' : 'border-orange-100 bg-white/80'}`}>
+                                        <p className='text-[11px] font-semibold uppercase tracking-[0.2em] text-[#ff6b43]'>Food Style</p>
+                                        <p className={`mt-2 text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{foodType === 'non veg' ? 'Non Veg' : 'Veg'}</p>
+                                        <p className={`mt-1 text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{category || 'Pick a category next'}</p>
+                                    </div>
+                                    <div className={`rounded-2xl border px-4 py-3 ${isDark ? 'border-white/10 bg-white/5' : 'border-orange-100 bg-white/80'}`}>
+                                        <p className='text-[11px] font-semibold uppercase tracking-[0.2em] text-[#ff6b43]'>Price Point</p>
+                                        <p className={`mt-2 text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Rs {price || 0}</p>
+                                        <p className={`mt-1 text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Clear, fast-to-scan pricing</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={`w-full max-w-sm rounded-[28px] border p-4 ${isDark ? 'border-white/10 bg-white/5' : 'border-orange-100 bg-white/75'} shadow-[0_20px_60px_rgba(15,23,42,0.08)]`}>
+                                <div className='relative overflow-hidden rounded-[24px]'>
+                                    {frontendImage ? (
+                                        <>
+                                            <img src={frontendImage} alt={name || 'Food preview'} className='h-80 w-full object-cover' />
+                                            <div className='absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent' />
+                                            <div className='absolute bottom-0 left-0 right-0 p-5 text-white'>
+                                                <div className='flex items-center justify-between gap-3'>
+                                                    <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${previewTone ? 'bg-emerald-400/20 text-emerald-100' : 'bg-red-400/20 text-red-100'}`}>
+                                                        {foodType === 'non veg' ? 'Non Veg' : 'Veg'}
+                                                    </span>
+                                                    <span className='rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-100'>
+                                                        {category || 'Category'}
+                                                    </span>
+                                                </div>
+                                                <h2 className='mt-4 text-2xl font-bold'>{name || 'Your next bestseller'}</h2>
+                                                <p className='mt-2 text-sm text-white/80 line-clamp-2'>{description || 'Add a short, mouth-watering description to make this dish easier to discover and harder to ignore.'}</p>
+                                                <p className='mt-4 text-xl font-black'>Rs {price || 0}</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className={`flex h-80 flex-col justify-between p-5 ${isDark ? 'bg-[linear-gradient(135deg,#1b2942,#0f172a)] text-white' : 'bg-[linear-gradient(135deg,#ffecd9,#fff7f1)] text-slate-900'}`}>
+                                            <div className='flex items-center justify-between'>
+                                                <div className='rounded-full bg-[#ff6b43]/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#ff6b43]'>
+                                                    Dish Preview
+                                                </div>
+                                                <div className='flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ff6b43] text-white shadow-lg shadow-orange-300'>
+                                                    <FaUtensils size={18} />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h2 className='text-3xl font-black'>{name || 'Add a stunning food image'}</h2>
+                                                <p className={`mt-3 text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                                    Give this dish a strong visual moment so it stands out on your menu and feels worth tapping instantly.
+                                                </p>
+                                            </div>
+                                            <div className='flex items-center justify-between'>
+                                                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${previewTone ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'}`}>
+                                                    {foodType === 'non veg' ? 'Non Veg' : 'Veg'}
+                                                </span>
+                                                <span className='text-lg font-bold text-[#ff6b43]'>Rs {price || 0}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className='mt-8'>
+                            <p className='text-[11px] font-semibold uppercase tracking-[0.24em] text-[#ff6b43]'>Shop Context</p>
+                            <div className='mt-3 flex flex-wrap gap-3'>
+                                {myShops.map((shop) => {
+                                    const isActive = String(shop?._id) === String(activeShop?._id)
+
+                                    return (
+                                        <button
+                                            key={shop._id}
+                                            type="button"
+                                            className={`rounded-2xl border px-4 py-3 text-left transition ${isActive ? 'border-[#ff6b43] bg-[#ff4d2d] text-white shadow-lg shadow-orange-300/30' : isDark ? 'border-white/10 bg-white/5 text-slate-100 hover:bg-white/10' : 'border-orange-100 bg-white/75 text-slate-700 hover:border-orange-200 hover:bg-orange-50'}`}
+                                            onClick={() => navigate(`/add-item?shopId=${shop._id}`)}
+                                        >
+                                            <p className='text-sm font-semibold'>{shop.name}</p>
+                                            <p className={`mt-1 text-xs ${isActive ? 'text-white/80' : isDark ? 'text-slate-400' : 'text-slate-500'}`}>{shop.city}, {shop.state}</p>
+                                        </button>
+                                    )
+                                })}
+                                <button
+                                    type="button"
+                                    className={`inline-flex items-center gap-2 rounded-2xl border border-dashed px-4 py-3 text-sm font-semibold transition ${isDark ? 'border-[#ff6b43]/60 bg-[#ff6b43]/10 text-orange-200 hover:bg-[#ff6b43]/15' : 'border-orange-300 bg-white/80 text-[#ff4d2d] hover:bg-orange-50'}`}
+                                    onClick={() => navigate("/create-edit-shop?mode=create")}
+                                >
+                                    <FaPlus size={12} />
+                                    Add New Shop
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section className={`${sectionCardClass} p-6 sm:p-8`}>
+                    <div className='flex items-start justify-between gap-4'>
+                        <div>
+                            <p className='text-[11px] font-semibold uppercase tracking-[0.24em] text-[#ff6b43]'>Dish Details</p>
+                            <h2 className={`mt-2 text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Build the menu card</h2>
+                            <p className={`mt-2 text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                                Add the essentials clearly so customers can understand the dish fast and trust the menu at a glance.
+                            </p>
+                        </div>
+                        <div className={`hidden rounded-2xl px-4 py-3 sm:block ${isDark ? 'bg-white/5 text-slate-200' : 'bg-orange-50 text-slate-700'}`}>
+                            <p className='text-[11px] font-semibold uppercase tracking-[0.2em] text-[#ff6b43]'>Save Target</p>
+                            <p className='mt-2 text-sm font-semibold'>{activeShop?.name || 'No shop selected'}</p>
+                        </div>
+                    </div>
+
+                    {!activeShop && (
+                        <div className={`mt-6 rounded-[24px] border p-4 text-sm ${isDark ? 'border-orange-400/20 bg-orange-500/10 text-orange-100' : 'border-orange-200 bg-orange-50 text-slate-700'}`}>
+                            Create or select a shop before adding menu items.
                         </div>
                     )}
-                </div>
-                {!activeShop && (
-                    <div className='mb-5 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-gray-700'>
-                        Create or select a shop before adding menu items.
-                    </div>
-                )}
-                <form className='space-y-5' onSubmit={handleSubmit}>
-                    <div>
-                        <label htmlFor="add-item-name" className='block text-sm font-medium text-gray-700 mb-1'>Name</label>
-                        <input id="add-item-name" name="name" type="text" placeholder='Enter Food Name' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
-                            onChange={(e) => setName(e.target.value)}
-                            value={name}
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="add-item-image" className='block text-sm font-medium text-gray-700 mb-1'>Food Image</label>
-                        <input id="add-item-image" name="image" type="file" accept='image/*' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500' onChange={handleImage} />
-                        {frontendImage && <div className='mt-4'>
-                            <img src={frontendImage} alt="" className='w-full h-48 object-cover rounded-lg border' />
-                        </div>}
 
-                    </div>
-                    <div>
-                        <label htmlFor="add-item-price" className='block text-sm font-medium text-gray-700 mb-1'>Price</label>
-                        <input id="add-item-price" name="price" type="number" placeholder='0' className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
-                            onChange={(e) => setPrice(e.target.value)}
-                            value={price}
-                        />
-                    </div>
-                    <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-1'>Description</label>
-                        <textarea className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500' rows={3} value={description} onChange={(e)=>setDescription(e.target.value)} placeholder='Describe the dish for search and recommendations' />
-                    </div>
-                    <div>
-                        <label htmlFor="add-item-category" className='block text-sm font-medium text-gray-700 mb-1'>Select Category</label>
-                        <select id="add-item-category" name="category" className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
-                            onChange={(e) => setCategory(e.target.value)}
-                            value={category}
+                    <form className='mt-8 space-y-6' onSubmit={handleSubmit}>
+                        <div className='space-y-3'>
+                            <label htmlFor="add-item-name" className={`block text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Food Name</label>
+                            <input
+                                id="add-item-name"
+                                name="name"
+                                type="text"
+                                placeholder='Enter food name'
+                                className={inputClass}
+                                onChange={(e) => setName(e.target.value)}
+                                value={name}
+                            />
+                        </div>
 
-                        >
-                            <option value="">select Category</option>
-                            {categories.map((cate, index) => (
-                                <option value={cate} key={index}>{cate}</option>
-                            ))}
+                        <div className='space-y-3'>
+                            <div className='flex items-center justify-between gap-3'>
+                                <label htmlFor="add-item-image" className={`block text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Food Image</label>
+                                <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Use bright, close-up food shots when possible</span>
+                            </div>
+                            <label htmlFor="add-item-image" className={`flex cursor-pointer items-center justify-between gap-4 rounded-[24px] border border-dashed px-5 py-4 transition ${isDark ? 'border-white/15 bg-white/5 hover:bg-white/10' : 'border-orange-200 bg-orange-50/70 hover:bg-orange-50'}`}>
+                                <div className='flex items-center gap-4'>
+                                    <div className='flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ff6b43] text-white shadow-lg shadow-orange-300/30'>
+                                        <FaCamera size={18} />
+                                    </div>
+                                    <div>
+                                        <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{backendImage?.name || 'Choose a dish image'}</p>
+                                        <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>PNG, JPG or WEBP recommended</p>
+                                    </div>
+                                </div>
+                                <span className='rounded-full bg-[#ff6b43]/10 px-3 py-1 text-xs font-semibold text-[#ff6b43]'>Upload</span>
+                            </label>
+                            <input id="add-item-image" name="image" type="file" accept='image/*' className='hidden' onChange={handleImage} />
+                        </div>
 
-                        </select>
-                    </div>
-                    <div>
-                        <label htmlFor="add-item-food-type" className='block text-sm font-medium text-gray-700 mb-1'>Select Food Type</label>
-                        <select id="add-item-food-type" name="foodType" className='w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500'
-                            onChange={(e) => setFoodType(e.target.value)}
-                            value={foodType}
+                        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+                            <div className={`rounded-[24px] border p-4 ${isDark ? 'border-white/10 bg-white/5' : 'border-orange-100 bg-orange-50/60'}`}>
+                                <div className='flex items-center gap-2 text-[#ff6b43]'>
+                                    <FaRupeeSign />
+                                    <p className='text-[11px] font-semibold uppercase tracking-[0.2em]'>Price</p>
+                                </div>
+                                <input
+                                    id="add-item-price"
+                                    name="price"
+                                    type="number"
+                                    min="0"
+                                    placeholder='0'
+                                    className={`${inputClass} mt-3`}
+                                    onChange={(e) => setPrice(e.target.value)}
+                                    value={price}
+                                />
+                            </div>
+                            <div className={`rounded-[24px] border p-4 ${isDark ? 'border-white/10 bg-white/5' : 'border-orange-100 bg-orange-50/60'}`}>
+                                <div className='flex items-center gap-2 text-[#ff6b43]'>
+                                    <FaLeaf />
+                                    <p className='text-[11px] font-semibold uppercase tracking-[0.2em]'>Food Type</p>
+                                </div>
+                                <select
+                                    id="add-item-food-type"
+                                    name="foodType"
+                                    className={`${inputClass} mt-3`}
+                                    onChange={(e) => setFoodType(e.target.value)}
+                                    value={foodType}
+                                >
+                                    <option value="veg">veg</option>
+                                    <option value="non veg">non veg</option>
+                                </select>
+                            </div>
+                        </div>
 
-                        >
-                            <option value="veg" >veg</option>
- <option value="non veg" >non veg</option>
+                        <div className='space-y-3'>
+                            <label className={`block text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Description</label>
+                            <textarea
+                                className={`${inputClass} min-h-[140px] resize-none`}
+                                rows={4}
+                                value={description}
+                                onChange={(e)=>setDescription(e.target.value)}
+                                placeholder='Describe the dish for search and recommendations'
+                            />
+                        </div>
 
+                        <div className='space-y-3'>
+                            <label htmlFor="add-item-category" className={`block text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Category</label>
+                            <select
+                                id="add-item-category"
+                                name="category"
+                                className={inputClass}
+                                onChange={(e) => setCategory(e.target.value)}
+                                value={category}
+                            >
+                                <option value="">select Category</option>
+                                {categories.map((cate, index) => (
+                                    <option value={cate} key={index}>{cate}</option>
+                                ))}
+                            </select>
+                        </div>
 
-
-
-                        </select>
-                    </div>
-
-                    <button className='w-full bg-[#ff4d2d] text-white px-6 py-3 rounded-lg font-semibold shadow-md hover:bg-orange-600 hover:shadow-lg transition-all duration-200 cursor-pointer' disabled={loading || !activeShop}>
-                      {loading?<ClipLoader size={20} color='white' />:"Save"}
-                    </button>
-                </form>
+                        <button className='flex w-full items-center justify-center gap-3 rounded-[22px] bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-6 py-4 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(255,107,67,0.35)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-75' disabled={loading || !activeShop}>
+                            {loading ? <ClipLoader size={18} color='white' /> : <FaUtensils size={15} />}
+                            {loading ? 'Saving menu item...' : 'Save Food Item'}
+                        </button>
+                    </form>
+                </section>
             </div>
-
-
-
         </div>
     )
 }
