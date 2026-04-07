@@ -132,7 +132,9 @@ export const toggleDeliveryAvailability = async (req, res) => {
         if (nextAvailability) {
             const activeOrderCount = await Order.countDocuments({
                 deliveryPartner: req.userId,
-                deliveryStatus: { $in: ACTIVE_DELIVERY_STATUSES }
+                deliveryStatus: { $in: ACTIVE_DELIVERY_STATUSES },
+                status: { $nin: ["cancelled", "delivered"] },
+                hiddenFromUser: { $ne: true }
             })
             if (activeOrderCount > 0) {
                 return res.status(400).json({
@@ -157,7 +159,9 @@ export const getAssignedDeliveryOrders = async (req, res) => {
     try {
         const orders = await Order.find({
             deliveryPartner: req.userId,
-            deliveryStatus: { $in: ACTIVE_DELIVERY_STATUSES }
+            deliveryStatus: { $in: ACTIVE_DELIVERY_STATUSES },
+            status: { $nin: ["cancelled", "delivered"] },
+            hiddenFromUser: { $ne: true }
         })
             .sort({ createdAt: -1 })
             .populate("user", "fullName email mobile socketId")

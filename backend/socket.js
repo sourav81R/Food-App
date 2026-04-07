@@ -9,6 +9,7 @@ let etaBroadcastLoopStarted = false;
 const emitEtaUpdatesForDriver = async ({ io, userId }) => {
   const activeOrders = await Order.find({
     status: { $nin: ["cancelled", "scheduled", "delivered"] },
+    hiddenFromUser: { $ne: true },
     $or: [
       {
         deliveryPartner: userId,

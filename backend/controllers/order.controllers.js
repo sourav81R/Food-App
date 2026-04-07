@@ -4,7 +4,7 @@ import Order from "../models/order.model.js"
 import Shop from "../models/shop.model.js"
 import User from "../models/user.model.js"
 import { sendDeliveryOtpMail } from "../utils/mail.js"
-import { activateOrder } from "../utils/orderActivation.js"
+import { activateOrder, attachDeliveryPartnerToOrder } from "../utils/orderActivation.js"
 import {
     emitEtaForOrder,
     emitOrderStatusUpdated,
@@ -164,7 +164,10 @@ const canCancelOrder = (order) => {
     return (order?.shopOrders || []).every((shopOrder) => validStatuses.has(shopOrder.status))
 }
 
-const canDeleteOrderHistory = (order) => Boolean(order?._id)
+const canDeleteOrderHistory = (order) => {
+    const normalizedStatus = String(order?.status || "").toLowerCase()
+    return ["delivered", "cancelled"].includes(normalizedStatus)
+}
 
 const refundOrderIfNeeded = async (order) => {
     if (order?.refund?.status === "processed") {
@@ -767,6 +770,15 @@ export const getOrderById = async (req, res) => {
             return res.status(401).json({ message: "Unauthorized" })
         }
 
+        const orderDoc = await Order.findById(orderId)
+        if (
+            orderDoc &&
+            !orderDoc.deliveryPartner &&
+            !["cancelled", "delivered", "scheduled"].includes(String(orderDoc.status || "").toLowerCase())
+        ) {
+            await attachDeliveryPartnerToOrder(orderDoc)
+        }
+
         const order = await Order.findById(orderId)
             .populate("user", "fullName email mobile")
             .populate("deliveryPartner", "fullName email mobile vehicleNumber location socketId")
@@ -1119,7 +1131,8 @@ export const clearAllOrderHistory = async (req, res) => {
         const result = await Order.updateMany(
             {
                 user: req.userId,
-                hiddenFromUser: { $ne: true }
+                hiddenFromUser: { $ne: true },
+                status: { $in: ["delivered", "cancelled"] }
             },
             {
                 $set: {

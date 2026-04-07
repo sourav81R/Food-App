@@ -88,7 +88,8 @@ export const setDeliveryPartnerAvailabilityIfIdle = async (deliveryPartnerId) =>
     const activeOrderCount = await Order.countDocuments({
         deliveryPartner: deliveryPartnerId,
         deliveryStatus: { $in: [...ACTIVE_DELIVERY_STATUSES] },
-        status: { $ne: "cancelled" }
+        status: { $nin: ["cancelled", "delivered"] },
+        hiddenFromUser: { $ne: true }
     })
 
     if (activeOrderCount === 0) {
@@ -162,6 +163,7 @@ export const broadcastEtaForActiveOrders = async (io) => {
 
     const activeOrders = await Order.find({
         status: { $nin: ["cancelled", "scheduled", "delivered"] },
+        hiddenFromUser: { $ne: true },
         $or: [
             {
                 deliveryPartner: { $ne: null },

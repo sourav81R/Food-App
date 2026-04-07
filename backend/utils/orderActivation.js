@@ -7,19 +7,49 @@ import { syncOrderLifecycleStatus } from "./orderRealtime.js"
 const ACTIVE_DELIVERY_STATUSES = new Set(["assigned", "picked_up", "on_the_way"])
 
 const assignFirstAvailableDeliveryPartner = async () => {
-    const deliveryPartner = await User.findOneAndUpdate(
-        {
-            role: { $in: expandRoleValues(ROLE.DELIVERY) },
-            isAvailable: true,
-            isSuspended: false
-        },
-        { $set: { isAvailable: false } },
-        { new: true, sort: { createdAt: 1 } }
+    const deliveryPartners = await User.find({
+        role: { $in: expandRoleValues(ROLE.DELIVERY) },
+        isSuspended: false
+    })
+        .sort({ createdAt: 1 })
+        .select("_id isAvailable")
+
+    if (!deliveryPartners.length) {
+        return {}
+    }
+
+    const deliveryPartnerIds = deliveryPartners.map((partner) => partner._id)
+    const busyPartnerIds = await Order.find({
+        deliveryPartner: { $in: deliveryPartnerIds },
+        deliveryStatus: { $in: [...ACTIVE_DELIVERY_STATUSES] },
+        status: { $nin: ["cancelled", "delivered"] },
+        hiddenFromUser: { $ne: true }
+    }).distinct("deliveryPartner")
+
+    const busyPartnerIdSet = new Set(busyPartnerIds.map((partnerId) => String(partnerId)))
+    const hiddenOnlyBusyPartners = deliveryPartners.filter(
+        (partner) => !partner.isAvailable && !busyPartnerIdSet.has(String(partner._id))
+    )
+
+    if (hiddenOnlyBusyPartners.length > 0) {
+        await User.updateMany(
+            { _id: { $in: hiddenOnlyBusyPartners.map((partner) => partner._id) } },
+            { $set: { isAvailable: true } }
+        )
+        hiddenOnlyBusyPartners.forEach((partner) => {
+            partner.isAvailable = true
+        })
+    }
+
+    const deliveryPartner = deliveryPartners.find((partner) =>
+        partner.isAvailable && !busyPartnerIdSet.has(String(partner._id))
     )
 
     if (!deliveryPartner) {
         return {}
     }
+
+    await User.findByIdAndUpdate(deliveryPartner._id, { $set: { isAvailable: false } })
 
     return {
         deliveryPartner: deliveryPartner._id,
@@ -118,6 +148,7 @@ export const hasActiveDeliveryForPartner = async (deliveryPartnerId) => {
     return Order.exists({
         deliveryPartner: deliveryPartnerId,
         deliveryStatus: { $in: [...ACTIVE_DELIVERY_STATUSES] },
-        status: { $ne: "cancelled" }
+        status: { $nin: ["cancelled", "delivered"] },
+        hiddenFromUser: { $ne: true }
     })
 }
