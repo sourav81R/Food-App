@@ -8,7 +8,7 @@ import { serverUrl } from '../App'
 import DeliveryBoyTracking from '../components/DeliveryBoyTracking'
 import OrderProgress from '../components/OrderProgress'
 import { useSocket } from '../context/SocketContext'
-import { clearOrderEta, setOrderEta } from '../redux/userSlice'
+import { clearOrderEta, setOrderEta, setWalletBalance, setWalletTransactions } from '../redux/userSlice'
 import { useToast } from '../context/ToastContext'
 
 const ETA_UPDATE_EVENT = "eta_update"
@@ -90,6 +90,16 @@ function TrackOrderPage() {
       setFetchError("Unable to refresh live order details. Retrying...")
     }
   }, [dispatch, orderId])
+
+  const refreshWalletState = useCallback(async () => {
+    try {
+      const result = await axios.get(`${serverUrl}/api/wallet/transactions`, { withCredentials: true })
+      dispatch(setWalletBalance(result.data?.walletBalance || 0))
+      dispatch(setWalletTransactions(result.data?.transactions || []))
+    } catch (error) {
+      console.log("wallet refresh error", error)
+    }
+  }, [dispatch])
 
   useEffect(() => {
     if (!socket) return
@@ -196,7 +206,7 @@ function TrackOrderPage() {
       toast.success("Order cancelled successfully")
       setShowCancelModal(false)
       setCancelReason("")
-      await handleGetOrder()
+      await Promise.all([handleGetOrder(), refreshWalletState()])
     } catch (error) {
       toast.error(error?.response?.data?.message || "Unable to cancel order")
     } finally {

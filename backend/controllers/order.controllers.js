@@ -211,33 +211,6 @@ const refundOrderIfNeeded = async (order) => {
         return
     }
 
-    if (order.paymentMethod === "online" && order.payment && order.razorpayPaymentId) {
-        const { client, error } = getRazorpayClient()
-        if (!error) {
-            try {
-                const refund = await client.payments.refund(order.razorpayPaymentId, {
-                    amount: Math.round(refundAmount * 100),
-                    notes: {
-                        orderId: String(order._id)
-                    }
-                })
-
-                order.refund = {
-                    status: "processed",
-                    amount: refundAmount,
-                    method: "razorpay",
-                    reason: "Order cancelled",
-                    razorpayRefundId: refund?.id || "",
-                    processedAt: new Date(),
-                    note: "Refund initiated through Razorpay"
-                }
-                return
-            } catch (error) {
-                console.error("Razorpay refund failed, falling back to wallet:", error.message)
-            }
-        }
-    }
-
     if (order.paymentMethod === "online" && !order.payment) {
         order.refund = {
             status: "processed",
@@ -269,7 +242,7 @@ const refundOrderIfNeeded = async (order) => {
             reason: "Order cancelled",
             processedAt: new Date(),
             note: order.paymentMethod === "online"
-                ? "Wallet credited after online refund fallback"
+                ? "Wallet credited for cancelled online order"
                 : "Wallet credited for cancelled wallet order"
         }
         return
