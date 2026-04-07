@@ -861,15 +861,8 @@ export const autoCompleteOrderByEta = async (req, res) => {
         if (String(order.user?._id || order.user) !== String(req.userId)) {
             return res.status(403).json({ message: "Forbidden: this order does not belong to you" })
         }
-
-        const eta = await getLiveEtaForOrder(order)
-        const remainingEtaSeconds = Number(eta?.remainingSeconds || 0)
-        if (remainingEtaSeconds > 0) {
-            return res.status(400).json({
-                message: "ETA has not completed yet",
-                remainingEtaSeconds,
-                eta
-            })
+        if (order.status === "cancelled") {
+            return res.status(400).json({ message: "Cancelled order cannot be auto-completed" })
         }
 
         if (order.status === "delivered") {
@@ -885,6 +878,15 @@ export const autoCompleteOrderByEta = async (req, res) => {
         })
         syncOrderLifecycleStatus(order)
         await order.save()
+
+        await DeliveryAssignment.updateMany(
+            { order: order._id },
+            {
+                $set: {
+                    status: "completed"
+                }
+            }
+        )
 
         if (order.deliveryPartner) {
             await setDeliveryPartnerAvailabilityIfIdle(order.deliveryPartner?._id || order.deliveryPartner)

@@ -189,7 +189,18 @@ const readCache = (key) => {
         ETA_CACHE.delete(key)
         return null
     }
-    return item.value
+    if (!item.value || !Number.isFinite(Number(item.value?.remainingSeconds))) {
+        return item.value
+    }
+
+    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - item.timestamp) / 1000))
+    const adjustedRemainingSeconds = Math.max(0, Number(item.value.remainingSeconds) - elapsedSeconds)
+
+    return {
+        ...item.value,
+        remainingSeconds: adjustedRemainingSeconds,
+        fetchedAt: new Date().toISOString()
+    }
 }
 
 const writeCache = (key, value) => {

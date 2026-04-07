@@ -20,10 +20,26 @@ import { useTheme } from '../context/ThemeContext';
 import { loadRazorpaySdk } from '../utils/razorpay';
 
 function RecenterMap({ location }) {
-  if (location.lat && location.lon) {
-    const map = useMap()
-    map.setView([location.lat, location.lon], 16, { animate: true })
-  }
+  const map = useMap()
+
+  useEffect(() => {
+    const lat = Number(location?.lat)
+    const lon = Number(location?.lon)
+    const isValidPoint =
+      Number.isFinite(lat) &&
+      Number.isFinite(lon) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lon >= -180 &&
+      lon <= 180 &&
+      !(Math.abs(lat) < 0.000001 && Math.abs(lon) < 0.000001)
+
+    if (!isValidPoint) return
+
+    map.invalidateSize()
+    map.setView([lat, lon], 16, { animate: true })
+  }, [map, location?.lat, location?.lon])
+
   return null
 }
 

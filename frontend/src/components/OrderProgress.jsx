@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { FaCheckCircle, FaUtensils, FaMotorcycle, FaHome, FaSpinner, FaClock } from 'react-icons/fa'
 
 const orderStatuses = [
@@ -41,21 +41,40 @@ function OrderProgress({
     canAutoComplete = true
 }) {
     const hasEta = Number.isFinite(Number(etaSecondsRemaining))
-    const normalizeDisplayEta = (seconds) => {
+    const normalizeDisplayEta = useCallback((seconds) => {
         const safeEta = Math.max(0, Math.floor(Number(seconds) || 0))
         if (currentStatus === 'delivered' || safeEta === 0) return safeEta
         return Math.max(60, safeEta)
-    }
+    }, [currentStatus])
     const normalizedIncomingEta = hasEta ? normalizeDisplayEta(etaSecondsRemaining) : 0
     const [displayEtaSeconds, setDisplayEtaSeconds] = useState(normalizedIncomingEta)
     const completionTriggeredRef = useRef(false)
+    const previousStatusRef = useRef(currentStatus)
     const currentIndex = getStatusIndex(currentStatus)
     const progressPercent = `${(currentIndex / (orderStatuses.length - 1)) * 100}%`
 
     useEffect(() => {
         if (!Number.isFinite(Number(etaSecondsRemaining))) return
-        setDisplayEtaSeconds(normalizeDisplayEta(etaSecondsRemaining))
-    }, [etaSecondsRemaining, currentIndex])
+        const nextEta = normalizeDisplayEta(etaSecondsRemaining)
+        const statusChanged = previousStatusRef.current !== currentStatus
+
+        setDisplayEtaSeconds((prev) => {
+            if (!Number.isFinite(Number(prev)) || statusChanged) {
+                return nextEta
+            }
+
+            if (currentStatus === 'delivered' || nextEta === 0) {
+                return nextEta
+            }
+
+            if (prev <= 0) {
+                return 0
+            }
+
+            return Math.min(prev, nextEta)
+        })
+        previousStatusRef.current = currentStatus
+    }, [currentStatus, etaSecondsRemaining, normalizeDisplayEta])
 
     useEffect(() => {
         if (currentIndex >= 3 || !hasEta) return
@@ -67,7 +86,7 @@ function OrderProgress({
 
     useEffect(() => {
         completionTriggeredRef.current = false
-    }, [currentStatus, etaSecondsRemaining])
+    }, [currentStatus])
 
     useEffect(() => {
         if (!hasEta || !canAutoComplete || currentIndex >= 3 || displayEtaSeconds > 0 || completionTriggeredRef.current) return
