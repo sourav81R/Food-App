@@ -58,17 +58,17 @@ function CheckOut() {
   const totalItems = cartItems.reduce((sum, item) => sum + Number(item?.quantity || 0), 0)
   const hasSavedAddresses = addresses.length > 0
   const sectionCardClass = isDark
-    ? 'overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,27,48,0.96),rgba(11,18,33,0.98))] shadow-[0_22px_70px_rgba(2,6,23,0.28)]'
-    : 'overflow-hidden rounded-[28px] border border-orange-100 bg-white shadow-[0_20px_70px_rgba(15,23,42,0.08)]'
+    ? 'overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,27,48,0.96),rgba(11,18,33,0.98))] shadow-[0_18px_50px_rgba(2,6,23,0.24)]'
+    : 'overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.07)]'
   const subtlePanelClass = isDark
-    ? 'rounded-2xl border border-white/10 bg-white/5'
-    : 'rounded-2xl border border-orange-100 bg-[linear-gradient(180deg,#fff8f3,#ffffff)]'
+    ? 'rounded-[20px] border border-white/10 bg-white/5'
+    : 'rounded-[20px] border border-orange-100 bg-[linear-gradient(180deg,#fff8f3,#ffffff)]'
   const inputClass = isDark
-    ? 'w-full rounded-2xl border border-white/10 bg-[#0f172c] px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#ff6b43]'
-    : 'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b43]'
+    ? 'w-full rounded-[20px] border border-white/10 bg-[#0f172c] px-3.5 py-2.5 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#ff6b43]'
+    : 'w-full rounded-[20px] border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b43]'
   const paymentCardBase = isDark
-    ? 'rounded-[24px] border border-white/10 bg-white/5 text-white'
-    : 'rounded-[24px] border border-slate-200 bg-white text-slate-900'
+    ? 'rounded-[20px] border border-white/10 bg-white/5 text-white'
+    : 'rounded-[20px] border border-slate-200 bg-white text-slate-900'
 
   const nowValue = useMemo(() => {
     const now = new Date()
@@ -378,22 +378,22 @@ function CheckOut() {
   ]
 
   return (
-    <div className={`min-h-screen px-3 py-4 sm:px-4 sm:py-6 ${isDark ? 'bg-[linear-gradient(180deg,#090f1f_0%,#10172a_45%,#0a1020_100%)]' : 'bg-[linear-gradient(180deg,#fff7f2_0%,#fffaf7_38%,#ffffff_100%)]'}`}>
-      <div className='mx-auto flex w-full max-w-7xl flex-col gap-6'>
+    <div className={`min-h-screen px-3 py-3 sm:px-4 sm:py-5 ${isDark ? 'bg-[linear-gradient(180deg,#090f1f_0%,#10172a_45%,#0a1020_100%)]' : 'bg-[linear-gradient(180deg,#fff7f2_0%,#fffaf7_38%,#ffffff_100%)]'}`}>
+      <div className='mx-auto flex w-full max-w-6xl flex-col gap-4'>
         <div className={sectionCardClass}>
-          <div className={`px-5 py-5 sm:px-7 sm:py-6 ${isDark ? 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.16),_transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0))]' : 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.22),_transparent_46%),linear-gradient(135deg,_#fff5ef,_#ffffff_62%)]'}`}>
-            <div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'>
+          <div className={`px-4 py-4 sm:px-5 sm:py-5 ${isDark ? 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.16),_transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0))]' : 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.22),_transparent_46%),linear-gradient(135deg,_#fff5ef,_#ffffff_62%)]'}`}>
+            <div className='flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'>
               <div className='flex items-start gap-3 sm:gap-4'>
                 <button
                   type='button'
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-[#ff4d2d] shadow-sm transition ${isDark ? 'bg-white/10 hover:bg-white/15' : 'bg-white hover:bg-orange-50 ring-1 ring-orange-100'}`}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] text-[#ff4d2d] shadow-sm transition ${isDark ? 'bg-white/10 hover:bg-white/15' : 'bg-white hover:bg-orange-50 ring-1 ring-orange-100'}`}
                   onClick={() => navigate("/cart")}
                 >
-                  <IoIosArrowRoundBack size={30} />
+                  <IoIosArrowRoundBack size={26} />
                 </button>
                 <div>
                   <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Final Step</p>
-                  <h1 className={`mt-1 text-2xl font-bold sm:text-3xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Checkout</h1>
+                  <h1 className={`mt-1 text-xl font-bold sm:text-2xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Checkout</h1>
                   <p className={`mt-2 max-w-2xl text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
                     Confirm your address, choose how you want to pay, and place your order with a cleaner, faster checkout flow.
                   </p>
@@ -401,21 +401,21 @@ function CheckOut() {
               </div>
 
               <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
-                <div className={`rounded-2xl px-4 py-4 shadow-sm backdrop-blur ${isDark ? 'border border-white/10 bg-white/5' : 'border border-orange-100 bg-white/85'}`}>
+                <div className={`rounded-[20px] px-3.5 py-3 shadow-sm backdrop-blur ${isDark ? 'border border-white/10 bg-white/5' : 'border border-orange-100 bg-white/85'}`}>
                   <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-400'>Cart Items</p>
-                  <p className={`mt-2 text-3xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{totalItems}</p>
+                  <p className={`mt-1.5 text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{totalItems}</p>
                   <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Ready for delivery</p>
                 </div>
-                <div className={`rounded-2xl px-4 py-4 shadow-sm backdrop-blur ${isDark ? 'border border-white/10 bg-white/5' : 'border border-orange-100 bg-white/85'}`}>
+                <div className={`rounded-[20px] px-3.5 py-3 shadow-sm backdrop-blur ${isDark ? 'border border-white/10 bg-white/5' : 'border border-orange-100 bg-white/85'}`}>
                   <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-400'>Payment</p>
-                  <p className={`mt-2 text-xl font-bold capitalize ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  <p className={`mt-1.5 text-lg font-bold capitalize ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {paymentMethod === "cod" ? "Cash" : paymentMethod === "online" ? "Online" : "Wallet"}
                   </p>
                   <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Selected method</p>
                 </div>
-                <div className={`rounded-2xl px-4 py-4 shadow-sm backdrop-blur ${isDark ? 'border border-white/10 bg-white/5' : 'border border-orange-100 bg-white/85'}`}>
+                <div className={`rounded-[20px] px-3.5 py-3 shadow-sm backdrop-blur ${isDark ? 'border border-white/10 bg-white/5' : 'border border-orange-100 bg-white/85'}`}>
                   <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-400'>Payable</p>
-                  <p className='mt-2 text-3xl font-bold text-[#ff4d2d]'>Rs {payableAmount}</p>
+                  <p className='mt-1.5 text-2xl font-bold text-[#ff4d2d]'>Rs {payableAmount}</p>
                   <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{deliveryFee === 0 ? 'Free delivery unlocked' : 'Includes delivery fee'}</p>
                 </div>
               </div>
@@ -423,10 +423,10 @@ function CheckOut() {
           </div>
         </div>
 
-        <div className='space-y-6'>
+        <div className='space-y-4'>
             {hasSavedAddresses && (
               <section className={sectionCardClass}>
-                <div className='p-5 sm:p-6'>
+                <div className='p-4 sm:p-5'>
                   <div className='mb-4 flex items-center justify-between gap-3'>
                     <div>
                       <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Saved Places</p>
@@ -441,7 +441,7 @@ function CheckOut() {
                     {addresses.map((savedAddress) => (
                       <button
                         key={savedAddress._id}
-                        className={`rounded-[22px] border p-4 text-left transition ${selectedAddressId === savedAddress._id
+                        className={`rounded-[18px] border p-3.5 text-left transition ${selectedAddressId === savedAddress._id
                           ? 'border-[#ff6b43] bg-[#ff6b43]/10 shadow-[0_16px_40px_rgba(255,107,67,0.15)]'
                           : isDark
                             ? 'border-white/10 bg-white/5 hover:border-[#ff6b43]/60'
@@ -451,7 +451,7 @@ function CheckOut() {
                       >
                         <div className='flex items-center justify-between gap-3'>
                           <div className='flex items-center gap-3'>
-                            <span className='inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1ea] text-[#ff4d2d]'>
+                            <span className='inline-flex h-10 w-10 items-center justify-center rounded-[18px] bg-[#fff1ea] text-[#ff4d2d]'>
                               <IoLocationSharp size={18} />
                             </span>
                             <div>
@@ -472,7 +472,7 @@ function CheckOut() {
             )}
 
             <section className={sectionCardClass}>
-              <div className='p-5 sm:p-6'>
+              <div className='p-4 sm:p-5'>
                 <div className='mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between'>
                   <div>
                     <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Location</p>
@@ -501,13 +501,13 @@ function CheckOut() {
                   </div>
                   <div className='flex gap-3'>
                     <button
-                      className='inline-flex h-12 min-w-[56px] items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-4 text-white shadow-lg shadow-orange-200 transition hover:brightness-105'
+                      className='inline-flex h-11 min-w-[52px] items-center justify-center rounded-[18px] bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-3.5 text-white shadow-lg shadow-orange-200 transition hover:brightness-105'
                       onClick={getLatLngByAddress}
                     >
                       <IoSearchOutline size={20} />
                     </button>
                     <button
-                      className='inline-flex h-12 min-w-[56px] items-center justify-center rounded-2xl bg-gradient-to-r from-sky-500 to-blue-500 px-4 text-white shadow-lg shadow-blue-200 transition hover:brightness-105 disabled:opacity-70'
+                      className='inline-flex h-11 min-w-[52px] items-center justify-center rounded-[18px] bg-gradient-to-r from-sky-500 to-blue-500 px-3.5 text-white shadow-lg shadow-blue-200 transition hover:brightness-105 disabled:opacity-70'
                       onClick={getCurrentLocation}
                       disabled={geoLoading}
                     >
@@ -530,8 +530,8 @@ function CheckOut() {
                   </label>
                 </div>
 
-                <div className={`mt-4 overflow-hidden rounded-[24px] border ${isDark ? 'border-white/10' : 'border-orange-100'}`}>
-                  <div className='h-64 sm:h-72 w-full flex items-center justify-center'>
+                <div className={`mt-4 overflow-hidden rounded-[20px] border ${isDark ? 'border-white/10' : 'border-orange-100'}`}>
+                  <div className='h-56 sm:h-60 w-full flex items-center justify-center'>
                     <MapContainer className={"w-full h-full"} center={mapCenter} zoom={16} maxZoom={20} scrollWheelZoom>
                       <EnhancedMapLayers />
                       <RecenterMap location={location} />
@@ -545,7 +545,7 @@ function CheckOut() {
             </section>
             <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
               <section className={sectionCardClass}>
-                <div className='p-5 sm:p-6'>
+                <div className='p-4 sm:p-5'>
                   <div className='mb-4'>
                     <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Schedule</p>
                     <h2 className={`mt-1 flex items-center gap-2 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -553,7 +553,7 @@ function CheckOut() {
                       Delivery Timing
                     </h2>
                   </div>
-                  <label className={`${subtlePanelClass} flex items-start gap-3 px-4 py-4`}>
+                  <label className={`${subtlePanelClass} flex items-start gap-3 px-3.5 py-3.5`}>
                     <input type="checkbox" checked={scheduleOrder} onChange={(e) => setScheduleOrder(e.target.checked)} className='mt-1' />
                     <div>
                       <p className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Deliver later within the next 24 hours</p>
@@ -574,7 +574,7 @@ function CheckOut() {
               </section>
 
               <section className={sectionCardClass}>
-                <div className='p-5 sm:p-6'>
+                <div className='p-4 sm:p-5'>
                   <div className='mb-4 flex items-center justify-between gap-3'>
                     <div>
                       <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Coupons</p>
@@ -597,11 +597,11 @@ function CheckOut() {
                         className={inputClass}
                       />
                       <div className='flex gap-3'>
-                        <button className='flex-1 rounded-2xl bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105' onClick={() => handleApplyManualCoupon()}>
+                        <button className='flex-1 rounded-[18px] bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105' onClick={() => handleApplyManualCoupon()}>
                           Apply
                         </button>
                         <button
-                          className={`flex-1 rounded-2xl px-4 py-3 text-sm font-semibold transition ${isDark ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                          className={`flex-1 rounded-[18px] px-4 py-2.5 text-sm font-semibold transition ${isDark ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
                           onClick={() => {
                             setManualCouponCode("")
                             setManualCouponOverride(false)
@@ -636,7 +636,7 @@ function CheckOut() {
                     )}
 
                     {appliedCoupon && (
-                      <div className={`rounded-[22px] border p-4 ${isDark ? 'border-[#ff6b43]/20 bg-[#ff6b43]/10' : 'border-orange-100 bg-orange-50'}`}>
+                      <div className={`rounded-[18px] border p-3.5 ${isDark ? 'border-[#ff6b43]/20 bg-[#ff6b43]/10' : 'border-orange-100 bg-orange-50'}`}>
                         <div className='flex items-center justify-between gap-3'>
                           <p className='font-semibold text-[#ff4d2d]'>{appliedCoupon.code}</p>
                           <span className='rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-emerald-600'>Save Rs {appliedCoupon.discount}</span>
@@ -650,7 +650,7 @@ function CheckOut() {
             </div>
 
             <section className={sectionCardClass}>
-              <div className='p-5 sm:p-6'>
+              <div className='p-4 sm:p-5'>
                 <div className='mb-4'>
                   <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Payment</p>
                   <h2 className={`mt-1 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Choose a payment method</h2>
@@ -658,11 +658,11 @@ function CheckOut() {
 
                 <div className='grid grid-cols-1 gap-4 lg:grid-cols-3'>
                   <div
-                    className={`${paymentCardBase} ${paymentMethod === "cod" ? 'border-[#ff6b43] bg-[#ff6b43]/10 shadow-[0_16px_40px_rgba(255,107,67,0.15)]' : ''} cursor-pointer p-4 transition`}
+                    className={`${paymentCardBase} ${paymentMethod === "cod" ? 'border-[#ff6b43] bg-[#ff6b43]/10 shadow-[0_16px_40px_rgba(255,107,67,0.15)]' : ''} cursor-pointer p-3.5 transition`}
                     onClick={() => setPaymentMethod("cod")}
                   >
                     <div className='flex items-start justify-between gap-3'>
-                      <span className='inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-green-100'>
+                      <span className='inline-flex h-10 w-10 items-center justify-center rounded-[18px] bg-green-100'>
                         <MdDeliveryDining className='text-green-600 text-2xl' />
                       </span>
                       {paymentMethod === "cod" && <span className='rounded-full bg-[#ff4d2d]/10 px-2.5 py-1 text-[11px] font-semibold text-[#ff4d2d]'>Selected</span>}
@@ -672,7 +672,7 @@ function CheckOut() {
                   </div>
 
                   <div
-                    className={`${paymentCardBase} ${paymentMethod === "online" ? 'border-[#ff6b43] bg-[#ff6b43]/10 shadow-[0_16px_40px_rgba(255,107,67,0.15)]' : ''} ${onlinePaymentEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'} p-4 transition`}
+                    className={`${paymentCardBase} ${paymentMethod === "online" ? 'border-[#ff6b43] bg-[#ff6b43]/10 shadow-[0_16px_40px_rgba(255,107,67,0.15)]' : ''} ${onlinePaymentEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'} p-3.5 transition`}
                     onClick={() => {
                       if (!onlinePaymentEnabled) {
                         toast.error(onlinePaymentReason || "Online payment is currently unavailable")
@@ -683,10 +683,10 @@ function CheckOut() {
                   >
                     <div className='flex items-start justify-between gap-3'>
                       <div className='flex gap-2'>
-                        <span className='inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100'>
+                        <span className='inline-flex h-10 w-10 items-center justify-center rounded-[18px] bg-blue-100'>
                           <FaCreditCard className='text-blue-700 text-xl' />
                         </span>
-                        <span className='inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-100'>
+                        <span className='inline-flex h-10 w-10 items-center justify-center rounded-[18px] bg-purple-100'>
                           <FaMobileScreenButton className='text-purple-700 text-xl' />
                         </span>
                       </div>
@@ -699,7 +699,7 @@ function CheckOut() {
                   </div>
 
                   <div
-                    className={`${paymentCardBase} ${paymentMethod === "wallet" ? 'border-[#ff6b43] bg-[#ff6b43]/10 shadow-[0_16px_40px_rgba(255,107,67,0.15)]' : ''} ${walletDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} p-4 transition`}
+                    className={`${paymentCardBase} ${paymentMethod === "wallet" ? 'border-[#ff6b43] bg-[#ff6b43]/10 shadow-[0_16px_40px_rgba(255,107,67,0.15)]' : ''} ${walletDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} p-3.5 transition`}
                     onClick={() => {
                       if (walletDisabled) {
                         toast.error("Insufficient wallet balance")
@@ -709,7 +709,7 @@ function CheckOut() {
                     }}
                   >
                     <div className='flex items-start justify-between gap-3'>
-                      <span className='inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100'>
+                      <span className='inline-flex h-10 w-10 items-center justify-center rounded-[18px] bg-emerald-100'>
                         <FaWallet className='text-emerald-700 text-xl' />
                       </span>
                       {paymentMethod === "wallet" && <span className='rounded-full bg-[#ff4d2d]/10 px-2.5 py-1 text-[11px] font-semibold text-[#ff4d2d]'>Selected</span>}
@@ -721,26 +721,26 @@ function CheckOut() {
               </div>
             </section>
             <section className={sectionCardClass}>
-              <div className={`p-5 sm:p-6 ${isDark ? 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.14),_transparent_52%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))]' : 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.18),_transparent_52%),linear-gradient(180deg,#fff7f1,#ffffff)]'}`}>
+              <div className={`p-4 sm:p-5 ${isDark ? 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.14),_transparent_52%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))]' : 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.18),_transparent_52%),linear-gradient(180deg,#fff7f1,#ffffff)]'}`}>
                 <div className='flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between'>
                   <div>
                     <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Order Summary</p>
-                    <h2 className={`mt-1 text-2xl font-bold sm:text-3xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Ready to place your order</h2>
+                    <h2 className={`mt-1 text-xl font-bold sm:text-2xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Ready to place your order</h2>
                     <p className={`mt-2 max-w-2xl text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Review your dishes, delivery charges, and final payable amount before confirming checkout.</p>
                   </div>
-                  <div className={`inline-flex self-start rounded-2xl px-4 py-3 text-sm font-semibold ${isDark ? 'bg-white/10 text-slate-200' : 'bg-white text-slate-700 ring-1 ring-orange-100'}`}>
+                  <div className={`inline-flex self-start rounded-[18px] px-3.5 py-2.5 text-sm font-semibold ${isDark ? 'bg-white/10 text-slate-200' : 'bg-white text-slate-700 ring-1 ring-orange-100'}`}>
                     {totalItems} item{totalItems > 1 ? 's' : ''} • Rs {payableAmount}
                   </div>
                 </div>
               </div>
 
-              <div className='p-5 sm:p-6'>
-                <div className='grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.9fr)_minmax(260px,0.8fr)]'>
+              <div className='p-4 sm:p-5'>
+                <div className='grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.9fr)_minmax(240px,0.8fr)]'>
                   <div className={subtlePanelClass}>
-                    <div className='p-4 space-y-3'>
+                    <div className='p-3.5 space-y-2.5'>
                       <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Items in this order</p>
                       {cartItems.map((item, index) => (
-                        <div key={index} className='flex items-start justify-between gap-3 rounded-2xl border border-transparent bg-white/40 p-3 text-sm backdrop-blur-sm'>
+                        <div key={index} className='flex items-start justify-between gap-3 rounded-[18px] border border-transparent bg-white/40 p-2.5 text-sm backdrop-blur-sm'>
                           <div className='min-w-0'>
                             <p className={`truncate font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.name}</p>
                             <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Qty {item.quantity}</p>
@@ -752,7 +752,7 @@ function CheckOut() {
                   </div>
 
                   <div className={subtlePanelClass}>
-                    <div className='p-4 space-y-4'>
+                    <div className='p-3.5 space-y-3'>
                       <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Cost breakdown</p>
                       <div className='space-y-3'>
                         <div className='flex items-center justify-between text-sm'>
@@ -771,12 +771,12 @@ function CheckOut() {
                     </div>
                   </div>
 
-                  <div className={`rounded-[24px] border p-5 ${isDark ? 'border-[#ff6b43]/20 bg-[#ff6b43]/10' : 'border-orange-100 bg-orange-50'}`}>
+                  <div className={`rounded-[20px] border p-4 ${isDark ? 'border-[#ff6b43]/20 bg-[#ff6b43]/10' : 'border-orange-100 bg-orange-50'}`}>
                     <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Final total</p>
-                    <p className='mt-3 text-5xl font-bold text-[#ff4d2d]'>Rs {payableAmount}</p>
+                    <p className='mt-2.5 text-4xl font-bold text-[#ff4d2d]'>Rs {payableAmount}</p>
                     <p className={`mt-2 text-sm leading-6 ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>Inclusive of taxes and applicable discounts for this delivery.</p>
                     <button
-                      className='mt-6 inline-flex w-full items-center justify-center gap-2 rounded-[24px] bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-6 py-4 text-base font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60'
+                      className='mt-5 inline-flex w-full items-center justify-center gap-2 rounded-[20px] bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60'
                       onClick={handlePlaceOrder}
                       disabled={orderLoading}
                     >
