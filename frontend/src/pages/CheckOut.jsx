@@ -55,6 +55,20 @@ function CheckOut() {
   const couponDiscount = Number(appliedCoupon?.discount || 0)
   const payableAmount = Math.max(0, totalAmount + deliveryFee - couponDiscount)
   const walletDisabled = Number(walletBalance || 0) < payableAmount
+  const totalItems = cartItems.reduce((sum, item) => sum + Number(item?.quantity || 0), 0)
+  const hasSavedAddresses = addresses.length > 0
+  const sectionCardClass = isDark
+    ? 'overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,27,48,0.96),rgba(11,18,33,0.98))] shadow-[0_22px_70px_rgba(2,6,23,0.28)]'
+    : 'overflow-hidden rounded-[28px] border border-orange-100 bg-white shadow-[0_20px_70px_rgba(15,23,42,0.08)]'
+  const subtlePanelClass = isDark
+    ? 'rounded-2xl border border-white/10 bg-white/5'
+    : 'rounded-2xl border border-orange-100 bg-[linear-gradient(180deg,#fff8f3,#ffffff)]'
+  const inputClass = isDark
+    ? 'w-full rounded-2xl border border-white/10 bg-[#0f172c] px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#ff6b43]'
+    : 'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b43]'
+  const paymentCardBase = isDark
+    ? 'rounded-[24px] border border-white/10 bg-white/5 text-white'
+    : 'rounded-[24px] border border-slate-200 bg-white text-slate-900'
 
   const nowValue = useMemo(() => {
     const now = new Date()
@@ -364,245 +378,421 @@ function CheckOut() {
   ]
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-3 sm:p-6 pt-16 sm:pt-6 ${isDark ? 'bg-[#1a1a2e]' : 'bg-[#fff9f6]'}`}>
-      <div className={`fixed top-3 left-3 sm:top-[20px] sm:left-[20px] z-[20] rounded-full p-1 shadow-sm cursor-pointer ${isDark ? 'bg-[#16213e]' : 'bg-white/90'}`} onClick={() => navigate("/")}>
-        <IoIosArrowRoundBack size={35} className='text-[#ff4d2d]' />
-      </div>
-      <div className={`w-full max-w-[980px] rounded-2xl shadow-xl p-4 sm:p-6 space-y-6 ${isDark ? 'bg-[#16213e] text-white' : 'bg-white'}`}>
-        <h1 className='text-2xl font-bold'>Checkout</h1>
-
-        {addresses.length > 0 && (
-          <section>
-            <h2 className='text-lg font-semibold mb-3'>Saved Addresses</h2>
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-              {addresses.map((savedAddress) => (
+    <div className={`min-h-screen px-3 py-4 sm:px-4 sm:py-6 ${isDark ? 'bg-[linear-gradient(180deg,#090f1f_0%,#10172a_45%,#0a1020_100%)]' : 'bg-[linear-gradient(180deg,#fff7f2_0%,#fffaf7_38%,#ffffff_100%)]'}`}>
+      <div className='mx-auto flex w-full max-w-7xl flex-col gap-6'>
+        <div className={sectionCardClass}>
+          <div className={`px-5 py-5 sm:px-7 sm:py-6 ${isDark ? 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.16),_transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0))]' : 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.22),_transparent_46%),linear-gradient(135deg,_#fff5ef,_#ffffff_62%)]'}`}>
+            <div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'>
+              <div className='flex items-start gap-3 sm:gap-4'>
                 <button
-                  key={savedAddress._id}
-                  className={`rounded-xl border p-4 text-left transition ${selectedAddressId === savedAddress._id ? 'border-[#ff4d2d] bg-[#ff4d2d]/10' : isDark ? 'border-[#374151] hover:border-[#ff4d2d]/60' : 'border-gray-200 hover:border-[#ff4d2d]/40'}`}
-                  onClick={() => handleSelectSavedAddress(savedAddress)}
+                  type='button'
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-[#ff4d2d] shadow-sm transition ${isDark ? 'bg-white/10 hover:bg-white/15' : 'bg-white hover:bg-orange-50 ring-1 ring-orange-100'}`}
+                  onClick={() => navigate("/cart")}
                 >
-                  <div className='flex items-center justify-between'>
-                    <p className='font-semibold'>{savedAddress.label}</p>
-                    {savedAddress.isDefault && <span className='text-xs text-[#ff4d2d] font-semibold'>Default</span>}
-                  </div>
-                  <p className={`text-sm mt-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{savedAddress.fullAddress}</p>
+                  <IoIosArrowRoundBack size={30} />
                 </button>
-              ))}
-            </div>
-          </section>
-        )}
+                <div>
+                  <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Final Step</p>
+                  <h1 className={`mt-1 text-2xl font-bold sm:text-3xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Checkout</h1>
+                  <p className={`mt-2 max-w-2xl text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                    Confirm your address, choose how you want to pay, and place your order with a cleaner, faster checkout flow.
+                  </p>
+                </div>
+              </div>
 
-        <section>
-          <h2 className='text-lg font-semibold mb-2 flex items-center gap-2'><IoLocationSharp className='text-[#ff4d2d]' /> Delivery Location</h2>
-          <div className='flex flex-col sm:flex-row gap-2 mb-3'>
-            <input id="checkout-delivery-address" name="deliveryAddress" type="text" className={`flex-1 border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2d] ${isDark ? 'bg-[#0f3460] border-[#374151]' : 'border-gray-300'}`} placeholder='Enter Your Delivery Address..' value={addressInput} onChange={(e) => {
-              setAddressInput(e.target.value)
-              setSelectedAddressId("")
-            }} />
-            <div className='flex gap-2'>
-              <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-3 py-2 rounded-lg flex-1 sm:flex-none flex items-center justify-center' onClick={getLatLngByAddress}><IoSearchOutline size={17} /></button>
-              <button
-                className='bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg flex-1 sm:flex-none flex items-center justify-center disabled:opacity-70'
-                onClick={getCurrentLocation}
-                disabled={geoLoading}
-              >
-                {geoLoading ? <ClipLoader size={14} color='white' /> : <TbCurrentLocation size={17} />}
-              </button>
+              <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
+                <div className={`rounded-2xl px-4 py-4 shadow-sm backdrop-blur ${isDark ? 'border border-white/10 bg-white/5' : 'border border-orange-100 bg-white/85'}`}>
+                  <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-400'>Cart Items</p>
+                  <p className={`mt-2 text-3xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{totalItems}</p>
+                  <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Ready for delivery</p>
+                </div>
+                <div className={`rounded-2xl px-4 py-4 shadow-sm backdrop-blur ${isDark ? 'border border-white/10 bg-white/5' : 'border border-orange-100 bg-white/85'}`}>
+                  <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-400'>Payment</p>
+                  <p className={`mt-2 text-xl font-bold capitalize ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {paymentMethod === "cod" ? "Cash" : paymentMethod === "online" ? "Online" : "Wallet"}
+                  </p>
+                  <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Selected method</p>
+                </div>
+                <div className={`rounded-2xl px-4 py-4 shadow-sm backdrop-blur ${isDark ? 'border border-white/10 bg-white/5' : 'border border-orange-100 bg-white/85'}`}>
+                  <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-400'>Payable</p>
+                  <p className='mt-2 text-3xl font-bold text-[#ff4d2d]'>Rs {payableAmount}</p>
+                  <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{deliveryFee === 0 ? 'Free delivery unlocked' : 'Includes delivery fee'}</p>
+                </div>
+              </div>
             </div>
           </div>
-          <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3'>
-            <input
-              type="text"
-              value={addressLabel}
-              onChange={(e) => setAddressLabel(e.target.value)}
-              placeholder='Address label'
-              className={`rounded-lg border px-3 py-2 text-sm ${isDark ? 'bg-[#0f3460] border-[#374151]' : 'border-gray-300'}`}
-            />
-            <label className={`sm:col-span-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${isDark ? 'border-[#374151] bg-[#0f3460]' : 'border-gray-200 bg-gray-50'}`}>
-              <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
-              Save this address to my account
-            </label>
-          </div>
-          <div className='rounded-xl border overflow-hidden'>
-            <div className='h-56 sm:h-64 w-full flex items-center justify-center'>
-              <MapContainer className={"w-full h-full"} center={mapCenter} zoom={16} maxZoom={20} scrollWheelZoom>
-                <EnhancedMapLayers />
-                <RecenterMap location={location} />
-                {Number.isFinite(location?.lat) && Number.isFinite(location?.lon) && (
-                  <Marker position={[location.lat, location.lon]} draggable eventHandlers={{ dragend: onDragEnd }} />
-                )}
-              </MapContainer>
-            </div>
-          </div>
-        </section>
+        </div>
 
-        <section>
-          <h2 className='text-lg font-semibold mb-3 flex items-center gap-2'><FaClock className='text-[#ff4d2d]' /> Schedule Order</h2>
-          <div className='space-y-3'>
-            <label className={`flex items-center gap-2 rounded-xl border p-4 ${isDark ? 'border-[#374151]' : 'border-gray-200'}`}>
-              <input type="checkbox" checked={scheduleOrder} onChange={(e) => setScheduleOrder(e.target.checked)} />
-              Deliver later within the next 24 hours
-            </label>
-            {scheduleOrder && (
-              <input
-                type="datetime-local"
-                min={nowValue}
-                max={maxScheduleValue}
-                value={scheduledFor}
-                onChange={(e) => setScheduledFor(e.target.value)}
-                className={`w-full rounded-xl border px-4 py-3 ${isDark ? 'bg-[#0f3460] border-[#374151]' : 'border-gray-300'}`}
-              />
+        <div className='space-y-6'>
+            {hasSavedAddresses && (
+              <section className={sectionCardClass}>
+                <div className='p-5 sm:p-6'>
+                  <div className='mb-4 flex items-center justify-between gap-3'>
+                    <div>
+                      <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Saved Places</p>
+                      <h2 className={`mt-1 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Choose a saved address</h2>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${isDark ? 'bg-white/10 text-slate-300' : 'bg-orange-50 text-[#ff4d2d]'}`}>
+                      {addresses.length} saved
+                    </span>
+                  </div>
+
+                  <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                    {addresses.map((savedAddress) => (
+                      <button
+                        key={savedAddress._id}
+                        className={`rounded-[22px] border p-4 text-left transition ${selectedAddressId === savedAddress._id
+                          ? 'border-[#ff6b43] bg-[#ff6b43]/10 shadow-[0_16px_40px_rgba(255,107,67,0.15)]'
+                          : isDark
+                            ? 'border-white/10 bg-white/5 hover:border-[#ff6b43]/60'
+                            : 'border-slate-200 bg-white hover:border-[#ff6b43]/40 hover:shadow-sm'
+                          }`}
+                        onClick={() => handleSelectSavedAddress(savedAddress)}
+                      >
+                        <div className='flex items-center justify-between gap-3'>
+                          <div className='flex items-center gap-3'>
+                            <span className='inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1ea] text-[#ff4d2d]'>
+                              <IoLocationSharp size={18} />
+                            </span>
+                            <div>
+                              <p className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{savedAddress.label}</p>
+                              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                {savedAddress.isDefault ? 'Default address' : 'Saved location'}
+                              </p>
+                            </div>
+                          </div>
+                          {savedAddress.isDefault && <span className='rounded-full bg-[#ff4d2d]/10 px-2.5 py-1 text-[11px] font-semibold text-[#ff4d2d]'>Default</span>}
+                        </div>
+                        <p className={`mt-3 text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{savedAddress.fullAddress}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </section>
             )}
-          </div>
-        </section>
 
-        <section>
-          <h2 className='text-lg font-semibold mb-3'>Payment Method</h2>
-          <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
-            <div className={`flex items-start gap-3 rounded-xl border p-4 transition cursor-pointer ${paymentMethod === "cod" ? "border-[#ff4d2d] bg-orange-50 text-gray-800" : isDark ? "border-[#374151]" : "border-gray-200"}`} onClick={() => setPaymentMethod("cod")}>
-              <span className='inline-flex h-10 w-10 items-center justify-center rounded-full bg-green-100'>
-                <MdDeliveryDining className='text-green-600 text-xl' />
-              </span>
-              <div>
-                <p className='font-medium'>Cash On Delivery</p>
-                <p className='text-xs opacity-75'>Pay when your food arrives</p>
-              </div>
-            </div>
-            <div
-              className={`flex items-start gap-3 rounded-xl border p-4 transition ${paymentMethod === "online" ? "border-[#ff4d2d] bg-orange-50 text-gray-800" : isDark ? "border-[#374151]" : "border-gray-200"} ${onlinePaymentEnabled ? "cursor-pointer" : "opacity-60 cursor-not-allowed"}`}
-              onClick={() => {
-                if (!onlinePaymentEnabled) {
-                  toast.error(onlinePaymentReason || "Online payment is currently unavailable")
-                  return
-                }
-                setPaymentMethod("online")
-              }}
-            >
-              <span className='inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-100'>
-                <FaCreditCard className='text-blue-700 text-lg' />
-              </span>
-              <span className='inline-flex h-10 w-10 items-center justify-center rounded-full bg-purple-100'>
-                <FaMobileScreenButton className='text-purple-700 text-lg' />
-              </span>
-              <div>
-                <p className='font-medium'>Online Payment</p>
-                <p className='text-xs opacity-75'>{onlinePaymentEnabled ? "UPI / Card / Netbanking" : (onlinePaymentReason || "Unavailable")}</p>
-              </div>
-            </div>
-            <div
-              className={`flex items-start gap-3 rounded-xl border p-4 transition ${paymentMethod === "wallet" ? "border-[#ff4d2d] bg-orange-50 text-gray-800" : isDark ? "border-[#374151]" : "border-gray-200"} ${walletDisabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-              onClick={() => {
-                if (walletDisabled) {
-                  toast.error("Insufficient wallet balance")
-                  return
-                }
-                setPaymentMethod("wallet")
-              }}
-            >
-              <span className='inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100'>
-                <FaWallet className='text-emerald-700 text-lg' />
-              </span>
-              <div>
-                <p className='font-medium'>Pay with Wallet</p>
-                <p className='text-xs opacity-75'>Balance: Rs {Number(walletBalance || 0).toFixed(2)}</p>
-              </div>
-            </div>
-          </div>
-        </section>
+            <section className={sectionCardClass}>
+              <div className='p-5 sm:p-6'>
+                <div className='mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between'>
+                  <div>
+                    <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Location</p>
+                    <h2 className={`mt-1 flex items-center gap-2 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      <IoLocationSharp className='text-[#ff4d2d]' />
+                      Delivery Address
+                    </h2>
+                  </div>
+                  <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Search, pin, and save the exact drop point for a smoother handoff.</p>
+                </div>
 
-        <section>
-          <div className='flex items-center justify-between mb-3'>
-            <h2 className='text-lg font-semibold'>Coupons</h2>
-            {bestCoupon && !manualCouponOverride && (
-              <span className='inline-flex items-center rounded-full bg-[#ff4d2d]/10 px-3 py-1 text-xs font-semibold text-[#ff4d2d]'>
-                Best coupon auto-applied
-              </span>
-            )}
-          </div>
-          <div className='space-y-3'>
-            <div className='flex flex-col sm:flex-row gap-2'>
-              <input
-                type="text"
-                value={manualCouponCode}
-                onChange={(e) => setManualCouponCode(e.target.value.toUpperCase())}
-                placeholder='Enter coupon code'
-                className={`flex-1 rounded-lg border px-3 py-2 ${isDark ? 'bg-[#0f3460] border-[#374151]' : 'border-gray-300'}`}
-              />
-              <button className='bg-[#ff4d2d] text-white px-4 py-2 rounded-lg' onClick={() => handleApplyManualCoupon()}>Apply</button>
-              <button className={`px-4 py-2 rounded-lg ${isDark ? 'bg-[#0f3460]' : 'bg-gray-100'}`} onClick={() => {
-                setManualCouponCode("")
-                setManualCouponOverride(false)
-                setAppliedCoupon(bestCoupon)
-              }}>Use Best</button>
+                <div className='flex flex-col gap-3 lg:flex-row'>
+                  <div className='flex-1'>
+                    <input
+                      id="checkout-delivery-address"
+                      name="deliveryAddress"
+                      type="text"
+                      className={inputClass}
+                      placeholder='Enter your delivery address'
+                      value={addressInput}
+                      onChange={(e) => {
+                        setAddressInput(e.target.value)
+                        setSelectedAddressId("")
+                      }}
+                    />
+                  </div>
+                  <div className='flex gap-3'>
+                    <button
+                      className='inline-flex h-12 min-w-[56px] items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-4 text-white shadow-lg shadow-orange-200 transition hover:brightness-105'
+                      onClick={getLatLngByAddress}
+                    >
+                      <IoSearchOutline size={20} />
+                    </button>
+                    <button
+                      className='inline-flex h-12 min-w-[56px] items-center justify-center rounded-2xl bg-gradient-to-r from-sky-500 to-blue-500 px-4 text-white shadow-lg shadow-blue-200 transition hover:brightness-105 disabled:opacity-70'
+                      onClick={getCurrentLocation}
+                      disabled={geoLoading}
+                    >
+                      {geoLoading ? <ClipLoader size={14} color='white' /> : <TbCurrentLocation size={20} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className='mt-4 grid grid-cols-1 gap-3 lg:grid-cols-[220px_minmax(0,1fr)]'>
+                  <input
+                    type="text"
+                    value={addressLabel}
+                    onChange={(e) => setAddressLabel(e.target.value)}
+                    placeholder='Address label'
+                    className={inputClass}
+                  />
+                  <label className={`${subtlePanelClass} flex items-center gap-3 px-4 py-3 text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
+                    Save this address to my account for faster checkout next time
+                  </label>
+                </div>
+
+                <div className={`mt-4 overflow-hidden rounded-[24px] border ${isDark ? 'border-white/10' : 'border-orange-100'}`}>
+                  <div className='h-64 sm:h-72 w-full flex items-center justify-center'>
+                    <MapContainer className={"w-full h-full"} center={mapCenter} zoom={16} maxZoom={20} scrollWheelZoom>
+                      <EnhancedMapLayers />
+                      <RecenterMap location={location} />
+                      {Number.isFinite(location?.lat) && Number.isFinite(location?.lon) && (
+                        <Marker position={[location.lat, location.lon]} draggable eventHandlers={{ dragend: onDragEnd }} />
+                      )}
+                    </MapContainer>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
+              <section className={sectionCardClass}>
+                <div className='p-5 sm:p-6'>
+                  <div className='mb-4'>
+                    <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Schedule</p>
+                    <h2 className={`mt-1 flex items-center gap-2 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      <FaClock className='text-[#ff4d2d]' />
+                      Delivery Timing
+                    </h2>
+                  </div>
+                  <label className={`${subtlePanelClass} flex items-start gap-3 px-4 py-4`}>
+                    <input type="checkbox" checked={scheduleOrder} onChange={(e) => setScheduleOrder(e.target.checked)} className='mt-1' />
+                    <div>
+                      <p className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Deliver later within the next 24 hours</p>
+                      <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Choose a precise slot if you want this order to arrive later.</p>
+                    </div>
+                  </label>
+                  {scheduleOrder && (
+                    <input
+                      type="datetime-local"
+                      min={nowValue}
+                      max={maxScheduleValue}
+                      value={scheduledFor}
+                      onChange={(e) => setScheduledFor(e.target.value)}
+                      className={`mt-4 ${inputClass}`}
+                    />
+                  )}
+                </div>
+              </section>
+
+              <section className={sectionCardClass}>
+                <div className='p-5 sm:p-6'>
+                  <div className='mb-4 flex items-center justify-between gap-3'>
+                    <div>
+                      <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Coupons</p>
+                      <h2 className={`mt-1 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Offers & savings</h2>
+                    </div>
+                    {bestCoupon && !manualCouponOverride && (
+                      <span className='rounded-full bg-[#ff4d2d]/10 px-3 py-1 text-xs font-semibold text-[#ff4d2d]'>
+                        Best auto-applied
+                      </span>
+                    )}
+                  </div>
+
+                  <div className='space-y-4'>
+                    <div className='flex flex-col gap-3'>
+                      <input
+                        type="text"
+                        value={manualCouponCode}
+                        onChange={(e) => setManualCouponCode(e.target.value.toUpperCase())}
+                        placeholder='Enter coupon code'
+                        className={inputClass}
+                      />
+                      <div className='flex gap-3'>
+                        <button className='flex-1 rounded-2xl bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105' onClick={() => handleApplyManualCoupon()}>
+                          Apply
+                        </button>
+                        <button
+                          className={`flex-1 rounded-2xl px-4 py-3 text-sm font-semibold transition ${isDark ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                          onClick={() => {
+                            setManualCouponCode("")
+                            setManualCouponOverride(false)
+                            setAppliedCoupon(bestCoupon)
+                          }}
+                        >
+                          Use Best
+                        </button>
+                      </div>
+                    </div>
+
+                    {activeCoupons.length > 0 && (
+                      <div className='flex flex-wrap gap-2'>
+                        {activeCoupons.map((coupon) => (
+                          <button
+                            key={coupon.code}
+                            className={`rounded-full border px-3 py-2 text-sm font-medium transition ${appliedCoupon?.code === coupon.code
+                              ? 'border-[#ff4d2d] bg-[#ff4d2d]/10 text-[#ff4d2d]'
+                              : isDark
+                                ? 'border-white/10 bg-white/5 text-slate-200 hover:border-[#ff4d2d]/40'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-[#ff4d2d]/40'
+                              }`}
+                            onClick={() => {
+                              setManualCouponCode(coupon.code)
+                              handleApplyManualCoupon(coupon.code)
+                            }}
+                          >
+                            {coupon.code}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {appliedCoupon && (
+                      <div className={`rounded-[22px] border p-4 ${isDark ? 'border-[#ff6b43]/20 bg-[#ff6b43]/10' : 'border-orange-100 bg-orange-50'}`}>
+                        <div className='flex items-center justify-between gap-3'>
+                          <p className='font-semibold text-[#ff4d2d]'>{appliedCoupon.code}</p>
+                          <span className='rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-emerald-600'>Save Rs {appliedCoupon.discount}</span>
+                        </div>
+                        <p className={`mt-2 text-sm leading-6 ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{appliedCoupon.description || appliedCoupon.message}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
             </div>
-            {activeCoupons.length > 0 && (
-              <div className='flex flex-wrap gap-2'>
-                {activeCoupons.map((coupon) => (
-                  <button
-                    key={coupon.code}
-                    className={`rounded-full border px-3 py-1.5 text-sm ${appliedCoupon?.code === coupon.code ? 'border-[#ff4d2d] text-[#ff4d2d]' : isDark ? 'border-[#374151]' : 'border-gray-200'}`}
+
+            <section className={sectionCardClass}>
+              <div className='p-5 sm:p-6'>
+                <div className='mb-4'>
+                  <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Payment</p>
+                  <h2 className={`mt-1 text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Choose a payment method</h2>
+                </div>
+
+                <div className='grid grid-cols-1 gap-4 lg:grid-cols-3'>
+                  <div
+                    className={`${paymentCardBase} ${paymentMethod === "cod" ? 'border-[#ff6b43] bg-[#ff6b43]/10 shadow-[0_16px_40px_rgba(255,107,67,0.15)]' : ''} cursor-pointer p-4 transition`}
+                    onClick={() => setPaymentMethod("cod")}
+                  >
+                    <div className='flex items-start justify-between gap-3'>
+                      <span className='inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-green-100'>
+                        <MdDeliveryDining className='text-green-600 text-2xl' />
+                      </span>
+                      {paymentMethod === "cod" && <span className='rounded-full bg-[#ff4d2d]/10 px-2.5 py-1 text-[11px] font-semibold text-[#ff4d2d]'>Selected</span>}
+                    </div>
+                    <p className={`mt-4 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Cash on Delivery</p>
+                    <p className={`mt-1 text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Pay only when the order arrives at your doorstep.</p>
+                  </div>
+
+                  <div
+                    className={`${paymentCardBase} ${paymentMethod === "online" ? 'border-[#ff6b43] bg-[#ff6b43]/10 shadow-[0_16px_40px_rgba(255,107,67,0.15)]' : ''} ${onlinePaymentEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'} p-4 transition`}
                     onClick={() => {
-                      setManualCouponCode(coupon.code)
-                      handleApplyManualCoupon(coupon.code)
+                      if (!onlinePaymentEnabled) {
+                        toast.error(onlinePaymentReason || "Online payment is currently unavailable")
+                        return
+                      }
+                      setPaymentMethod("online")
                     }}
                   >
-                    {coupon.code}
-                  </button>
-                ))}
-              </div>
-            )}
-            {appliedCoupon && (
-              <div className={`rounded-xl border p-4 ${isDark ? 'border-[#374151] bg-[#0f3460]' : 'border-orange-100 bg-orange-50'}`}>
-                <p className='font-semibold text-[#ff4d2d]'>{appliedCoupon.code}</p>
-                <p className={`text-sm mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{appliedCoupon.description || appliedCoupon.message}</p>
-                <p className='text-sm mt-2'>Discount: Rs {appliedCoupon.discount}</p>
-              </div>
-            )}
-          </div>
-        </section>
+                    <div className='flex items-start justify-between gap-3'>
+                      <div className='flex gap-2'>
+                        <span className='inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100'>
+                          <FaCreditCard className='text-blue-700 text-xl' />
+                        </span>
+                        <span className='inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-100'>
+                          <FaMobileScreenButton className='text-purple-700 text-xl' />
+                        </span>
+                      </div>
+                      {paymentMethod === "online" && <span className='rounded-full bg-[#ff4d2d]/10 px-2.5 py-1 text-[11px] font-semibold text-[#ff4d2d]'>Selected</span>}
+                    </div>
+                    <p className={`mt-4 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Online Payment</p>
+                    <p className={`mt-1 text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                      {onlinePaymentEnabled ? "UPI, cards, and netbanking with instant confirmation." : (onlinePaymentReason || "Currently unavailable")}
+                    </p>
+                  </div>
 
-        <section>
-          <h2 className='text-lg font-semibold mb-3'>Order Summary</h2>
-          <div className={`rounded-xl border p-4 space-y-2 ${isDark ? 'border-[#374151] bg-[#0f3460]' : 'bg-gray-50'}`}>
-            {cartItems.map((item, index) => (
-              <div key={index} className='flex justify-between gap-3 text-sm'>
-                <span className='truncate'>{item.name} x {item.quantity}</span>
-                <span className='whitespace-nowrap'>Rs {item.price * item.quantity}</span>
+                  <div
+                    className={`${paymentCardBase} ${paymentMethod === "wallet" ? 'border-[#ff6b43] bg-[#ff6b43]/10 shadow-[0_16px_40px_rgba(255,107,67,0.15)]' : ''} ${walletDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} p-4 transition`}
+                    onClick={() => {
+                      if (walletDisabled) {
+                        toast.error("Insufficient wallet balance")
+                        return
+                      }
+                      setPaymentMethod("wallet")
+                    }}
+                  >
+                    <div className='flex items-start justify-between gap-3'>
+                      <span className='inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100'>
+                        <FaWallet className='text-emerald-700 text-xl' />
+                      </span>
+                      {paymentMethod === "wallet" && <span className='rounded-full bg-[#ff4d2d]/10 px-2.5 py-1 text-[11px] font-semibold text-[#ff4d2d]'>Selected</span>}
+                    </div>
+                    <p className={`mt-4 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Wallet</p>
+                    <p className={`mt-1 text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Balance available: Rs {Number(walletBalance || 0).toFixed(2)}</p>
+                  </div>
+                </div>
               </div>
-            ))}
-            <hr className='border-gray-200 my-2' />
-            <div className='flex justify-between font-medium'>
-              <span>Subtotal</span>
-              <span>Rs {totalAmount}</span>
-            </div>
-            <div className='flex justify-between text-sm'>
-              <span>Delivery Fee</span>
-              <span>{deliveryFee === 0 ? "Free" : `Rs ${deliveryFee}`}</span>
-            </div>
-            <div className='flex justify-between text-sm text-green-500'>
-              <span>Coupon Discount</span>
-              <span>- Rs {couponDiscount}</span>
-            </div>
-            <div className='flex justify-between text-lg font-bold text-[#ff4d2d] pt-2'>
-              <span>Total</span>
-              <span>Rs {payableAmount}</span>
-            </div>
-          </div>
-        </section>
+            </section>
+            <section className={sectionCardClass}>
+              <div className={`p-5 sm:p-6 ${isDark ? 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.14),_transparent_52%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))]' : 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.18),_transparent_52%),linear-gradient(180deg,#fff7f1,#ffffff)]'}`}>
+                <div className='flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between'>
+                  <div>
+                    <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Order Summary</p>
+                    <h2 className={`mt-1 text-2xl font-bold sm:text-3xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Ready to place your order</h2>
+                    <p className={`mt-2 max-w-2xl text-sm leading-6 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Review your dishes, delivery charges, and final payable amount before confirming checkout.</p>
+                  </div>
+                  <div className={`inline-flex self-start rounded-2xl px-4 py-3 text-sm font-semibold ${isDark ? 'bg-white/10 text-slate-200' : 'bg-white text-slate-700 ring-1 ring-orange-100'}`}>
+                    {totalItems} item{totalItems > 1 ? 's' : ''} • Rs {payableAmount}
+                  </div>
+                </div>
+              </div>
 
-        <button
-          className='w-full bg-[#ff4d2d] hover:bg-[#e64526] text-white py-3 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2'
-          onClick={handlePlaceOrder}
-          disabled={orderLoading}
-        >
-          {orderLoading ? (
-            <><ClipLoader size={20} color='white' /> Processing...</>
-          ) : (
-            scheduleOrder
-              ? (paymentMethod === "online" ? "Pay & Schedule Order" : "Schedule Order")
-              : (paymentMethod === "online" ? "Pay & Place Order" : "Place Order")
-          )}
-        </button>
+              <div className='p-5 sm:p-6'>
+                <div className='grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.9fr)_minmax(260px,0.8fr)]'>
+                  <div className={subtlePanelClass}>
+                    <div className='p-4 space-y-3'>
+                      <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Items in this order</p>
+                      {cartItems.map((item, index) => (
+                        <div key={index} className='flex items-start justify-between gap-3 rounded-2xl border border-transparent bg-white/40 p-3 text-sm backdrop-blur-sm'>
+                          <div className='min-w-0'>
+                            <p className={`truncate font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.name}</p>
+                            <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Qty {item.quantity}</p>
+                          </div>
+                          <span className={`shrink-0 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Rs {item.price * item.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className={subtlePanelClass}>
+                    <div className='p-4 space-y-4'>
+                      <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Cost breakdown</p>
+                      <div className='space-y-3'>
+                        <div className='flex items-center justify-between text-sm'>
+                          <span className={isDark ? 'text-slate-300' : 'text-slate-500'}>Subtotal</span>
+                          <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Rs {totalAmount}</span>
+                        </div>
+                        <div className='flex items-center justify-between text-sm'>
+                          <span className={isDark ? 'text-slate-300' : 'text-slate-500'}>Delivery Fee</span>
+                          <span className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{deliveryFee === 0 ? "Free" : `Rs ${deliveryFee}`}</span>
+                        </div>
+                        <div className='flex items-center justify-between text-sm'>
+                          <span className='text-emerald-500'>Coupon Discount</span>
+                          <span className='font-semibold text-emerald-500'>- Rs {couponDiscount}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={`rounded-[24px] border p-5 ${isDark ? 'border-[#ff6b43]/20 bg-[#ff6b43]/10' : 'border-orange-100 bg-orange-50'}`}>
+                    <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Final total</p>
+                    <p className='mt-3 text-5xl font-bold text-[#ff4d2d]'>Rs {payableAmount}</p>
+                    <p className={`mt-2 text-sm leading-6 ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>Inclusive of taxes and applicable discounts for this delivery.</p>
+                    <button
+                      className='mt-6 inline-flex w-full items-center justify-center gap-2 rounded-[24px] bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-6 py-4 text-base font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60'
+                      onClick={handlePlaceOrder}
+                      disabled={orderLoading}
+                    >
+                      {orderLoading ? (
+                        <><ClipLoader size={20} color='white' /> Processing...</>
+                      ) : (
+                        scheduleOrder
+                          ? (paymentMethod === "online" ? "Pay & Schedule Order" : "Schedule Order")
+                          : (paymentMethod === "online" ? "Pay & Place Order" : "Place Order")
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+        </div>
       </div>
     </div>
   )
