@@ -11,7 +11,14 @@ const parseCoords = (lat, lon) => {
     const safeLat = toNumber(lat)
     const safeLon = toNumber(lon)
     if (safeLat == null || safeLon == null) return null
+    if (safeLat < -90 || safeLat > 90 || safeLon < -180 || safeLon > 180) return null
+    if (Math.abs(safeLat) < 0.000001 && Math.abs(safeLon) < 0.000001) return null
     return { lat: safeLat, lon: safeLon }
+}
+
+const estimateEtaSecondsFromDistance = (distanceKm) => {
+    const safeDistanceKm = Math.max(0, Number(distanceKm) || 0)
+    return Math.max(60, Math.round(safeDistanceKm * 90))
 }
 
 const haversineDistanceKm = (from, to) => {
@@ -103,7 +110,7 @@ const fetchOsrmEta = async ({ from, to }) => {
     return {
         provider: "osrm",
         source: "live",
-        remainingSeconds: normalizeActiveEtaSeconds(durationSeconds),
+        remainingSeconds: normalizeActiveEtaSeconds(estimateEtaSecondsFromDistance(distanceKm)),
         trafficLevel: classifyTraffic(durationSeconds, distanceKm),
         distanceKm,
         fetchedAt: new Date().toISOString()
@@ -135,7 +142,7 @@ const fetchGoogleTrafficEta = async ({ from, to, apiKey }) => {
     return {
         provider: "google",
         source: "live",
-        remainingSeconds: normalizeActiveEtaSeconds(durationSeconds),
+        remainingSeconds: normalizeActiveEtaSeconds(estimateEtaSecondsFromDistance(distanceKm)),
         trafficLevel: classifyTraffic(durationSeconds, distanceKm),
         distanceKm,
         fetchedAt: new Date().toISOString()
@@ -167,7 +174,7 @@ const fetchMapboxTrafficEta = async ({ from, to, token }) => {
     return {
         provider: "mapbox",
         source: "live",
-        remainingSeconds: normalizeActiveEtaSeconds(durationSeconds),
+        remainingSeconds: normalizeActiveEtaSeconds(estimateEtaSecondsFromDistance(distanceKm)),
         trafficLevel: classifyTraffic(durationSeconds, distanceKm),
         distanceKm,
         fetchedAt: new Date().toISOString()
@@ -259,7 +266,7 @@ const fallbackEtaFromCreatedAt = ({ createdAt, statusIndex, now = new Date() }) 
 const fallbackEtaFromDistance = ({ from, to, now = new Date() }) => {
     const traffic = getHeuristicTrafficProfile(now)
     const distanceKm = haversineDistanceKm(from, to)
-    const durationSeconds = Math.max(60, Math.round((distanceKm / traffic.speedKmph) * 3600))
+    const durationSeconds = estimateEtaSecondsFromDistance(distanceKm)
 
     return {
         provider: "heuristic",

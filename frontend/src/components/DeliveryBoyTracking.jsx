@@ -90,8 +90,7 @@ function DeliveryBoyTracking({ data }) {
             deliveryBoyPoint,
             customerPoint
         )
-        const averageDeliverySpeedKmph = 25
-        const etaMinutes = Math.max(1, Math.round((distanceKm / averageDeliverySpeedKmph) * 60))
+        const etaMinutes = Math.max(1, Math.round(distanceKm * 1.5))
         return {
             distanceKm: distanceKm.toFixed(2),
             etaMinutes

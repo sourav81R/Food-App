@@ -32,8 +32,7 @@ const haversineDistanceKm = (from, to) => {
 const getFallbackEtaSeconds = (from, to) => {
   if (!from || !to) return null
   const distanceKm = haversineDistanceKm(from, to)
-  const averageDeliverySpeedKmph = 25
-  return Math.max(60, Math.round((distanceKm / averageDeliverySpeedKmph) * 3600))
+  return Math.max(60, Math.round(distanceKm * 90))
 }
 
 const formatOrderDateTime = (value) => {
@@ -171,6 +170,28 @@ function TrackOrderPage() {
     autoCompletionInFlightRef.current = true
     try {
       await axios.patch(`${serverUrl}/api/order/auto-complete-by-eta/${currentOrder._id}`, {}, { withCredentials: true })
+      const deliveredAt = new Date().toISOString()
+      setCurrentOrder((prev) => {
+        if (!prev?._id) return prev
+        return {
+          ...prev,
+          status: 'delivered',
+          deliveryStatus: 'delivered',
+          liveEta: {
+            ...(prev.liveEta || {}),
+            remainingSeconds: 0
+          },
+          shopOrders: (prev.shopOrders || []).map((shopOrder) => ({
+            ...shopOrder,
+            status: 'delivered',
+            deliveredAt: shopOrder?.deliveredAt || deliveredAt
+          }))
+        }
+      })
+      dispatch(setOrderEta({
+        orderId: currentOrder._id,
+        etaSeconds: 0
+      }))
       await handleGetOrder()
     } catch (error) {
       const remainingSeconds = Number(error?.response?.data?.remainingEtaSeconds)

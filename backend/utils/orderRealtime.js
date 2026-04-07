@@ -100,9 +100,10 @@ export const setDeliveryPartnerAvailabilityIfIdle = async (deliveryPartnerId) =>
 const getLiveEtaSourceCoords = (order = {}) => {
     const deliveryPartnerCoordinates = order?.deliveryPartner?.location?.coordinates
     if (Array.isArray(deliveryPartnerCoordinates) && deliveryPartnerCoordinates.length === 2) {
-        return {
-            lat: deliveryPartnerCoordinates[1],
-            lon: deliveryPartnerCoordinates[0]
+        const lat = Number(deliveryPartnerCoordinates[1])
+        const lon = Number(deliveryPartnerCoordinates[0])
+        if (Number.isFinite(lat) && Number.isFinite(lon) && !(Math.abs(lat) < 0.000001 && Math.abs(lon) < 0.000001)) {
+            return { lat, lon }
         }
     }
 
@@ -113,9 +114,30 @@ const getLiveEtaSourceCoords = (order = {}) => {
 
     if (assignedShopOrder?.assignedDeliveryBoy?.location?.coordinates?.length === 2) {
         const coordinates = assignedShopOrder.assignedDeliveryBoy.location.coordinates
-        return {
-            lat: coordinates[1],
-            lon: coordinates[0]
+        const lat = Number(coordinates[1])
+        const lon = Number(coordinates[0])
+        if (Number.isFinite(lat) && Number.isFinite(lon) && !(Math.abs(lat) < 0.000001 && Math.abs(lon) < 0.000001)) {
+            return {
+                lat,
+                lon
+            }
+        }
+    }
+
+    const activeShopOrder = (order?.shopOrders || []).find((shopOrder) => {
+        const coordinates = shopOrder?.shop?.location?.coordinates
+        return Array.isArray(coordinates) && coordinates.length === 2 && shopOrder?.status !== "delivered"
+    })
+
+    if (activeShopOrder?.shop?.location?.coordinates?.length === 2) {
+        const coordinates = activeShopOrder.shop.location.coordinates
+        const lat = Number(coordinates[1])
+        const lon = Number(coordinates[0])
+        if (Number.isFinite(lat) && Number.isFinite(lon) && !(Math.abs(lat) < 0.000001 && Math.abs(lon) < 0.000001)) {
+            return {
+                lat,
+                lon
+            }
         }
     }
 
