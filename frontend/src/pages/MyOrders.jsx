@@ -85,22 +85,22 @@ function MyOrders() {
   }
 
   return (
-    <div className='min-h-screen bg-[linear-gradient(180deg,#fff7f2_0%,#fffaf7_38%,#ffffff_100%)] px-3 py-4 sm:px-4 sm:py-6'>
-      <div className='mx-auto flex w-full max-w-6xl flex-col gap-6'>
-        <div className='overflow-hidden rounded-[32px] border border-orange-100 bg-white shadow-[0_20px_70px_rgba(15,23,42,0.08)]'>
-          <div className='bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.22),_transparent_46%),linear-gradient(135deg,_#fff5ef,_#ffffff_62%)] px-5 py-5 sm:px-7 sm:py-6'>
-            <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
+    <div className='min-h-screen bg-[linear-gradient(180deg,#fff7f2_0%,#fffaf7_38%,#ffffff_100%)] px-3 py-3 sm:px-4 sm:py-5'>
+      <div className='mx-auto flex w-full max-w-5xl flex-col gap-4'>
+        <div className='overflow-hidden rounded-[26px] border border-orange-100 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.07)]'>
+          <div className='bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.22),_transparent_46%),linear-gradient(135deg,_#fff5ef,_#ffffff_62%)] px-4 py-4 sm:px-5 sm:py-5'>
+            <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
               <div className='flex items-start gap-3 sm:gap-4'>
                 <button
                   type='button'
-                  className='flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#ff4d2d] shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-50'
+                  className='flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] bg-white text-[#ff4d2d] shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-50'
                   onClick={() => navigate("/")}
                 >
-                  <IoIosArrowRoundBack size={30} />
+                  <IoIosArrowRoundBack size={26} />
                 </button>
                 <div>
                   <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Order Center</p>
-                  <h1 className='mt-1 text-2xl font-bold text-slate-900 sm:text-3xl'>My Orders</h1>
+                  <h1 className='mt-1 text-xl font-bold text-slate-900 sm:text-2xl'>My Orders</h1>
                   <p className='mt-1 text-sm text-slate-500'>Track previous purchases, reorder favorites, manage reviews, and tidy your order history.</p>
                 </div>
               </div>
@@ -108,7 +108,7 @@ function MyOrders() {
               {isUserRole(normalizedRole) && myOrders?.length > 0 && (
                 <button
                   type='button'
-                  className='inline-flex items-center gap-2 self-start rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-red-500 shadow-sm ring-1 ring-red-100 transition hover:bg-red-50 sm:self-auto'
+                  className='inline-flex items-center gap-2 self-start rounded-[18px] bg-white px-3.5 py-2.5 text-sm font-semibold text-red-500 shadow-sm ring-1 ring-red-100 transition hover:bg-red-50 sm:self-auto'
                   onClick={() => setShowClearModal(true)}
                 >
                   <FaTrash size={12} />
@@ -118,29 +118,29 @@ function MyOrders() {
               )}
             </div>
 
-            <div className='mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3'>
-              <div className='rounded-2xl border border-orange-100 bg-white/85 px-4 py-4 shadow-sm backdrop-blur'>
+            <div className='mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3'>
+              <div className='rounded-[20px] border border-orange-100 bg-white/85 px-3.5 py-3 shadow-sm backdrop-blur'>
                 <div className='flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400'>
                   <FaBoxOpen className='text-[#ff4d2d]' />
                   Orders
                 </div>
-                <p className='mt-2 text-3xl font-bold text-slate-900'>{myOrders?.length || 0}</p>
+                <p className='mt-1.5 text-2xl font-bold text-slate-900'>{myOrders?.length || 0}</p>
                 <p className='mt-1 text-sm text-slate-500'>Visible in your history</p>
               </div>
-              <div className='rounded-2xl border border-orange-100 bg-white/85 px-4 py-4 shadow-sm backdrop-blur'>
+              <div className='rounded-[20px] border border-orange-100 bg-white/85 px-3.5 py-3 shadow-sm backdrop-blur'>
                 <div className='flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400'>
                   <FaReceipt className='text-[#ff4d2d]' />
                   Role
                 </div>
-                <p className='mt-2 text-2xl font-bold capitalize text-slate-900'>{normalizedRole || 'user'}</p>
+                <p className='mt-1.5 text-xl font-bold capitalize text-slate-900'>{normalizedRole || 'user'}</p>
                 <p className='mt-1 text-sm text-slate-500'>Current dashboard mode</p>
               </div>
-              <div className='rounded-2xl border border-orange-100 bg-white/85 px-4 py-4 shadow-sm backdrop-blur'>
+              <div className='rounded-[20px] border border-orange-100 bg-white/85 px-3.5 py-3 shadow-sm backdrop-blur'>
                 <div className='flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400'>
                   <FaClock className='text-[#ff4d2d]' />
                   History
                 </div>
-                <p className='mt-2 text-2xl font-bold text-slate-900'>{loading ? '--' : 'Ready'}</p>
+                <p className='mt-1.5 text-xl font-bold text-slate-900'>{loading ? '--' : 'Ready'}</p>
                 <p className='mt-1 text-sm text-slate-500'>Realtime sync enabled</p>
               </div>
             </div>
@@ -148,14 +148,14 @@ function MyOrders() {
         </div>
 
         {loading ? (
-          <div className='flex min-h-[280px] items-center justify-center rounded-[28px] border border-orange-100 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]'>
+          <div className='flex min-h-[220px] items-center justify-center rounded-[24px] border border-orange-100 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]'>
             <div className='flex flex-col items-center gap-4'>
               <div className='h-12 w-12 rounded-full border-4 border-[#ff4d2d] border-t-transparent animate-spin'></div>
               <p className='text-sm font-medium text-slate-500'>Loading your order history...</p>
             </div>
           </div>
         ) : myOrders && myOrders.length > 0 ? (
-          <div className='grid grid-cols-1 gap-6'>
+          <div className='grid grid-cols-1 gap-4'>
             {myOrders.map((order, index) => (
               isUserRole(normalizedRole) ? (
                 <UserOrderCard data={order} key={index} />
@@ -165,14 +165,14 @@ function MyOrders() {
             ))}
           </div>
         ) : (
-          <div className='flex flex-col items-center justify-center rounded-[28px] border border-orange-100 bg-white px-6 py-20 text-center shadow-[0_18px_60px_rgba(15,23,42,0.06)]'>
-            <div className='flex h-20 w-20 items-center justify-center rounded-[28px] bg-[linear-gradient(135deg,#fff0e8,#ffffff)] text-[#ff4d2d] shadow-sm'>
+          <div className='flex flex-col items-center justify-center rounded-[24px] border border-orange-100 bg-white px-5 py-16 text-center shadow-[0_16px_50px_rgba(15,23,42,0.06)]'>
+            <div className='flex h-16 w-16 items-center justify-center rounded-[22px] bg-[linear-gradient(135deg,#fff0e8,#ffffff)] text-[#ff4d2d] shadow-sm'>
               <FaBoxOpen size={32} />
             </div>
-            <h2 className='mt-6 text-2xl font-bold text-slate-900'>No orders yet</h2>
+            <h2 className='mt-5 text-xl font-bold text-slate-900'>No orders yet</h2>
             <p className='mt-2 max-w-md text-sm leading-6 text-slate-500'>When you place your first order, it will appear here with tracking, reorder actions, and restaurant review options.</p>
             <button
-              className='mt-6 rounded-2xl bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105'
+              className='mt-5 rounded-[18px] bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105'
               onClick={() => navigate("/")}
             >
               Start Ordering

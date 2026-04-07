@@ -34,6 +34,46 @@ function UserOrderCard({ data }) {
     const canDeleteHistory = Boolean(data?._id)
     const orderStatus = String(data?.status || shopOrders?.[0]?.status || "pending").toLowerCase()
 
+    const getFoodStory = (itemName = '', itemDoc = {}, shopName = '') => {
+        const normalizedName = String(itemName || itemDoc?.name || '').toLowerCase()
+        const shopLabel = shopName || "this restaurant"
+
+        if (normalizedName.includes('pizza')) {
+            return {
+                eyebrow: "Chef's note",
+                title: "Oven-fresh comfort",
+                description: `A warm, shareable favorite from ${shopLabel}, built for that perfect cheesy bite and crisp crust finish.`
+            }
+        }
+        if (normalizedName.includes('burger') || normalizedName.includes('roll') || normalizedName.includes('sandwich')) {
+            return {
+                eyebrow: "Why it hits",
+                title: "Built for big cravings",
+                description: `Layered textures, bold fillings, and a satisfying finish make this a standout pick from ${shopLabel}.`
+            }
+        }
+        if (normalizedName.includes('biryani') || normalizedName.includes('rice') || normalizedName.includes('momos')) {
+            return {
+                eyebrow: "Flavor profile",
+                title: "Comfort in every bite",
+                description: `A hearty choice from ${shopLabel} with rich flavor, filling portions, and that familiar comfort-food appeal.`
+            }
+        }
+        if (normalizedName.includes('coffee') || normalizedName.includes('tea') || normalizedName.includes('shake')) {
+            return {
+                eyebrow: "Sip spotlight",
+                title: "Smooth and satisfying",
+                description: `A signature sip from ${shopLabel} that adds a mellow, indulgent note to the order experience.`
+            }
+        }
+
+        return {
+            eyebrow: "Food highlight",
+            title: "A crowd-pleasing pick",
+            description: `One of the standout picks from ${shopLabel}, chosen for its balanced flavor and easy-to-love comfort appeal.`
+        }
+    }
+
     const formatDate = (dateString) => {
         if (!dateString) return "-"
         const date = new Date(dateString)
@@ -193,8 +233,8 @@ function UserOrderCard({ data }) {
     }
 
     return (
-        <div className='overflow-hidden rounded-[30px] border border-orange-100 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)]'>
-            <div className='bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.16),_transparent_44%),linear-gradient(135deg,_#fff7f1,_#ffffff_62%)] p-5 sm:p-6'>
+        <div className='overflow-hidden rounded-[24px] border border-orange-100 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.07)]'>
+            <div className='bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.16),_transparent_44%),linear-gradient(135deg,_#fff7f1,_#ffffff_62%)] p-4 sm:p-5'>
                 {reviewStateByOrder?.[data?._id]?.message && (
                     <div
                         className={`mb-4 rounded-2xl px-4 py-3 text-sm font-medium ${
@@ -207,11 +247,11 @@ function UserOrderCard({ data }) {
                     </div>
                 )}
 
-                <div className='flex flex-col gap-4 border-b border-orange-100 pb-5 sm:flex-row sm:items-start sm:justify-between'>
+                <div className='flex flex-col gap-3 border-b border-orange-100 pb-4 sm:flex-row sm:items-start sm:justify-between'>
                     <div>
                         <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>Order Summary</p>
-                        <h3 className='mt-1 text-2xl font-bold text-slate-900'>Order #{String(data?._id || "").slice(-6)}</h3>
-                        <div className='mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-500'>
+                        <h3 className='mt-1 text-xl font-bold text-slate-900'>Order #{String(data?._id || "").slice(-6)}</h3>
+                        <div className='mt-2.5 flex flex-wrap items-center gap-3 text-sm text-slate-500'>
                             <span className='inline-flex items-center gap-2'>
                                 <FaRegClock className='text-[#ff4d2d]' />
                                 {formatDate(data?.createdAt)}
@@ -224,46 +264,47 @@ function UserOrderCard({ data }) {
                     </div>
 
                     <div className='flex flex-col items-start gap-3 sm:items-end'>
-                        <span className={`inline-flex rounded-full border px-4 py-2 text-sm font-semibold capitalize ${getStatusTone(orderStatus)}`}>
+                        <span className={`inline-flex rounded-full border px-3.5 py-1.5 text-sm font-semibold capitalize ${getStatusTone(orderStatus)}`}>
                             {orderStatus}
                         </span>
-                        <div className='rounded-2xl border border-orange-100 bg-white/90 px-4 py-3 text-left shadow-sm sm:text-right'>
+                        <div className='rounded-[18px] border border-orange-100 bg-white/90 px-3.5 py-2.5 text-left shadow-sm sm:text-right'>
                             <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-400'>Total Amount</p>
-                            <p className='mt-1 text-xl font-bold text-slate-900'>Rs {data?.totalAmount || 0}</p>
+                            <p className='mt-1 text-lg font-bold text-slate-900'>Rs {data?.totalAmount || 0}</p>
                         </div>
                     </div>
                 </div>
 
-                <div className='mt-5 space-y-4'>
+                <div className='mt-4 space-y-3.5'>
                     {shopOrders.map((shopOrder, index) => (
-                        <div key={shopOrder?._id || index} className='rounded-[26px] border border-orange-100 bg-white p-4 shadow-sm'>
-                            <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
+                        <div key={shopOrder?._id || index} className='rounded-[22px] border border-orange-100 bg-white p-3.5 shadow-sm'>
+                            <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
                                 <div className='min-w-0'>
                                     <div className='flex items-center gap-3'>
-                                        <div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1ea] text-[#ff4d2d]'>
+                                        <div className='flex h-10 w-10 items-center justify-center rounded-[18px] bg-[#fff1ea] text-[#ff4d2d]'>
                                             <FaStore size={16} />
                                         </div>
                                         <div>
                                             <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400'>Restaurant</p>
-                                            <h4 className='text-xl font-bold text-slate-900'>{shopOrder?.shop?.name || "Restaurant unavailable"}</h4>
+                                            <h4 className='text-lg font-bold text-slate-900'>{shopOrder?.shop?.name || "Restaurant unavailable"}</h4>
                                         </div>
                                     </div>
                                 </div>
-                                <span className={`inline-flex self-start rounded-full border px-4 py-2 text-sm font-semibold capitalize ${getStatusTone(shopOrder?.status || orderStatus)}`}>
+                                <span className={`inline-flex self-start rounded-full border px-3.5 py-1.5 text-sm font-semibold capitalize ${getStatusTone(shopOrder?.status || orderStatus)}`}>
                                     {shopOrder?.status || "pending"}
                                 </span>
                             </div>
 
-                            <div className='mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3'>
-                                {(Array.isArray(shopOrder?.shopOrderItems) ? shopOrder.shopOrderItems : []).map((item, idx) => {
+                            <div className='mt-3 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(300px,340px)_minmax(0,1.35fr)]'>
+                                <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1'>
+                                    {(Array.isArray(shopOrder?.shopOrderItems) ? shopOrder.shopOrderItems : []).map((item, idx) => {
                                     const itemDoc = item?.item
                                     const itemId = itemDoc?._id
                                     return (
-                                        <div key={item?._id || idx} className='overflow-hidden rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fffdfb,#ffffff)] shadow-sm'>
-                                            <img src={itemDoc?.image || FALLBACK_FOOD_IMAGE} alt={item?.name || "Food item"} className='h-36 w-full object-cover' />
-                                            <div className='p-3'>
-                                                <p className='line-clamp-2 text-base font-semibold text-slate-900'>{item?.name || itemDoc?.name || "Item unavailable"}</p>
-                                                <p className='mt-2 text-sm text-slate-500'>Qty: {item?.quantity || 0} x Rs {item?.price || 0}</p>
+                                        <div key={item?._id || idx} className='overflow-hidden rounded-[18px] border border-slate-200 bg-[linear-gradient(135deg,#fffdfb,#ffffff)] shadow-sm'>
+                                            <img src={itemDoc?.image || FALLBACK_FOOD_IMAGE} alt={item?.name || "Food item"} className='h-40 w-full object-cover' />
+                                            <div className='p-3.5'>
+                                                <p className='line-clamp-2 text-lg font-semibold text-slate-900'>{item?.name || itemDoc?.name || "Item unavailable"}</p>
+                                                <p className='mt-1.5 text-sm text-slate-500'>Qty: {item?.quantity || 0} x Rs {item?.price || 0}</p>
 
                                                 {shopOrder?.status === "delivered" && itemId && (
                                                     <div className='mt-3 flex gap-1'>
@@ -282,10 +323,35 @@ function UserOrderCard({ data }) {
                                         </div>
                                     )
                                 })}
+                                </div>
+
+                                {(() => {
+                                    const firstItem = Array.isArray(shopOrder?.shopOrderItems) ? shopOrder.shopOrderItems[0] : null
+                                    const story = getFoodStory(firstItem?.name, firstItem?.item, shopOrder?.shop?.name)
+                                    return (
+                                        <div className='rounded-[18px] border border-orange-100 bg-[linear-gradient(180deg,#fff7f1,#ffffff)] p-3.5 shadow-sm'>
+                                            <div className='flex h-full flex-col gap-3 md:flex-row md:items-start md:justify-between'>
+                                                <div className='min-w-0 md:max-w-[60%]'>
+                                                    <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]'>{story.eyebrow}</p>
+                                                    <h5 className='mt-2 text-lg font-bold text-slate-900'>{story.title}</h5>
+                                                    <p className='mt-2 text-sm leading-6 text-slate-500'>{story.description}</p>
+                                                </div>
+
+                                                {firstItem && (
+                                                    <div className='md:min-w-[180px] rounded-[16px] border border-white/80 bg-white/90 px-3 py-3 shadow-sm'>
+                                                        <p className='text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400'>Featured dish</p>
+                                                        <p className='mt-2 text-sm font-semibold text-slate-900'>{firstItem?.name || firstItem?.item?.name || "Selected item"}</p>
+                                                        <p className='mt-1 text-sm text-slate-500'>Qty {firstItem?.quantity || 0} • Rs {firstItem?.price || 0}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })()}
                             </div>
 
                             {shopOrder?.status === "delivered" && !reviewStateByOrder?.[data?._id] && (
-                                <div className='mt-4 rounded-[24px] border border-orange-200 bg-[linear-gradient(135deg,#fff6ef,#fffdfb)] p-4 shadow-sm'>
+                                <div className='mt-3 rounded-[20px] border border-orange-200 bg-[linear-gradient(135deg,#fff6ef,#fffdfb)] p-3.5 shadow-sm'>
                                     <p className='text-sm font-semibold text-slate-800'>Rate your restaurant experience</p>
                                     <div className='mt-3 flex items-center gap-1'>
                                         {[1, 2, 3, 4, 5].map((star) => (
@@ -300,7 +366,7 @@ function UserOrderCard({ data }) {
                                         ))}
                                     </div>
                                     <textarea
-                                        className='mt-3 w-full rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#ff4d2d]'
+                                        className='mt-3 w-full rounded-[18px] border border-orange-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#ff4d2d]'
                                         rows={3}
                                         placeholder='Share your feedback about food quality, delivery, and service'
                                         value={reviewDrafts?.[shopOrder?._id]?.comment || ""}
@@ -310,7 +376,7 @@ function UserOrderCard({ data }) {
                                     <div className='mt-3 flex justify-end'>
                                         <button
                                             type='button'
-                                            className='rounded-2xl bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105 disabled:opacity-60'
+                                            className='rounded-[18px] bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105 disabled:opacity-60'
                                             disabled={Boolean(reviewSubmittingByOrder?.[data?._id])}
                                             onClick={() => handleSubmitRestaurantReview(shopOrder)}
                                         >
@@ -320,7 +386,7 @@ function UserOrderCard({ data }) {
                                 </div>
                             )}
 
-                            <div className='mt-4 flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3'>
+                            <div className='mt-3 flex items-center justify-between rounded-[18px] border border-slate-200 bg-slate-50/70 px-3.5 py-2.5'>
                                 <p className='text-sm font-semibold text-slate-900'>Subtotal: Rs {shopOrder?.subtotal || 0}</p>
                                 <span className='text-sm font-semibold capitalize text-slate-500'>{shopOrder?.status || "pending"}</span>
                             </div>
@@ -328,16 +394,16 @@ function UserOrderCard({ data }) {
                     ))}
                 </div>
 
-                <div className='mt-5 flex flex-col gap-3 border-t border-orange-100 pt-5 sm:flex-row sm:items-center sm:justify-between'>
-                    <div className='rounded-2xl border border-orange-100 bg-white/90 px-4 py-3 shadow-sm'>
+                <div className='mt-4 flex flex-col gap-3 border-t border-orange-100 pt-4 sm:flex-row sm:items-center sm:justify-between'>
+                    <div className='rounded-[18px] border border-orange-100 bg-white/90 px-3.5 py-2.5 shadow-sm'>
                         <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-400'>Grand Total</p>
-                        <p className='mt-1 text-2xl font-bold text-slate-900'>Rs {data?.totalAmount || 0}</p>
+                        <p className='mt-1 text-xl font-bold text-slate-900'>Rs {data?.totalAmount || 0}</p>
                     </div>
 
                     <div className='flex flex-col gap-2 sm:flex-row'>
                         {canDeleteHistory && (
                             <button
-                                className='inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-500 to-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-red-200 transition hover:brightness-105 disabled:opacity-50'
+                                className='inline-flex items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-red-500 to-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-200 transition hover:brightness-105 disabled:opacity-50'
                                 onClick={() => setShowDeleteModal(true)}
                                 disabled={deletingHistory}
                             >
@@ -346,7 +412,7 @@ function UserOrderCard({ data }) {
                             </button>
                         )}
                         <button
-                            className='inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:brightness-105 disabled:opacity-50'
+                            className='inline-flex items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-emerald-500 to-green-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:brightness-105 disabled:opacity-50'
                             onClick={handleQuickReorder}
                             disabled={reordering}
                         >
@@ -354,7 +420,7 @@ function UserOrderCard({ data }) {
                             <span>{reordering ? 'Adding...' : 'Reorder'}</span>
                         </button>
                         <button
-                            className='inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105'
+                            className='inline-flex items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-[#ff6b43] to-[#ff4d2d] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-200 transition hover:brightness-105'
                             onClick={() => navigate(`/track-order/${data?._id}`)}
                         >
                             <FaReceipt size={12} />
