@@ -9,7 +9,8 @@ import { serverUrl } from '../App';
 import { setSearchItems, setUserData } from '../redux/userSlice';
 import { FaPlus } from "react-icons/fa6";
 import { TbReceipt2 } from "react-icons/tb";
-import { FaHeart, FaSun, FaMoon } from "react-icons/fa";
+import { FaHeart, FaSun, FaMoon, FaStore } from "react-icons/fa";
+import { FiLogOut, FiShield, FiUser } from "react-icons/fi";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { signOut as firebaseSignOut } from "firebase/auth";
@@ -364,47 +365,96 @@ function Nav() {
                         {userData?.fullName?.slice(0, 1)}
                     </div>
                     {showInfo && (
-                        <div className={`absolute top-[52px] right-0 w-[min(90vw,240px)] rounded-xl p-[14px] flex flex-col gap-[8px] z-[10000] border ${isDark ? 'bg-[#16213e] border-[#374151] text-white shadow-black/20' : 'bg-white border-gray-100 text-black shadow-2xl'}`}>
-                            <div className='text-[16px] font-semibold truncate'>{userData.fullName}</div>
-                            <div className={`text-[12px] ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>{roleLabel}</div>
+                        <div className={`absolute top-[56px] right-0 z-[10000] w-[min(90vw,290px)] overflow-hidden rounded-[26px] border ${isDark ? 'border-white/10 bg-[linear-gradient(180deg,rgba(22,33,62,0.98),rgba(15,23,42,0.96))] text-white shadow-[0_24px_70px_rgba(2,6,23,0.45)]' : 'border-white/80 bg-[rgba(255,255,255,0.94)] text-slate-900 shadow-[0_24px_70px_rgba(15,23,42,0.14)]'} backdrop-blur-xl`}>
+                            <div className={`${isDark ? 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.18),_transparent_58%)]' : 'bg-[radial-gradient(circle_at_top_left,_rgba(255,120,82,0.22),_transparent_58%)]'} p-4`}>
+                                <div className='flex items-start gap-3'>
+                                    <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#ff6b43] to-[#ff4d2d] text-lg font-bold text-white shadow-[0_14px_30px_rgba(255,107,67,0.34)]'>
+                                        {userData?.fullName?.slice(0, 1)}
+                                    </div>
+                                    <div className='min-w-0 flex-1'>
+                                        <div className='truncate text-[15px] font-semibold'>{userData.fullName}</div>
+                                        <div className={`mt-1 text-[12px] ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{roleLabel}</div>
+                                        <div className='mt-2 inline-flex items-center rounded-full bg-[#ff6b43]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ff6b43]'>
+                                            Account Center
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                            <button
-                                className={`text-left text-sm font-medium py-1.5 px-2 rounded-md transition ${isDark ? 'hover:bg-[#0f3460]' : 'hover:bg-gray-100'}`}
-                                onClick={() => navigate("/profile")}
-                            >
-                                View Profile
-                            </button>
-
-                            {(isUserRole(normalizedRole) || isOwnerRole(normalizedRole)) && (
+                            <div className='p-3'>
                                 <button
-                                    className={`text-left text-sm font-medium py-1.5 px-2 rounded-md transition ${isDark ? 'hover:bg-[#0f3460]' : 'hover:bg-gray-100'}`}
-                                    onClick={() => navigate("/my-orders")}
+                                    className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium transition ${isDark ? 'hover:bg-white/5' : 'hover:bg-orange-50'}`}
+                                    onClick={() => navigate("/profile")}
                                 >
-                                    My Orders
+                                    <div className='flex h-9 w-9 items-center justify-center rounded-xl bg-[#ff6b43]/10 text-[#ff6b43]'>
+                                        <FiUser size={16} />
+                                    </div>
+                                    <div>
+                                        <div className='font-semibold'>View Profile</div>
+                                        <div className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Personal details and account hub</div>
+                                    </div>
                                 </button>
-                            )}
 
-                            {isAdminRole(normalizedRole) && (
+                                {(isUserRole(normalizedRole) || isOwnerRole(normalizedRole)) && (
+                                    <button
+                                        className={`mt-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium transition ${isDark ? 'hover:bg-white/5' : 'hover:bg-orange-50'}`}
+                                        onClick={() => navigate("/my-orders")}
+                                    >
+                                        <div className='flex h-9 w-9 items-center justify-center rounded-xl bg-[#ff6b43]/10 text-[#ff6b43]'>
+                                            <TbReceipt2 size={16} />
+                                        </div>
+                                        <div>
+                                            <div className='font-semibold'>My Orders</div>
+                                            <div className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Track current and past orders</div>
+                                        </div>
+                                    </button>
+                                )}
+
+                                {isAdminRole(normalizedRole) && (
+                                    <button
+                                        className={`mt-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium transition ${isDark ? 'hover:bg-white/5' : 'hover:bg-orange-50'}`}
+                                        onClick={() => navigate("/admin")}
+                                    >
+                                        <div className='flex h-9 w-9 items-center justify-center rounded-xl bg-[#ff6b43]/10 text-[#ff6b43]'>
+                                            <FiShield size={16} />
+                                        </div>
+                                        <div>
+                                            <div className='font-semibold'>Admin Panel</div>
+                                            <div className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Platform management controls</div>
+                                        </div>
+                                    </button>
+                                )}
+
+                                {isOwnerRole(normalizedRole) && (
+                                    <button
+                                        className={`mt-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium transition ${isDark ? 'hover:bg-white/5' : 'hover:bg-orange-50'}`}
+                                        onClick={() => navigate(myShopData?._id ? `/create-edit-shop?shopId=${myShopData._id}` : "/create-edit-shop?mode=create")}
+                                    >
+                                        <div className='flex h-9 w-9 items-center justify-center rounded-xl bg-[#ff6b43]/10 text-[#ff6b43]'>
+                                            <FaStore size={15} />
+                                        </div>
+                                        <div>
+                                            <div className='font-semibold'>{myShopData ? `Manage Shop${myShops.length > 1 ? ` (${myShops.length})` : ""}` : "Create Shop"}</div>
+                                            <div className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Storefront and menu setup</div>
+                                        </div>
+                                    </button>
+                                )}
+
+                                <div className={`my-2 h-px ${isDark ? 'bg-white/10' : 'bg-orange-100'}`} />
+
                                 <button
-                                    className={`text-left text-sm font-medium py-1.5 px-2 rounded-md transition ${isDark ? 'hover:bg-[#0f3460]' : 'hover:bg-gray-100'}`}
-                                    onClick={() => navigate("/admin")}
+                                    className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium transition ${isDark ? 'hover:bg-red-500/10' : 'hover:bg-red-50'}`}
+                                    onClick={handleLogOut}
                                 >
-                                    Admin Panel
+                                    <div className='flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/10 text-[#ff4d2d]'>
+                                        <FiLogOut size={16} />
+                                    </div>
+                                    <div>
+                                        <div className='font-semibold text-[#ff4d2d]'>Log Out</div>
+                                        <div className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Sign out from this session</div>
+                                    </div>
                                 </button>
-                            )}
-
-                            {isOwnerRole(normalizedRole) && (
-                                <button
-                                    className={`text-left text-sm font-medium py-1.5 px-2 rounded-md transition ${isDark ? 'hover:bg-[#0f3460]' : 'hover:bg-gray-100'}`}
-                                    onClick={() => navigate(myShopData?._id ? `/create-edit-shop?shopId=${myShopData._id}` : "/create-edit-shop?mode=create")}
-                                >
-                                    {myShopData ? `Manage Shop${myShops.length > 1 ? ` (${myShops.length})` : ""}` : "Create Shop"}
-                                </button>
-                            )}
-
-                            <button className='text-left text-sm font-semibold py-1.5 px-2 rounded-md transition text-[#ff4d2d] hover:bg-[#ff4d2d]/10' onClick={handleLogOut}>
-                                Log Out
-                            </button>
+                            </div>
                         </div>
                     )}
                 </div>
