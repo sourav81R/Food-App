@@ -5,6 +5,19 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Foodooza</title>
+    <script>
+      const redirectPath = sessionStorage.getItem('spa-redirect-path');
+
+      if (redirectPath) {
+        sessionStorage.removeItem('spa-redirect-path');
+
+        const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+        if (redirectPath !== currentPath) {
+          window.history.replaceState(null, '', redirectPath);
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
