@@ -25,7 +25,7 @@ const emitEtaUpdatesForDriver = async ({ io, userId }) => {
       }
     ]
   })
-    .select("_id user createdAt deliveryAddress deliveryStatus status shopOrders.status shopOrders.assignedDeliveryBoy")
+    .select("_id user createdAt activatedAt scheduledFor deliveryAddress deliveryStatus status shopOrders.status shopOrders.assignedDeliveryBoy")
     .populate("user", "socketId")
     .populate("deliveryPartner", "location")
     .populate("shopOrders.assignedDeliveryBoy", "location");

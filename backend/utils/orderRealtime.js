@@ -4,6 +4,7 @@ import { SOCKET_EVENTS } from "./socketEvents.js"
 import { resolveOrderEta } from "./trafficEta.js"
 
 const ACTIVE_DELIVERY_STATUSES = new Set(["assigned", "picked_up", "on_the_way"])
+export const ORDER_COMPLETION_WINDOW_SECONDS = 30 * 60
 
 export const getOrderProgressStatus = (order = {}) => {
     if (order?.status === "cancelled") return "cancelled"
@@ -158,15 +159,64 @@ const getOrderDestinationCoords = (order = {}) => {
     }
 }
 
+const getOrderEtaAnchorDate = (order = {}, now = new Date()) => {
+    const candidateValues = [
+        order?.activatedAt,
+        order?.scheduledFor,
+        order?.createdAt
+    ]
+
+    for (const value of candidateValues) {
+        if (!value) continue
+        const parsed = new Date(value)
+        if (!Number.isNaN(parsed.getTime())) {
+            return parsed
+        }
+    }
+
+    return now
+}
+
+const getWindowBoundEta = (order = {}, now = new Date(), statusIndex = 0) => {
+    const anchorDate = getOrderEtaAnchorDate(order, now)
+    const expiresAt = new Date(anchorDate.getTime() + (ORDER_COMPLETION_WINDOW_SECONDS * 1000))
+
+    if (statusIndex >= 3) {
+        return {
+            startedAt: anchorDate.toISOString(),
+            expiresAt: now.toISOString(),
+            remainingSeconds: 0,
+            totalWindowSeconds: ORDER_COMPLETION_WINDOW_SECONDS
+        }
+    }
+
+    return {
+        startedAt: anchorDate.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        remainingSeconds: Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / 1000)),
+        totalWindowSeconds: ORDER_COMPLETION_WINDOW_SECONDS
+    }
+}
+
 export const getLiveEtaForOrder = async (order = {}, now = new Date()) => {
-    return resolveOrderEta({
+    const statusIndex = getProgressStatusIndex(getOrderProgressStatus(order))
+    const liveRouteEta = await resolveOrderEta({
         order,
-        statusIndex: getProgressStatusIndex(getOrderProgressStatus(order)),
+        statusIndex,
         now,
         fromCoords: getLiveEtaSourceCoords(order),
         destinationCoords: getOrderDestinationCoords(order),
         providerOverride: "osrm"
     })
+
+    const windowEta = getWindowBoundEta(order, now, statusIndex)
+
+    return {
+        ...liveRouteEta,
+        ...windowEta,
+        source: statusIndex >= 3 ? "delivered" : "delivery-window",
+        routeRemainingSeconds: Number(liveRouteEta?.remainingSeconds || 0)
+    }
 }
 
 export const emitEtaForOrder = async (io, order) => {
@@ -175,7 +225,8 @@ export const emitEtaForOrder = async (io, order) => {
     const eta = await getLiveEtaForOrder(order)
     io.to(order.user.socketId).emit(SOCKET_EVENTS.ETA_UPDATE, {
         orderId: order._id,
-        etaSeconds: Number(eta?.remainingSeconds || 0)
+        etaSeconds: Number(eta?.remainingSeconds || 0),
+        expiresAt: eta?.expiresAt || null
     })
     return eta
 }
@@ -196,7 +247,7 @@ export const broadcastEtaForActiveOrders = async (io) => {
             }
         ]
     })
-        .select("_id user createdAt deliveryAddress deliveryStatus status shopOrders.status shopOrders.assignedDeliveryBoy")
+        .select("_id user createdAt activatedAt scheduledFor deliveryAddress deliveryStatus status shopOrders.status shopOrders.assignedDeliveryBoy")
         .populate("user", "socketId")
         .populate("deliveryPartner", "location")
         .populate("shopOrders.assignedDeliveryBoy", "location")

@@ -869,6 +869,15 @@ export const autoCompleteOrderByEta = async (req, res) => {
             return res.status(200).json({ message: "Order already delivered", order })
         }
 
+        const liveEta = await getLiveEtaForOrder(order)
+        if (Number(liveEta?.remainingSeconds) > 0) {
+            return res.status(409).json({
+                message: "Order is still within the active delivery window",
+                remainingEtaSeconds: Number(liveEta.remainingSeconds),
+                expiresAt: liveEta?.expiresAt || null
+            })
+        }
+
         order.deliveryStatus = "delivered"
         order.shopOrders.forEach((shopOrder) => {
             shopOrder.status = "delivered"

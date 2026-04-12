@@ -153,13 +153,17 @@ const userSlice = createSlice({
     },
 
     setOrderEta: (state, action) => {
-      const { orderId, etaSeconds } = action.payload || {}
+      const { orderId, etaSeconds, expiresAt } = action.payload || {}
       if (!orderId) return
 
       const safeEta = Number(etaSeconds)
-      state.liveEtaByOrderId[orderId] = Number.isFinite(safeEta)
-        ? Math.max(0, Math.round(safeEta))
-        : null
+      state.liveEtaByOrderId[orderId] = {
+        remainingSeconds: Number.isFinite(safeEta)
+          ? Math.max(0, Math.round(safeEta))
+          : null,
+        expiresAt: expiresAt || null,
+        updatedAt: new Date().toISOString()
+      }
     },
 
     clearOrderEta: (state, action) => {

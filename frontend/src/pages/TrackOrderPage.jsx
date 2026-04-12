@@ -8,13 +8,14 @@ import { serverUrl } from '../App'
 import DeliveryBoyTracking from '../components/DeliveryBoyTracking'
 import OrderProgress from '../components/OrderProgress'
 import { useSocket } from '../context/SocketContext'
-import { clearOrderEta, setOrderEta, setWalletBalance, setWalletTransactions } from '../redux/userSlice'
+import { setOrderEta, setWalletBalance, setWalletTransactions } from '../redux/userSlice'
 import { useToast } from '../context/ToastContext'
 
 const ETA_UPDATE_EVENT = "eta_update"
 const UPDATE_DELIVERY_LOCATION_EVENT = "updateDeliveryLocation"
 const ORDER_STATUS_UPDATED_EVENT = "orderStatusUpdated"
 const UPDATE_STATUS_EVENT = "update-status"
+const ORDER_COMPLETION_WINDOW_SECONDS = 30 * 60
 
 const toValidCoordinatePoint = (latValue, lonValue) => {
   const lat = Number(latValue)
@@ -65,6 +66,14 @@ const formatOrderDateTime = (value) => {
   })
 }
 
+const buildEtaDeadlineFromOrder = (order) => {
+  const anchorValue = order?.activatedAt || order?.scheduledFor || order?.createdAt
+  const anchorDate = new Date(anchorValue)
+  if (Number.isNaN(anchorDate.getTime())) return null
+
+  return new Date(anchorDate.getTime() + (ORDER_COMPLETION_WINDOW_SECONDS * 1000)).toISOString()
+}
+
 const getStatusTone = (status = '') => {
   const normalized = String(status || '').toLowerCase()
   if (normalized === 'cancelled') return 'bg-red-50 text-red-600 border-red-100'
@@ -87,24 +96,31 @@ function TrackOrderPage() {
   const navigate = useNavigate()
   const socket = useSocket()
   const dispatch = useDispatch()
-  const liveEtaSeconds = useSelector((state) => state.user.liveEtaByOrderId?.[orderId])
+  const liveEtaSnapshot = useSelector((state) => state.user.liveEtaByOrderId?.[orderId])
   const toast = useToast()
+
+  const syncOrderEta = useCallback((targetOrderId, liveEta) => {
+    if (!targetOrderId) return
+
+    dispatch(setOrderEta({
+      orderId: targetOrderId,
+      etaSeconds: liveEta?.remainingSeconds,
+      expiresAt: liveEta?.expiresAt
+    }))
+  }, [dispatch])
 
   const handleGetOrder = useCallback(async () => {
     try {
       const result = await axios.get(`${serverUrl}/api/order/get-order-by-id/${orderId}`, { withCredentials: true })
       setCurrentOrder(result.data)
-      dispatch(setOrderEta({
-        orderId,
-        etaSeconds: result?.data?.liveEta?.remainingSeconds
-      }))
+      syncOrderEta(orderId, result?.data?.liveEta)
       setLastUpdated(new Date())
       setFetchError("")
     } catch (error) {
       console.log(error)
       setFetchError("Unable to refresh live order details. Retrying...")
     }
-  }, [dispatch, orderId])
+  }, [orderId, syncOrderEta])
 
   const refreshWalletState = useCallback(async () => {
     try {
@@ -153,10 +169,23 @@ function TrackOrderPage() {
 
     const handleEtaUpdate = (payload) => {
       if (String(payload?.orderId) !== String(orderId)) return
-      dispatch(setOrderEta({
-        orderId: payload.orderId,
-        etaSeconds: payload.etaSeconds
-      }))
+      syncOrderEta(payload.orderId, {
+        remainingSeconds: payload?.etaSeconds,
+        expiresAt: payload?.expiresAt
+      })
+      setCurrentOrder((prev) => {
+        if (!prev?._id || String(prev._id) !== String(payload.orderId)) return prev
+        return {
+          ...prev,
+          liveEta: {
+            ...(prev.liveEta || {}),
+            remainingSeconds: Number.isFinite(Number(payload?.etaSeconds))
+              ? Math.max(0, Math.round(Number(payload.etaSeconds)))
+              : prev?.liveEta?.remainingSeconds,
+            expiresAt: payload?.expiresAt || prev?.liveEta?.expiresAt || buildEtaDeadlineFromOrder(prev)
+          }
+        }
+      })
       setLastUpdated(new Date())
     }
 
@@ -169,7 +198,7 @@ function TrackOrderPage() {
       socket.off(UPDATE_STATUS_EVENT, refreshWhenShopOrderChanges)
       socket.off(ETA_UPDATE_EVENT, handleEtaUpdate)
     }
-  }, [socket, orderId, handleGetOrder, dispatch])
+  }, [socket, orderId, handleGetOrder, syncOrderEta])
 
   useEffect(() => {
     void handleGetOrder()
@@ -179,9 +208,8 @@ function TrackOrderPage() {
 
     return () => {
       clearInterval(intervalId)
-      dispatch(clearOrderEta(orderId))
     }
-  }, [dispatch, handleGetOrder, orderId])
+  }, [handleGetOrder])
 
   const handleAutoCompleteByEta = useCallback(async () => {
     if (!currentOrder?._id || autoCompletionInFlightRef.current) return
@@ -198,7 +226,8 @@ function TrackOrderPage() {
           deliveryStatus: 'delivered',
           liveEta: {
             ...(prev.liveEta || {}),
-            remainingSeconds: 0
+            remainingSeconds: 0,
+            expiresAt: new Date().toISOString()
           },
           shopOrders: (prev.shopOrders || []).map((shopOrder) => ({
             ...shopOrder,
@@ -207,18 +236,18 @@ function TrackOrderPage() {
           }))
         }
       })
-      dispatch(setOrderEta({
-        orderId: currentOrder._id,
-        etaSeconds: 0
-      }))
+      syncOrderEta(currentOrder._id, {
+        remainingSeconds: 0,
+        expiresAt: new Date().toISOString()
+      })
       await handleGetOrder()
     } catch (error) {
       const remainingSeconds = Number(error?.response?.data?.remainingEtaSeconds)
       if (Number.isFinite(remainingSeconds) && remainingSeconds > 0) {
-        dispatch(setOrderEta({
-          orderId: currentOrder._id,
-          etaSeconds: remainingSeconds
-        }))
+        syncOrderEta(currentOrder._id, {
+          remainingSeconds,
+          expiresAt: error?.response?.data?.expiresAt
+        })
         await handleGetOrder()
       } else {
         console.log(error)
@@ -226,7 +255,7 @@ function TrackOrderPage() {
     } finally {
       autoCompletionInFlightRef.current = false
     }
-  }, [currentOrder?._id, dispatch, handleGetOrder])
+  }, [currentOrder?._id, handleGetOrder, syncOrderEta])
 
   const activeShopOrdersCount = useMemo(() => {
     return currentOrder?.shopOrders?.filter(order => !["delivered", "cancelled"].includes(order.status))?.length || 0
@@ -347,9 +376,12 @@ function TrackOrderPage() {
             ? "delivered"
             : (assignedPartner ? "out of delivery" : (currentOrder?.deliveryStatus || shopOrder?.status))
           const canAutoComplete = progressStatus !== "delivered"
-          const serverEtaSeconds = Number.isFinite(Number(liveEtaSeconds))
-            ? Number(liveEtaSeconds)
+          const serverEtaSeconds = Number.isFinite(Number(liveEtaSnapshot?.remainingSeconds))
+            ? Number(liveEtaSnapshot?.remainingSeconds)
             : Number(currentOrder?.liveEta?.remainingSeconds)
+          const etaDeadlineAt = liveEtaSnapshot?.expiresAt
+            || currentOrder?.liveEta?.expiresAt
+            || buildEtaDeadlineFromOrder(currentOrder)
           const fallbackEtaSeconds = (partnerLocation && hasCustomerLocation)
             ? getFallbackEtaSeconds(
               partnerLocation,
@@ -460,6 +492,7 @@ function TrackOrderPage() {
                   <OrderProgress
                     currentStatus={progressStatus}
                     etaSecondsRemaining={resolvedEtaSeconds}
+                    etaExpiresAt={etaDeadlineAt}
                     canAutoComplete={canAutoComplete}
                     onEtaComplete={handleAutoCompleteByEta}
                   />

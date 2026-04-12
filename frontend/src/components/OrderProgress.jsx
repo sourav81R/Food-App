@@ -37,25 +37,37 @@ const formatAsMinuteSecond = (seconds = 0) => {
 function OrderProgress({
     currentStatus,
     etaSecondsRemaining,
+    etaExpiresAt,
     onEtaComplete,
     canAutoComplete = true
 }) {
-    const hasEta = Number.isFinite(Number(etaSecondsRemaining))
+    const etaDeadlineMs = Number(new Date(etaExpiresAt || "").getTime())
+    const hasEtaDeadline = Number.isFinite(etaDeadlineMs)
+    const hasEta = hasEtaDeadline || Number.isFinite(Number(etaSecondsRemaining))
     const normalizeDisplayEta = useCallback((seconds) => {
         const safeEta = Math.max(0, Math.floor(Number(seconds) || 0))
         if (currentStatus === 'delivered' || safeEta === 0) return safeEta
         return Math.max(60, safeEta)
     }, [currentStatus])
-    const normalizedIncomingEta = hasEta ? normalizeDisplayEta(etaSecondsRemaining) : 0
-    const [displayEtaSeconds, setDisplayEtaSeconds] = useState(normalizedIncomingEta)
+    const getDisplayEtaSeconds = useCallback(() => {
+        if (!hasEta) return 0
+        if (currentStatus === 'delivered') return 0
+
+        if (hasEtaDeadline) {
+            return Math.max(0, Math.ceil((etaDeadlineMs - Date.now()) / 1000))
+        }
+
+        return normalizeDisplayEta(etaSecondsRemaining)
+    }, [currentStatus, etaDeadlineMs, etaSecondsRemaining, hasEta, hasEtaDeadline, normalizeDisplayEta])
+    const [displayEtaSeconds, setDisplayEtaSeconds] = useState(getDisplayEtaSeconds)
     const completionTriggeredRef = useRef(false)
     const previousStatusRef = useRef(currentStatus)
     const currentIndex = getStatusIndex(currentStatus)
     const progressPercent = `${(currentIndex / (orderStatuses.length - 1)) * 100}%`
 
     useEffect(() => {
-        if (!Number.isFinite(Number(etaSecondsRemaining))) return
-        const nextEta = normalizeDisplayEta(etaSecondsRemaining)
+        if (!hasEta) return
+        const nextEta = getDisplayEtaSeconds()
         const statusChanged = previousStatusRef.current !== currentStatus
 
         setDisplayEtaSeconds((prev) => {
@@ -67,6 +79,10 @@ function OrderProgress({
                 return nextEta
             }
 
+            if (hasEtaDeadline) {
+                return nextEta
+            }
+
             if (prev <= 0) {
                 return 0
             }
@@ -74,15 +90,20 @@ function OrderProgress({
             return Math.min(prev, nextEta)
         })
         previousStatusRef.current = currentStatus
-    }, [currentStatus, etaSecondsRemaining, normalizeDisplayEta])
+    }, [currentStatus, getDisplayEtaSeconds, hasEta, hasEtaDeadline])
 
     useEffect(() => {
         if (currentIndex >= 3 || !hasEta) return
         const timer = setInterval(() => {
+            if (hasEtaDeadline) {
+                setDisplayEtaSeconds(getDisplayEtaSeconds())
+                return
+            }
+
             setDisplayEtaSeconds((prev) => Math.max(0, prev - 1))
         }, 1000)
         return () => clearInterval(timer)
-    }, [currentIndex, hasEta])
+    }, [currentIndex, getDisplayEtaSeconds, hasEta, hasEtaDeadline])
 
     useEffect(() => {
         completionTriggeredRef.current = false
