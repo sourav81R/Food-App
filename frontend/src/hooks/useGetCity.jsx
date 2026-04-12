@@ -7,6 +7,22 @@ import { setAddress, setLocation } from '../redux/mapSlice'
 const LOCATION_CACHE_KEY = 'foodooza:lastReverseGeo'
 const CACHE_TTL_MS = 10 * 60 * 1000
 
+const toValidCoordinatePoint = (latValue, lonValue) => {
+    const lat = Number(latValue)
+    const lon = Number(lonValue)
+
+    const isValidPoint =
+        Number.isFinite(lat) &&
+        Number.isFinite(lon) &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lon >= -180 &&
+        lon <= 180 &&
+        !(Math.abs(lat) < 0.000001 && Math.abs(lon) < 0.000001)
+
+    return isValidPoint ? { lat, lon } : null
+}
+
 function useGetCity() {
     const dispatch = useDispatch()
     const { userData, currentCity } = useSelector(state => state.user)
@@ -85,8 +101,9 @@ function useGetCity() {
             }
         }
 
-        if (Number.isFinite(savedLon) && Number.isFinite(savedLat)) {
-            dispatch(setLocation({ lat: savedLat, lon: savedLon }))
+        const savedLocation = toValidCoordinatePoint(savedLat, savedLon)
+        if (savedLocation) {
+            dispatch(setLocation(savedLocation))
         }
 
         navigator.geolocation.getCurrentPosition(
@@ -112,9 +129,9 @@ function useGetCity() {
                 }
             },
             {
-                enableHighAccuracy: false,
-                timeout: 7000,
-                maximumAge: 5 * 60 * 1000
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
             }
         )
 

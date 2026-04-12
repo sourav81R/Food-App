@@ -789,7 +789,7 @@ export const getOrderById = async (req, res) => {
             .populate({
                 path: "shopOrders.owner",
                 model: "User",
-                select: "fullName email mobile socketId"
+                select: "fullName email mobile socketId location"
             })
             .populate({
                 path: "shopOrders.assignedDeliveryBoy",

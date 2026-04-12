@@ -41,9 +41,9 @@ function haversineDistanceKm(from, to) {
     return earthRadius * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
 }
 
-function toValidCoordinatePoint(location) {
-    const lat = Number(location?.lat)
-    const lon = Number(location?.lon)
+function toValidCoordinatePoint(latValue, lonValue) {
+    const lat = Number(latValue)
+    const lon = Number(lonValue)
 
     const isInRange =
         Number.isFinite(lat) &&
@@ -61,10 +61,28 @@ function toValidCoordinatePoint(location) {
     return { lat, lon }
 }
 
+function normalizeCoordinatePoint(location) {
+    if (!location) return null
+
+    if (Array.isArray(location) && location.length >= 2) {
+        return toValidCoordinatePoint(location[1], location[0])
+    }
+
+    if (Array.isArray(location?.coordinates) && location.coordinates.length >= 2) {
+        return toValidCoordinatePoint(location.coordinates[1], location.coordinates[0])
+    }
+
+    return (
+        toValidCoordinatePoint(location?.lat, location?.lon) ||
+        toValidCoordinatePoint(location?.lat, location?.lng) ||
+        toValidCoordinatePoint(location?.latitude, location?.longitude)
+    )
+}
+
 function DeliveryBoyTracking({ data }) {
-    const deliveryBoyPoint = useMemo(() => toValidCoordinatePoint(data?.deliveryBoyLocation), [data?.deliveryBoyLocation])
-    const customerPoint = useMemo(() => toValidCoordinatePoint(data?.customerLocation), [data?.customerLocation])
-    const isMapReady = Boolean(deliveryBoyPoint && customerPoint)
+    const deliveryBoyPoint = useMemo(() => normalizeCoordinatePoint(data?.deliveryBoyLocation), [data?.deliveryBoyLocation])
+    const customerPoint = useMemo(() => normalizeCoordinatePoint(data?.customerLocation), [data?.customerLocation])
+    const isMapReady = Boolean(deliveryBoyPoint || customerPoint)
     const path = useMemo(() => {
         if (!deliveryBoyPoint || !customerPoint) return []
         return [
@@ -74,9 +92,10 @@ function DeliveryBoyTracking({ data }) {
     }, [deliveryBoyPoint, customerPoint])
 
     const center = useMemo(() => {
-        if (!deliveryBoyPoint) return [22.5726, 88.3639]
-        return [deliveryBoyPoint.lat, deliveryBoyPoint.lon]
-    }, [deliveryBoyPoint])
+        if (deliveryBoyPoint) return [deliveryBoyPoint.lat, deliveryBoyPoint.lon]
+        if (customerPoint) return [customerPoint.lat, customerPoint.lon]
+        return [22.5726, 88.3639]
+    }, [deliveryBoyPoint, customerPoint])
 
     const stats = useMemo(() => {
         if (!deliveryBoyPoint || !customerPoint) {
@@ -100,16 +119,23 @@ function DeliveryBoyTracking({ data }) {
     if (!isMapReady) {
         return (
             <div className='w-full h-[280px] sm:h-[400px] mt-3 rounded-xl overflow-hidden shadow-md bg-gray-100 flex items-center justify-center px-4 text-center text-sm text-gray-600'>
-                Live tracking will appear once valid delivery and customer coordinates are available.
+                Live tracking will appear once at least one valid route coordinate is available.
             </div>
         )
     }
+
+    const statusMessage = !deliveryBoyPoint
+        ? 'Waiting for live driver coordinates. Showing the delivery destination meanwhile.'
+        : !customerPoint
+            ? 'Waiting for customer coordinates to draw the route.'
+            : 'Live route is active.'
 
     return (
         <div className='w-full h-[280px] sm:h-[400px] mt-3 rounded-xl overflow-hidden shadow-md relative'>
             <div className='absolute top-3 left-3 z-[500] bg-white/95 rounded-lg px-3 py-2 shadow text-xs'>
                 <p className='font-semibold text-gray-700'>Distance: {stats.distanceKm || "--"} km</p>
                 <p className='text-gray-600'>ETA: ~{stats.etaMinutes || "--"} min</p>
+                <p className='mt-1 max-w-[220px] text-gray-500'>{statusMessage}</p>
             </div>
             <MapContainer
                 className={"w-full h-full"}
@@ -120,13 +146,19 @@ function DeliveryBoyTracking({ data }) {
             >
                 <EnhancedMapLayers />
                 <FitBounds path={path} />
-                <Marker position={[deliveryBoyPoint.lat, deliveryBoyPoint.lon]} icon={deliveryBoyIcon}>
-                    <Popup>Delivery Boy</Popup>
-                </Marker>
-                <Marker position={[customerPoint.lat, customerPoint.lon]} icon={customerIcon}>
-                    <Popup>Customer</Popup>
-                </Marker>
-                <Polyline positions={path} color='blue' weight={4} dashArray="8 8" />
+                {deliveryBoyPoint && (
+                    <Marker position={[deliveryBoyPoint.lat, deliveryBoyPoint.lon]} icon={deliveryBoyIcon}>
+                        <Popup>Delivery Boy</Popup>
+                    </Marker>
+                )}
+                {customerPoint && (
+                    <Marker position={[customerPoint.lat, customerPoint.lon]} icon={customerIcon}>
+                        <Popup>Customer</Popup>
+                    </Marker>
+                )}
+                {path.length >= 2 && (
+                    <Polyline positions={path} color='blue' weight={4} dashArray="8 8" />
+                )}
 
             </MapContainer>
         </div>

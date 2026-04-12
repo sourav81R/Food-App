@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { IoSearchOutline, IoLocationSharp } from "react-icons/io5";
 import { TbCurrentLocation } from "react-icons/tb";
-import { MapContainer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import { useDispatch, useSelector } from 'react-redux';
 import "leaflet/dist/leaflet.css"
 import { setAddress, setLocation } from '../redux/mapSlice';
@@ -43,9 +43,98 @@ function RecenterMap({ location }) {
   return null
 }
 
+const DEFAULT_MAP_CENTER = { lat: 22.5726, lon: 88.3639 }
+
+const normalizeText = (value) => String(value || "").toLowerCase().replace(/\s+/g, " ").trim()
+
+const toValidCoordinatePoint = (latValue, lonValue) => {
+  const lat = Number(latValue)
+  const lon = Number(lonValue)
+
+  const isValidPoint =
+    Number.isFinite(lat) &&
+    Number.isFinite(lon) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lon >= -180 &&
+    lon <= 180 &&
+    !(Math.abs(lat) < 0.000001 && Math.abs(lon) < 0.000001)
+
+  return isValidPoint ? { lat, lon } : null
+}
+
+const calculateDistanceKm = (from, to) => {
+  const toRad = (value) => (value * Math.PI) / 180
+  const earthRadius = 6371
+  const dLat = toRad(to.lat - from.lat)
+  const dLon = toRad(to.lon - from.lon)
+  const lat1 = toRad(from.lat)
+  const lat2 = toRad(to.lat)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+
+  return earthRadius * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
+}
+
+const pickBestGeoapifyFeature = ({ features, searchText, currentCity, currentState, biasPoint }) => {
+  if (!Array.isArray(features) || features.length === 0) return null
+
+  const normalizedSearch = normalizeText(searchText)
+  const normalizedCity = normalizeText(currentCity)
+  const normalizedState = normalizeText(currentState)
+
+  const scoredMatches = features
+    .map((feature) => {
+      const props = feature?.properties || {}
+      const formatted = normalizeText([
+        props.formatted,
+        props.address_line1,
+        props.address_line2
+      ].filter(Boolean).join(" "))
+      const cityText = normalizeText(props.city || props.county)
+      const stateText = normalizeText(props.state)
+      const point = toValidCoordinatePoint(
+        props.lat ?? feature?.geometry?.coordinates?.[1],
+        props.lon ?? feature?.geometry?.coordinates?.[0]
+      )
+
+      let score = 0
+
+      if (normalizedSearch && formatted.startsWith(normalizedSearch)) score += 12
+      else if (normalizedSearch && formatted.includes(normalizedSearch)) score += 8
+
+      if (normalizedCity && cityText && cityText.includes(normalizedCity)) score += 5
+      if (normalizedState && stateText && stateText.includes(normalizedState)) score += 3
+
+      if (biasPoint && point) {
+        const distanceKm = calculateDistanceKm(biasPoint, point)
+        if (distanceKm <= 5) score += 5
+        else if (distanceKm <= 25) score += 3
+        else if (distanceKm <= 75) score += 1
+        else if (distanceKm > 250) score -= 2
+      }
+
+      return { feature, score }
+    })
+    .sort((left, right) => right.score - left.score)
+
+  return scoredMatches[0]?.feature || features[0] || null
+}
+
+function MapClickSelector({ onSelect }) {
+  useMapEvents({
+    click(event) {
+      onSelect?.(event?.latlng)
+    }
+  })
+
+  return null
+}
+
 function CheckOut() {
   const { location, address } = useSelector(state => state.map)
-  const { cartItems, totalAmount, userData, addresses, walletBalance, bestCoupon } = useSelector(state => state.user)
+  const { cartItems, totalAmount, userData, addresses, walletBalance, bestCoupon, currentCity, currentState } = useSelector(state => state.user)
   const [addressInput, setAddressInput] = useState("")
   const [addressLabel, setAddressLabel] = useState("Home")
   const [paymentMethod, setPaymentMethod] = useState("cod")
@@ -98,10 +187,47 @@ function CheckOut() {
     return date.toISOString().slice(0, 16)
   }, [])
 
+  const savedLocationPoint = useMemo(() => (
+    toValidCoordinatePoint(
+      userData?.location?.coordinates?.[1],
+      userData?.location?.coordinates?.[0]
+    )
+  ), [userData?.location?.coordinates])
+
+  const activeLocationPoint = useMemo(() => (
+    toValidCoordinatePoint(location?.lat, location?.lon)
+  ), [location?.lat, location?.lon])
+
+  const searchBiasPoint = activeLocationPoint || savedLocationPoint
+
   const onDragEnd = (e) => {
     const { lat, lng } = e.target.getLatLng()
     dispatch(setLocation({ lat, lon: lng }))
+    setSelectedAddressId("")
     void getAddressByLatLng(lat, lng)
+  }
+
+  const handleMapClick = (latlng) => {
+    const point = toValidCoordinatePoint(latlng?.lat, latlng?.lng)
+    if (!point) return
+
+    dispatch(setLocation(point))
+    setSelectedAddressId("")
+    void getAddressByLatLng(point.lat, point.lon)
+  }
+
+  const applyResolvedAddress = ({ lat, lon, formattedAddress }) => {
+    const point = toValidCoordinatePoint(lat, lon)
+    if (!point) return false
+
+    dispatch(setLocation(point))
+    const nextAddress = String(formattedAddress || "").trim()
+    if (nextAddress) {
+      dispatch(setAddress(nextAddress))
+      setAddressInput(nextAddress)
+    }
+    setSelectedAddressId("")
+    return true
   }
 
   const getCurrentLocation = () => {
@@ -110,53 +236,120 @@ function CheckOut() {
       return
     }
 
+    if (!apiKey) {
+      toast.error("Map lookup is not configured. Add VITE_GEOAPIKEY to enable address detection.")
+      return
+    }
+
     setGeoLoading(true)
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const latitude = position.coords.latitude
         const longitude = position.coords.longitude
-        dispatch(setLocation({ lat: latitude, lon: longitude }))
+        applyResolvedAddress({ lat: latitude, lon: longitude, formattedAddress: addressInput })
         void getAddressByLatLng(latitude, longitude)
         setGeoLoading(false)
       },
-      () => {
-        const savedLongitude = userData?.location?.coordinates?.[0]
-        const savedLatitude = userData?.location?.coordinates?.[1]
-        if (Number.isFinite(savedLongitude) && Number.isFinite(savedLatitude)) {
-          dispatch(setLocation({ lat: savedLatitude, lon: savedLongitude }))
-          void getAddressByLatLng(savedLatitude, savedLongitude)
+      (error) => {
+        if (savedLocationPoint) {
+          applyResolvedAddress({
+            lat: savedLocationPoint.lat,
+            lon: savedLocationPoint.lon,
+            formattedAddress: addressInput
+          })
+          void getAddressByLatLng(savedLocationPoint.lat, savedLocationPoint.lon)
+          toast.info("Using your last saved location because live GPS was unavailable.")
         } else {
-          toast.error("Unable to fetch current location")
+          const message = error?.code === 1
+            ? "Location permission was blocked. Please allow GPS access and try again."
+            : "Unable to fetch current location"
+          toast.error(message)
         }
         setGeoLoading(false)
       },
-      { enableHighAccuracy: false, timeout: 7000, maximumAge: 5 * 60 * 1000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
   }
 
   const getAddressByLatLng = async (lat, lng) => {
+    const point = toValidCoordinatePoint(lat, lng)
+    if (!point) {
+      toast.warning("The selected map point is invalid. Please try another spot.")
+      return
+    }
+
+    if (!apiKey) {
+      toast.error("Map lookup is not configured. Add VITE_GEOAPIKEY to enable address detection.")
+      return
+    }
+
     try {
-      const result = await axios.get(`https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&format=json&apiKey=${apiKey}`)
-      const formattedAddress = result?.data?.results?.[0]?.address_line2 || result?.data?.results?.[0]?.formatted || ""
-      dispatch(setAddress(formattedAddress))
-      setAddressInput(formattedAddress)
+      const result = await axios.get(`https://api.geoapify.com/v1/geocode/reverse?lat=${point.lat}&lon=${point.lon}&format=json&apiKey=${apiKey}`)
+      const firstResult = result?.data?.results?.[0]
+      const formattedAddress = firstResult?.formatted || firstResult?.address_line2 || firstResult?.address_line1 || ""
+
+      if (formattedAddress) {
+        dispatch(setAddress(formattedAddress))
+        setAddressInput(formattedAddress)
+      }
     } catch (error) {
       console.log(error)
+      toast.error("Unable to resolve an address for that map location.")
     }
   }
 
   const getLatLngByAddress = async () => {
+    const normalizedAddressInput = String(addressInput || "").trim()
+    if (!normalizedAddressInput) {
+      toast.warning("Please enter an address to search")
+      return
+    }
+
+    if (!apiKey) {
+      toast.error("Map lookup is not configured. Add VITE_GEOAPIKEY to enable address search.")
+      return
+    }
+
     try {
-      const result = await axios.get(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(addressInput)}&apiKey=${apiKey}`)
-      const firstMatch = result?.data?.features?.[0]?.properties
-      if (!firstMatch) {
+      const params = new URLSearchParams({
+        text: normalizedAddressInput,
+        apiKey,
+        limit: "5",
+        filter: "countrycode:in"
+      })
+
+      if (searchBiasPoint) {
+        params.set("bias", `proximity:${searchBiasPoint.lon},${searchBiasPoint.lat}`)
+      }
+
+      const result = await axios.get(`https://api.geoapify.com/v1/geocode/search?${params.toString()}`)
+      const selectedFeature = pickBestGeoapifyFeature({
+        features: result?.data?.features || [],
+        searchText: normalizedAddressInput,
+        currentCity,
+        currentState,
+        biasPoint: searchBiasPoint
+      })
+      const selectedProperties = selectedFeature?.properties
+      const resolvedPoint = toValidCoordinatePoint(
+        selectedProperties?.lat ?? selectedFeature?.geometry?.coordinates?.[1],
+        selectedProperties?.lon ?? selectedFeature?.geometry?.coordinates?.[0]
+      )
+
+      if (!selectedProperties || !resolvedPoint) {
         toast.warning("No matching address found")
         return
       }
-      const { lat, lon } = firstMatch
-      dispatch(setLocation({ lat, lon }))
+
+      const formattedAddress = selectedProperties?.formatted || selectedProperties?.address_line2 || selectedProperties?.address_line1 || normalizedAddressInput
+      applyResolvedAddress({
+        lat: resolvedPoint.lat,
+        lon: resolvedPoint.lon,
+        formattedAddress
+      })
     } catch (error) {
       console.log(error)
+      toast.error("Unable to search that address right now.")
     }
   }
 
@@ -254,7 +447,7 @@ function CheckOut() {
       toast.warning("Please enter a delivery address")
       return
     }
-    if (!location.lat || !location.lon) {
+    if (!toValidCoordinatePoint(location?.lat, location?.lon)) {
       toast.warning("Please select a location on the map")
       return
     }
@@ -389,8 +582,8 @@ function CheckOut() {
   }, [addresses, selectedAddressId])
 
   const mapCenter = [
-    Number.isFinite(location?.lat) ? location.lat : 22.5726,
-    Number.isFinite(location?.lon) ? location.lon : 88.3639
+    activeLocationPoint?.lat ?? DEFAULT_MAP_CENTER.lat,
+    activeLocationPoint?.lon ?? DEFAULT_MAP_CENTER.lon
   ]
 
   return (
@@ -551,8 +744,9 @@ function CheckOut() {
                     <MapContainer className={"w-full h-full"} center={mapCenter} zoom={16} maxZoom={20} scrollWheelZoom>
                       <EnhancedMapLayers />
                       <RecenterMap location={location} />
-                      {Number.isFinite(location?.lat) && Number.isFinite(location?.lon) && (
-                        <Marker position={[location.lat, location.lon]} draggable eventHandlers={{ dragend: onDragEnd }} />
+                      <MapClickSelector onSelect={handleMapClick} />
+                      {activeLocationPoint && (
+                        <Marker position={[activeLocationPoint.lat, activeLocationPoint.lon]} draggable eventHandlers={{ dragend: onDragEnd }} />
                       )}
                     </MapContainer>
                   </div>

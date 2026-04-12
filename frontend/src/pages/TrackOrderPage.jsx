@@ -16,6 +16,22 @@ const UPDATE_DELIVERY_LOCATION_EVENT = "updateDeliveryLocation"
 const ORDER_STATUS_UPDATED_EVENT = "orderStatusUpdated"
 const UPDATE_STATUS_EVENT = "update-status"
 
+const toValidCoordinatePoint = (latValue, lonValue) => {
+  const lat = Number(latValue)
+  const lon = Number(lonValue)
+
+  const isValidPoint =
+    Number.isFinite(lat) &&
+    Number.isFinite(lon) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lon >= -180 &&
+    lon <= 180 &&
+    !(Math.abs(lat) < 0.000001 && Math.abs(lon) < 0.000001)
+
+  return isValidPoint ? { lat, lon } : null
+}
+
 const haversineDistanceKm = (from, to) => {
   const toRad = (value) => (value * Math.PI) / 180
   const earthRadius = 6371
@@ -104,9 +120,12 @@ function TrackOrderPage() {
     if (!socket) return
 
     const handleUpdateDeliveryLocation = ({ deliveryBoyId, latitude, longitude }) => {
+      const nextPoint = toValidCoordinatePoint(latitude, longitude)
+      if (!deliveryBoyId || !nextPoint) return
+
       setLiveLocations(prev => ({
         ...prev,
-        [deliveryBoyId]: { lat: latitude, lon: longitude }
+        [String(deliveryBoyId)]: nextPoint
       }))
     }
 
@@ -292,17 +311,38 @@ function TrackOrderPage() {
 
         {currentOrder?.shopOrders?.map((shopOrder, index) => {
           const assignedPartner = shopOrder?.assignedDeliveryBoy || currentOrder?.deliveryPartner || null
-          const defaultPartnerLocation =
-            Array.isArray(assignedPartner?.location?.coordinates) && assignedPartner.location.coordinates.length === 2
-              ? {
-                lat: assignedPartner.location.coordinates[1],
-                lon: assignedPartner.location.coordinates[0]
-              }
-              : null
-          const livePartnerLocation = assignedPartner?._id ? liveLocations[assignedPartner._id] : null
-          const partnerLocation = livePartnerLocation || defaultPartnerLocation
-          const hasCustomerLocation = Number.isFinite(Number(currentOrder?.deliveryAddress?.latitude)) &&
-            Number.isFinite(Number(currentOrder?.deliveryAddress?.longitude))
+          const partnerId = assignedPartner?._id ? String(assignedPartner._id) : ""
+          const defaultPartnerLocation = toValidCoordinatePoint(
+            assignedPartner?.location?.coordinates?.[1],
+            assignedPartner?.location?.coordinates?.[0]
+          )
+          const livePartnerLocation = partnerId ? liveLocations[partnerId] : null
+          const shopLocation = toValidCoordinatePoint(
+            shopOrder?.shop?.location?.coordinates?.[1],
+            shopOrder?.shop?.location?.coordinates?.[0]
+          )
+          const ownerLocation = toValidCoordinatePoint(
+            shopOrder?.owner?.location?.coordinates?.[1],
+            shopOrder?.owner?.location?.coordinates?.[0]
+          )
+          const customerLocation = toValidCoordinatePoint(
+            currentOrder?.deliveryAddress?.latitude,
+            currentOrder?.deliveryAddress?.longitude
+          )
+          const partnerLocation = livePartnerLocation || defaultPartnerLocation || shopLocation || ownerLocation
+          const hasCustomerLocation = Boolean(customerLocation)
+          const hasAnyTrackingPoint = Boolean(partnerLocation || customerLocation)
+          const trackingSourceLabel = livePartnerLocation
+            ? "Live driver GPS"
+            : defaultPartnerLocation
+              ? "Last known driver location"
+              : shopLocation
+                ? "Store fallback location"
+                : ownerLocation
+                  ? "Owner device fallback"
+                  : customerLocation
+                    ? "Customer destination pinned"
+                    : "Awaiting route"
           const progressStatus = shopOrder?.status === "delivered"
             ? "delivered"
             : (assignedPartner ? "out of delivery" : (currentOrder?.deliveryStatus || shopOrder?.status))
@@ -313,10 +353,7 @@ function TrackOrderPage() {
           const fallbackEtaSeconds = (partnerLocation && hasCustomerLocation)
             ? getFallbackEtaSeconds(
               partnerLocation,
-              {
-                lat: Number(currentOrder.deliveryAddress.latitude),
-                lon: Number(currentOrder.deliveryAddress.longitude)
-              }
+              customerLocation
             )
             : null
           const resolvedEtaSeconds = Number.isFinite(serverEtaSeconds) && serverEtaSeconds > 0
@@ -468,19 +505,21 @@ function TrackOrderPage() {
                   </div>
                 )}
 
-                {(assignedPartner && partnerLocation && hasCustomerLocation && shopOrder.status !== "delivered" && !isCancelled) && (
+                {(hasAnyTrackingPoint && shopOrder.status !== "delivered" && !isCancelled) && (
                   <div className="overflow-hidden rounded-[28px] border border-orange-100 shadow-md">
                     <div className='bg-[linear-gradient(135deg,#fff7ef,#ffffff)] px-5 py-4 border-b border-orange-100'>
-                      <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400'>Live Map</p>
+                      <div className='flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between'>
+                        <p className='text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400'>Live Map</p>
+                        <span className='inline-flex w-fit rounded-full bg-orange-50 px-3 py-1 text-[11px] font-semibold text-[#ff4d2d]'>
+                          {trackingSourceLabel}
+                        </span>
+                      </div>
                       <p className='mt-1 text-lg font-bold text-slate-900'>Delivery route in motion</p>
                     </div>
                     <div className="h-[280px] sm:h-[360px] w-full">
                       <DeliveryBoyTracking data={{
                         deliveryBoyLocation: partnerLocation,
-                        customerLocation: {
-                          lat: currentOrder.deliveryAddress.latitude,
-                          lon: currentOrder.deliveryAddress.longitude
-                        }
+                        customerLocation
                       }} />
                     </div>
                   </div>
