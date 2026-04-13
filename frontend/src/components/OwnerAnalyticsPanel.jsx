@@ -59,7 +59,7 @@ function OwnerAnalyticsPanel() {
           </div>
           <div className={`rounded-[24px] border px-4 py-3 ${isDark ? "border-white/10 bg-white/5" : "border-orange-100 bg-white/90"} shadow-sm`}>
             <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${isDark ? "text-slate-400" : "text-slate-400"}`}>Insight Range</p>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {["week", "month"].map((entry) => (
                 <button
                   key={entry}
@@ -170,7 +170,7 @@ function OwnerAnalyticsPanel() {
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#ff6b43]">Service Rhythm</p>
               <h3 className="mt-2 text-lg font-bold">Peak Hours Heatmap</h3>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12">
               {(analytics.hourlyDistribution || []).map((entry) => (
                 <div
                   key={entry.hour}

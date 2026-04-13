@@ -34,9 +34,9 @@ function CategoryCard({name,image,onClick,badgeLabel = "", disabled = false, sub
         {badgeLabel}
       </div>
      )}
-     <div className='absolute  bottom-0 w-full left-0  bg-[#ffffff96] bg-opacity-95 px-3 py-1 rounded-t-xl text-center shadow text-sm font-medium text-gray-800 backdrop-blur'>
+     <div className='absolute bottom-0 left-0 w-full rounded-t-xl bg-[#ffffff96] bg-opacity-95 px-2.5 py-1 text-center text-sm font-medium text-gray-800 shadow backdrop-blur'>
 {name}
-     {subtitle && <div className='text-[11px] font-normal text-gray-500'>{subtitle}</div>}
+     {subtitle && <div className='truncate text-[11px] font-normal text-gray-500'>{subtitle}</div>}
      </div>
     </div>
   )

@@ -16,7 +16,7 @@ function SearchAutocomplete({
   const shops = suggestions?.shops || [];
 
   return (
-    <div className={`absolute top-full mt-2 w-full rounded-2xl border shadow-2xl overflow-hidden z-[10001] ${isDark ? "bg-[#16213e] border-[#374151]" : "bg-white border-gray-200"}`}>
+    <div className={`absolute top-full z-[10001] mt-2 w-full max-w-full overflow-hidden rounded-2xl border shadow-2xl ${isDark ? "bg-[#16213e] border-[#374151]" : "bg-white border-gray-200"}`}>
       {!hasQuery && recentSearches.length > 0 && (
         <div className="p-3">
           <div className="flex items-center justify-between mb-2">
@@ -57,10 +57,10 @@ function SearchAutocomplete({
               {shops.map((shop) => (
                 <button
                   key={shop._id}
-                  className={`w-full text-left rounded-xl px-3 py-2 transition ${isDark ? "hover:bg-[#0f3460] text-white" : "hover:bg-orange-50 text-gray-800"}`}
+                  className={`break-anywhere w-full text-left rounded-xl px-3 py-2 transition ${isDark ? "hover:bg-[#0f3460] text-white" : "hover:bg-orange-50 text-gray-800"}`}
                   onClick={() => onSelectShop(shop)}
                 >
-                  <p className="font-semibold">{shop.name}</p>
+                  <p className="break-words font-semibold">{shop.name}</p>
                   <p className={`text-xs ${isDark ? "text-gray-300" : "text-gray-500"}`}>{shop.city} • {shop.address}</p>
                 </button>
               ))}
@@ -73,10 +73,10 @@ function SearchAutocomplete({
               {items.map((item) => (
                 <button
                   key={item._id}
-                  className={`w-full text-left rounded-xl px-3 py-2 transition ${isDark ? "hover:bg-[#0f3460] text-white" : "hover:bg-orange-50 text-gray-800"}`}
+                  className={`break-anywhere w-full text-left rounded-xl px-3 py-2 transition ${isDark ? "hover:bg-[#0f3460] text-white" : "hover:bg-orange-50 text-gray-800"}`}
                   onClick={() => onSelectItem(item)}
                 >
-                  <p className="font-semibold">{item.name}</p>
+                  <p className="break-words font-semibold">{item.name}</p>
                   <p className={`text-xs ${isDark ? "text-gray-300" : "text-gray-500"}`}>
                     {item.shop?.name || "Restaurant"} • Rs {item.price}
                   </p>

@@ -184,11 +184,11 @@ function Nav() {
     if (!userData) return null
 
     return (
-        <div className={`w-full min-h-[72px] sm:h-[80px] flex items-center justify-between md:justify-center gap-3 sm:gap-6 md:gap-[30px] px-3 sm:px-5 fixed top-0 left-0 z-[9999] border-none outline-none transition-colors duration-300 ${isDark ? 'bg-[#1a1a2e]' : 'bg-[#fff9f6]'} overflow-visible`}>
+        <div className={`w-full min-h-[72px] sm:h-[80px] flex items-center justify-between md:justify-center gap-2 sm:gap-6 md:gap-[30px] px-2.5 sm:px-5 fixed top-0 left-0 z-[9999] border-none outline-none transition-colors duration-300 ${isDark ? 'bg-[#1a1a2e]' : 'bg-[#fff9f6]'} overflow-visible`}>
 
             {showSearch && isUserRole(normalizedRole) && (
-                <div ref={searchRef} className={`w-[94%] min-h-[64px] rounded-2xl items-center gap-3 flex fixed top-[78px] left-[3%] px-3 py-2 md:hidden transition-all duration-300 ${isDark ? 'bg-[#16213e] border border-[#374151]' : 'bg-white/80 backdrop-blur-lg border border-white/20'} shadow-2xl`}>
-                    <div className={`flex items-center w-[40%] min-w-[108px] overflow-hidden gap-[10px] pr-3 border-r-2 ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                <div ref={searchRef} className={`fixed left-2 right-2 top-[78px] z-[10000] flex min-h-[64px] items-center gap-3 rounded-2xl px-3 py-2 md:hidden transition-all duration-300 ${isDark ? 'bg-[#16213e] border border-[#374151]' : 'bg-white/80 backdrop-blur-lg border border-white/20'} shadow-2xl`}>
+                    <div className={`flex items-center w-[38%] min-w-[92px] overflow-hidden gap-[10px] pr-3 border-r-2 ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
                         <FaLocationDot size={22} className="text-[#ff4d2d] flex-shrink-0" />
                         <div className={`w-full truncate text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{currentCity}</div>
                     </div>
@@ -236,7 +236,7 @@ function Nav() {
                 </div>
             )}
 
-            <h1 className='text-xl sm:text-2xl md:text-3xl font-bold italic text-[#ff4d2d] drop-shadow-sm shrink-0'>Foodooza</h1>
+            <h1 className='text-lg sm:text-2xl md:text-3xl font-bold italic text-[#ff4d2d] drop-shadow-sm shrink-0'>Foodooza</h1>
 
             {isUserRole(normalizedRole) && (
                 <div ref={searchRef} className={`md:w-[55%] lg:w-[45%] h-[56px] rounded-2xl items-center hidden md:flex transition-all duration-300 overflow-visible group relative ${isDark ? 'bg-[#16213e] border border-[#374151] hover:border-[#ff4d2d]/50' : 'bg-white/90 backdrop-blur-lg border border-gray-100 hover:border-[#ff4d2d]/30'} shadow-lg hover:shadow-xl hover:shadow-[#ff4d2d]/10`}>
@@ -305,7 +305,7 @@ function Nav() {
                 </div>
             )}
 
-            <div className='flex items-center gap-2 sm:gap-4'>
+            <div className='flex shrink-0 items-center gap-1.5 sm:gap-4'>
                 {isUserRole(normalizedRole) && (showSearch ? <RxCross2 size={25} className='text-[#ff4d2d] md:hidden' onClick={() => setShowSearch(false)} /> : <IoIosSearch size={25} className='text-[#ff4d2d] md:hidden' onClick={() => setShowSearch(true)} />)
                 }
                 {isOwnerRole(normalizedRole) ? <>

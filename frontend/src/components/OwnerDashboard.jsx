@@ -106,7 +106,7 @@ function OwnerDashboard() {
                     onClick={() => handleSelectShop(shop._id)}
                   >
                     <p className='text-sm font-semibold'>{shop.name}</p>
-                    <p className={`mt-1 text-xs ${isActive ? 'text-white/85' : isDark ? 'text-slate-300' : 'text-slate-500'}`}>{shop.city}, {shop.state}</p>
+                    <p className={`mt-1 break-words text-xs ${isActive ? 'text-white/85' : isDark ? 'text-slate-300' : 'text-slate-500'}`}>{shop.city}, {shop.state}</p>
                   </button>
                 )
               })}
@@ -196,11 +196,11 @@ function OwnerDashboard() {
                         <h2 className='text-2xl font-bold'>{myShopData.name}</h2>
                         <div className='mt-2 flex items-center gap-2 text-sm text-white/85'>
                           <FaMapMarkerAlt className='text-[#ff9a62]' />
-                          <span>{myShopData.address}</span>
+                          <span className='break-words'>{myShopData.address}</span>
                         </div>
                       </div>
                     </div>
-                    <div className='grid grid-cols-2 gap-3 p-5'>
+                    <div className='grid grid-cols-1 gap-3 p-5 sm:grid-cols-2'>
                       <div className={`rounded-2xl px-4 py-3 ${isDark ? 'bg-white/5' : 'bg-orange-50'}`}>
                         <p className='text-[11px] font-semibold uppercase tracking-[0.18em] text-[#ff6b43]'>Store Rhythm</p>
                         <p className={`mt-2 text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{myShopData.isBusy ? 'Busy mode active' : 'Ready for orders'}</p>

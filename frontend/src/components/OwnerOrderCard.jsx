@@ -21,55 +21,79 @@ function OwnerOrderCard({ data }) {
     }
 
     return (
-        <div className='bg-white rounded-lg shadow p-4 space-y-4'>
-            <div>
-                <h2 className='text-lg font-semibold text-gray-800'>{data.user.fullName}</h2>
-                <p className='text-sm text-gray-500'>{data.user.email}</p>
-                <p className='flex items-center gap-2 text-sm text-gray-600 mt-1'><MdPhone /><span>{data.user.mobile}</span></p>
-                {data.paymentMethod == "online" ? <p className='gap-2 text-sm text-gray-600'>payment: {data.payment ? "true" : "false"}</p> : <p className='gap-2 text-sm text-gray-600'>Payment Method: {data.paymentMethod}</p>}
+        <div className='overflow-hidden rounded-[24px] border border-orange-100 bg-white p-4 shadow-[0_16px_50px_rgba(15,23,42,0.07)] sm:p-5'>
+            <div className='flex flex-col gap-4 border-b border-orange-100 pb-4 lg:flex-row lg:items-start lg:justify-between'>
+                <div className='min-w-0 space-y-2'>
+                    <div>
+                        <h2 className='break-words text-lg font-semibold text-gray-800 sm:text-xl'>{data?.user?.fullName || "Customer"}</h2>
+                        <p className='break-all text-sm text-gray-500'>{data?.user?.email || "Email unavailable"}</p>
+                    </div>
+                    <p className='flex flex-wrap items-center gap-2 text-sm text-gray-600'>
+                        <MdPhone className='shrink-0' />
+                        <span className='break-all'>{data?.user?.mobile || "Mobile unavailable"}</span>
+                    </p>
+                    {data.paymentMethod == "online" ? (
+                        <p className='text-sm text-gray-600'>Payment: {data.payment ? "true" : "false"}</p>
+                    ) : (
+                        <p className='text-sm text-gray-600'>Payment Method: {data?.paymentMethod || "N/A"}</p>
+                    )}
+                </div>
+
+                <div className='flex w-full flex-col gap-3 lg:w-auto lg:min-w-[220px]'>
+                    <div className='rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3'>
+                        <p className='text-[11px] font-semibold uppercase tracking-wide text-slate-400'>Status</p>
+                        <p className='mt-1 text-base font-semibold capitalize text-[#ff4d2d]'>{data?.shopOrders?.status || "pending"}</p>
+                    </div>
+
+                    <label htmlFor={`order-status-${data._id}`} className='sr-only'>Change order status</label>
+                    <select
+                        id={`order-status-${data._id}`}
+                        name="orderStatus"
+                        className='w-full rounded-xl border border-[#ff4d2d] px-3 py-3 text-sm text-[#ff4d2d] focus:outline-none focus:ring-2 focus:ring-[#ff4d2d]/20'
+                        onChange={(e) => handleUpdateStatus(data._id, data.shopOrders.shop._id, e.target.value)}
+                    >
+                        <option value="">Change status</option>
+                        <option value="pending">Pending</option>
+                        <option value="preparing">Preparing</option>
+                        <option value="out of delivery">Out Of Delivery</option>
+                    </select>
+                </div>
             </div>
 
-            <div className='flex items-start flex-col gap-2 text-gray-600 text-sm'>
-                <p>{data?.deliveryAddress?.text}</p>
-                <p className='text-xs text-gray-500'>Lat: {data?.deliveryAddress.latitude} , Lon {data?.deliveryAddress.longitude}</p>
+            <div className='mt-4 rounded-[20px] border border-slate-200 bg-slate-50/80 p-4 text-sm text-gray-600'>
+                <p className='break-words'>{data?.deliveryAddress?.text || "Address unavailable"}</p>
+                <p className='mt-2 break-all text-xs text-gray-500'>
+                    Lat: {data?.deliveryAddress?.latitude || "-"} | Lon: {data?.deliveryAddress?.longitude || "-"}
+                </p>
             </div>
 
-            <div className='flex space-x-4 overflow-x-auto pb-2'>
+            <div className='mt-4 flex gap-4 overflow-x-auto pb-2'>
                 {data.shopOrders.shopOrderItems.map((item, index) => (
-                    <div key={index} className='flex-shrink-0 w-40 border rounded-lg p-2 bg-white'>
-                        <img src={item.item.image} alt="" className='w-full h-24 object-cover rounded' />
-                        <p className='text-sm font-semibold mt-1'>{item.name}</p>
-                        <p className='text-xs text-gray-500'>Qty: {item.quantity} x Rs {item.price}</p>
+                    <div key={index} className='w-[220px] shrink-0 rounded-[18px] border border-orange-100 bg-white p-3 shadow-sm sm:w-44'>
+                        <img src={item.item.image} alt="" className='h-24 w-full rounded object-cover' />
+                        <p className='mt-2 break-words text-sm font-semibold text-slate-900'>{item.name}</p>
+                        <p className='mt-1 text-xs text-gray-500'>Qty: {item.quantity} x Rs {item.price}</p>
                     </div>
                 ))}
             </div>
 
-            <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center mt-auto pt-3 border-t border-gray-100 gap-2'>
-                <span className='text-sm'>status: <span className='font-semibold capitalize text-[#ff4d2d]'>{data.shopOrders.status}</span>
-                </span>
-
-                <label htmlFor={`order-status-${data._id}`} className='sr-only'>Change order status</label>
-                <select id={`order-status-${data._id}`} name="orderStatus" className='rounded-md border px-3 py-1 text-sm focus:outline-none focus:ring-2 border-[#ff4d2d] text-[#ff4d2d] w-full sm:w-auto' onChange={(e) => handleUpdateStatus(data._id, data.shopOrders.shop._id, e.target.value)}>
-                    <option value="">Change</option>
-                    <option value="pending">Pending</option>
-                    <option value="preparing">Preparing</option>
-                    <option value="out of delivery">Out Of Delivery</option>
-                </select>
-
-            </div>
-
             {data.shopOrders.status == "out of delivery" &&
-                <div className="mt-3 p-2 border rounded-lg text-sm bg-orange-50 gap-4 break-words">
+                <div className="mt-4 rounded-[18px] border border-orange-100 bg-orange-50 p-4 text-sm text-slate-700">
                     {data.shopOrders.assignedDeliveryBoy ? <p>Assigned Delivery Boy:</p> : <p>Available Delivery Boys:</p>}
                     {availableBoys?.length > 0 ? (
                         availableBoys.map((b, index) => (
-                            <div key={b._id || `${b.mobile}-${index}`} className='text-gray-800'>{b.fullName}-{b.mobile}</div>
+                            <div key={b._id || `${b.mobile}-${index}`} className='break-all text-gray-800'>{b.fullName} - {b.mobile}</div>
                         ))
-                    ) : data.shopOrders.assignedDeliveryBoy ? <div>{data.shopOrders.assignedDeliveryBoy.fullName}-{data.shopOrders.assignedDeliveryBoy.mobile}</div> : <div>Waiting for delivery boy to accept</div>}
+                    ) : data.shopOrders.assignedDeliveryBoy ? <div className='break-all'>{data.shopOrders.assignedDeliveryBoy.fullName} - {data.shopOrders.assignedDeliveryBoy.mobile}</div> : <div>Waiting for delivery boy to accept</div>}
                 </div>}
 
-            <div className='text-right font-bold text-gray-800 text-sm'>
-                Total: Rs {data.shopOrders.subtotal}
+            <div className='mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between'>
+                <span className='text-sm text-slate-600'>
+                    Status: <span className='font-semibold capitalize text-[#ff4d2d]'>{data.shopOrders.status}</span>
+                </span>
+                <div className='text-left text-sm font-bold text-gray-800 sm:text-right'>
+                    Total: Rs {data.shopOrders.subtotal}
+                </div>
             </div>
         </div>
     )

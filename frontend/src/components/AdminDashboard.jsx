@@ -220,7 +220,7 @@ function AdminDashboard() {
               </div>
 
               {!loading && overview?.cards && (
-                <div className={`rounded-[24px] border px-5 py-4 min-w-[250px] ${isDark ? "border-white/10 bg-white/5" : "border-orange-100 bg-white/90"} shadow-sm`}>
+                <div className={`w-full rounded-[24px] border px-5 py-4 sm:w-auto sm:min-w-[250px] ${isDark ? "border-white/10 bg-white/5" : "border-orange-100 bg-white/90"} shadow-sm`}>
                   <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDark ? "text-gray-300" : "text-slate-400"}`}>Live Snapshot</p>
                   <p className={`mt-2 text-lg font-bold ${isDark ? "text-white" : "text-slate-900"}`}>Revenue At A Glance</p>
                   <p className="mt-2 text-3xl font-bold text-[#ff4d2d]">{formatMoney(overview.cards.totalRevenue)}</p>
@@ -319,17 +319,17 @@ function AdminDashboard() {
           )}
 
           {!loading && activeTab === "users" && (
-            <div className="overflow-x-hidden">
-              <table className="w-full table-fixed">
+            <div className="overflow-x-auto">
+              <table className="min-w-[1080px] w-full table-fixed">
                 <thead className={isDark ? "bg-[#0f3460] text-gray-200" : "bg-[linear-gradient(180deg,#fff8f4,#ffffff)] text-slate-700"}>
                   <tr>
                     <th className="w-[19%] text-left px-5 py-4 text-sm font-semibold">Name</th>
-                    <th className="w-[25%] text-left px-5 py-4 text-sm font-semibold">Email</th>
-                    <th className="w-[13%] text-left px-5 py-4 text-sm font-semibold">Mobile</th>
-                    <th className="w-[12%] text-left px-5 py-4 text-sm font-semibold">Role</th>
-                    <th className="w-[11%] text-left px-5 py-4 text-sm font-semibold">Joined</th>
-                    <th className="w-[10%] text-center px-5 py-4 text-sm font-semibold">Data Updated</th>
-                    <th className="w-[10%] text-center px-5 py-4 text-sm font-semibold">Actions</th>
+                    <th className="w-[23%] text-left px-5 py-4 text-sm font-semibold">Email</th>
+                    <th className="w-[12%] text-left px-5 py-4 text-sm font-semibold">Mobile</th>
+                    <th className="w-[11%] text-left px-5 py-4 text-sm font-semibold">Role</th>
+                    <th className="w-[10%] text-left px-5 py-4 text-sm font-semibold">Joined</th>
+                    <th className="w-[7%] text-center px-5 py-4 text-sm font-semibold">Data Updated</th>
+                    <th className="w-[18%] text-center px-5 py-4 text-sm font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -370,9 +370,9 @@ function AdminDashboard() {
                         </div>
                       </td>
                       <td className="px-5 py-4 align-top">
-                        <div className="flex items-center justify-center gap-2 whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
                           <button
-                            className={`px-3.5 py-2 rounded-xl text-white text-sm font-medium ${
+                            className={`inline-flex min-w-[96px] justify-center whitespace-nowrap rounded-xl px-3 py-2 text-white text-sm font-medium ${
                               user.isSuspended ? "bg-slate-600 hover:bg-slate-700" : "bg-amber-500 hover:bg-amber-600"
                             }`}
                             disabled={busyKey === `suspend-${user._id}` || user._id === userData._id}
@@ -399,8 +399,8 @@ function AdminDashboard() {
           )}
 
           {!loading && activeTab === "shops" && (
-            <div className="overflow-x-hidden">
-              <table className="w-full table-fixed">
+            <div className="overflow-x-auto">
+              <table className="min-w-[860px] w-full table-fixed">
                 <thead className={isDark ? "bg-[#0f3460] text-gray-200" : "bg-[linear-gradient(180deg,#fff8f4,#ffffff)] text-slate-700"}>
                   <tr>
                     <th className="w-[28%] text-left px-5 py-4 text-sm font-semibold">Shop</th>
@@ -434,8 +434,8 @@ function AdminDashboard() {
           )}
 
           {!loading && activeTab === "items" && (
-            <div className="overflow-x-hidden">
-              <table className="w-full table-fixed">
+            <div className="overflow-x-auto">
+              <table className="min-w-[940px] w-full table-fixed">
                 <thead className={isDark ? "bg-[#0f3460] text-gray-200" : "bg-[linear-gradient(180deg,#fff8f4,#ffffff)] text-slate-700"}>
                   <tr>
                     <th className="w-[24%] text-left px-5 py-4 text-sm font-semibold">Item</th>
@@ -471,8 +471,8 @@ function AdminDashboard() {
           )}
 
           {!loading && activeTab === "orders" && (
-            <div className="overflow-x-hidden">
-              <table className="w-full table-fixed">
+            <div className="overflow-x-auto">
+              <table className="min-w-[920px] w-full table-fixed">
                 <thead className={isDark ? "bg-[#0f3460] text-gray-200" : "bg-[linear-gradient(180deg,#fff8f4,#ffffff)] text-slate-700"}>
                   <tr>
                     <th className="w-[14%] text-left px-5 py-4 text-sm font-semibold">Order ID</th>

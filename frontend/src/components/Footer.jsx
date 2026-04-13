@@ -167,7 +167,7 @@ function Footer() {
                 href="https://www.apple.com/app-store/"
                 target="_blank"
                 rel="noreferrer"
-                className="flex w-[180px] items-center gap-2.5 rounded-xl border border-[#f0bf9f] bg-[#fff2e8] px-3 py-2 text-[#0e2b56] shadow-sm transition hover:bg-[#ffe7d7] hover:border-[#e8aa84]"
+                className="flex w-full sm:w-[180px] items-center gap-2.5 rounded-xl border border-[#f0bf9f] bg-[#fff2e8] px-3 py-2 text-[#0e2b56] shadow-sm transition hover:bg-[#ffe7d7] hover:border-[#e8aa84]"
                 aria-label="Download on the App Store"
               >
                 <FaApple size={20} />
@@ -181,7 +181,7 @@ function Footer() {
                 href="https://play.google.com/store/apps"
                 target="_blank"
                 rel="noreferrer"
-                className="flex w-[180px] items-center gap-2.5 rounded-xl border border-[#f0bf9f] bg-[#fff2e8] px-3 py-2 text-[#0e2b56] shadow-sm transition hover:bg-[#ffe7d7] hover:border-[#e8aa84]"
+                className="flex w-full sm:w-[180px] items-center gap-2.5 rounded-xl border border-[#f0bf9f] bg-[#fff2e8] px-3 py-2 text-[#0e2b56] shadow-sm transition hover:bg-[#ffe7d7] hover:border-[#e8aa84]"
                 aria-label="Get it on Google Play"
               >
                 <IoLogoGooglePlaystore size={19} />

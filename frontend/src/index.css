@@ -21,6 +21,7 @@ body,
   width: 100%;
   min-height: 100%;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 /* Dark Mode Variables */
@@ -187,6 +188,24 @@ body,
 input:focus, button:focus {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+input,
+textarea,
+select {
+  max-width: 100%;
+}
+
+.break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Keep nav search input visually clean without extra focus border */

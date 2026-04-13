@@ -415,7 +415,7 @@ function UserDashboard() {
                 <p className={`mt-2 text-sm leading-6 ${isDark ? 'text-gray-300' : 'text-slate-500'}`}>Add balance instantly, pay faster at checkout, and keep track of refunds and wallet activity in one polished place.</p>
               </div>
 
-              <div className={`rounded-[20px] border px-4 py-3 min-w-[200px] ${isDark ? 'border-white/10 bg-white/5' : 'border-orange-100 bg-white/90'} shadow-sm`}>
+              <div className={`w-full rounded-[20px] border px-4 py-3 lg:w-auto lg:min-w-[200px] ${isDark ? 'border-white/10 bg-white/5' : 'border-orange-100 bg-white/90'} shadow-sm`}>
                 <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDark ? 'text-gray-300' : 'text-slate-400'}`}>Current Balance</p>
                 <p className='mt-1.5 text-3xl font-bold text-[#ff4d2d]'>Rs {Number(walletBalance || 0).toFixed(2)}</p>
                 <p className={`mt-1.5 text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Ready for checkout, refunds, and quick re-use.</p>

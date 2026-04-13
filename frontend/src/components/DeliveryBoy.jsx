@@ -212,7 +212,7 @@ function DeliveryBoy() {
                 </div>
                 <p className={`mt-4 text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Current selected range</p>
                 <p className={`mt-1 text-4xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Rs {earningSummary.totalEarnings}</p>
-                <div className='mt-4 grid grid-cols-2 gap-3'>
+                <div className='mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2'>
                   <div className={`rounded-2xl px-3 py-3 ${isDark ? 'bg-white/5' : 'bg-orange-50'}`}>
                     <p className='text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ff6b43]'>Deliveries</p>
                     <p className={`mt-2 text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{earningSummary.totalDeliveries}</p>
