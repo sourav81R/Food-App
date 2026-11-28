@@ -1,4 +1,4 @@
-# Foodooza
+# Foodooza  
 
 Foodooza is a full-stack MERN food delivery platform with four distinct roles:
 
